@@ -1,6 +1,6 @@
 # Story 1.1: Initialize the SoniqMCP Application Scaffold
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -19,25 +19,25 @@ so that all future work starts from a consistent, production-ready baseline.
 
 ## Tasks / Subtasks
 
-- [ ] Initialize the Python application scaffold with `uv` (AC: 1)
-  - [ ] Create the application package rooted at `src/soniq_mcp/`
-  - [ ] Ensure `pyproject.toml`, `uv.lock`, and standard Python app entry points are present
-  - [ ] Add `.python-version` if the scaffold does not produce one
-- [ ] Add and record baseline dependencies (AC: 2)
-  - [ ] Add `mcp[cli]`
-  - [ ] Add `soco`
-  - [ ] Confirm dependency declarations land in `pyproject.toml`
-- [ ] Establish the agreed repository skeleton (AC: 3, 4)
-  - [ ] Add root `Makefile`
-  - [ ] Add placeholder app subpackages under `src/soniq_mcp/` for `config`, `transports`, `tools`, `services`, `adapters`, `schemas`, `domain`, and `utils`
-  - [ ] Add `tests/` layout with unit, integration, contract, smoke, fixtures, and fakes directories
-  - [ ] Add `helm/soniq/` and `docs/setup/`, `docs/integrations/`, `docs/prompts/` directories
-- [ ] Add minimal bootstrap placeholders that preserve boundaries without over-implementing later stories (AC: 4)
-  - [ ] Keep transport bootstrapping separate from business logic
-  - [ ] Do not implement real Sonos control, config validation, or transport behavior beyond placeholder wiring
-- [ ] Verify scaffold integrity (AC: 1, 2, 3, 4)
-  - [ ] Run a lightweight tree/package verification
-  - [ ] Ensure the created layout matches the architecture document before moving to Story 1.2
+- [x] Initialize the Python application scaffold with `uv` (AC: 1)
+  - [x] Create the application package rooted at `src/soniq_mcp/`
+  - [x] Ensure `pyproject.toml`, `uv.lock`, and standard Python app entry points are present
+  - [x] Add `.python-version` if the scaffold does not produce one
+- [x] Add and record baseline dependencies (AC: 2)
+  - [x] Add `mcp[cli]`
+  - [x] Add `soco`
+  - [x] Confirm dependency declarations land in `pyproject.toml`
+- [x] Establish the agreed repository skeleton (AC: 3, 4)
+  - [x] Add root `Makefile`
+  - [x] Add placeholder app subpackages under `src/soniq_mcp/` for `config`, `transports`, `tools`, `services`, `adapters`, `schemas`, `domain`, and `utils`
+  - [x] Add `tests/` layout with unit, integration, contract, smoke, fixtures, and fakes directories
+  - [x] Add `helm/soniq/` and `docs/setup/`, `docs/integrations/`, `docs/prompts/` directories
+- [x] Add minimal bootstrap placeholders that preserve boundaries without over-implementing later stories (AC: 4)
+  - [x] Keep transport bootstrapping separate from business logic
+  - [x] Do not implement real Sonos control, config validation, or transport behavior beyond placeholder wiring
+- [x] Verify scaffold integrity (AC: 1, 2, 3, 4)
+  - [x] Run a lightweight tree/package verification
+  - [x] Ensure the created layout matches the architecture document before moving to Story 1.2
 
 ## Dev Notes
 
@@ -81,6 +81,56 @@ gpt-5-codex
 
 ### Debug Log References
 
+- `uv init --app --package --name soniq_mcp --description "Sonos MCP server" --vcs none --author-from none --python 3.12 --no-readme --no-workspace .`
+- `uv add "mcp[cli]" soco`
+- `uv add --dev pytest`
+- `uv run python -m soniq_mcp`
+- `uv run pytest`
+- `uv run python -m compileall src tests`
+
 ### Completion Notes List
 
+- Initialized the repository as a `uv`-managed Python application and normalized the package layout to `src/soniq_mcp`.
+- Added the baseline MCP SDK and `SoCo` dependencies plus `pytest` as a development dependency for scaffold verification.
+- Created the initial package boundaries for config, transports, tools, services, adapters, schemas, domain, and utils.
+- Added the root `Makefile`, `.env.example`, `.gitignore`, tracked docs and Helm placeholders, and the initial tests layout.
+- Implemented a minimal composition boundary in `server.py` and placeholder stdio transport modules without adding real Sonos or config behavior.
+- Verified the scaffold through `uv run python -m soniq_mcp`, `uv run pytest`, and `uv run python -m compileall src tests`.
+
 ### File List
+
+- .env.example
+- .gitignore
+- Makefile
+- _bmad-output/implementation-artifacts/1-1-initialize-the-soniqmcp-application-scaffold.md
+- docs/integrations/README.md
+- docs/prompts/README.md
+- docs/setup/README.md
+- helm/soniq/README.md
+- pyproject.toml
+- src/soniq_mcp/__init__.py
+- src/soniq_mcp/__main__.py
+- src/soniq_mcp/adapters/__init__.py
+- src/soniq_mcp/config/__init__.py
+- src/soniq_mcp/domain/__init__.py
+- src/soniq_mcp/schemas/__init__.py
+- src/soniq_mcp/server.py
+- src/soniq_mcp/services/__init__.py
+- src/soniq_mcp/tools/__init__.py
+- src/soniq_mcp/transports/__init__.py
+- src/soniq_mcp/transports/bootstrap.py
+- src/soniq_mcp/transports/stdio.py
+- src/soniq_mcp/utils/__init__.py
+- tests/__init__.py
+- tests/contract/__init__.py
+- tests/fakes/sonos/.gitkeep
+- tests/fixtures/configs/.gitkeep
+- tests/integration/__init__.py
+- tests/smoke/__init__.py
+- tests/unit/__init__.py
+- tests/unit/test_scaffold_smoke.py
+- uv.lock
+
+### Change Log
+
+- 2026-03-23: Implemented the Story 1.1 uv-based scaffold, placeholder package boundaries, and initial verification coverage; status set to review.
