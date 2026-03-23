@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "container-use": {
+      "command": "cu",
+      "args": ["mcp"]
+    }
+  }
+}
