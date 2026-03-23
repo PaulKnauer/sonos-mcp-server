@@ -1,6 +1,6 @@
 # Story 1.1: Initialize the SoniqMCP Application Scaffold
 
-Status: review
+Status: complete
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -134,3 +134,4 @@ gpt-5-codex
 ### Change Log
 
 - 2026-03-23: Implemented the Story 1.1 uv-based scaffold, placeholder package boundaries, and initial verification coverage; status set to review.
+- 2026-03-23: Story marked complete after review on user request.
