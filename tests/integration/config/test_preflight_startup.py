@@ -6,6 +6,20 @@ import pytest
 
 from soniq_mcp.config.validation import ConfigValidationError, run_preflight
 
+_ALL_ENV_KEYS = [
+    "SONIQ_MCP_TRANSPORT",
+    "SONIQ_MCP_EXPOSURE",
+    "SONIQ_MCP_LOG_LEVEL",
+    "SONIQ_MCP_DEFAULT_ROOM",
+]
+
+
+@pytest.fixture(autouse=True)
+def _clear_soniq_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ensure no pre-existing SONIQ_MCP_* vars bleed into any test."""
+    for key in _ALL_ENV_KEYS:
+        monkeypatch.delenv(key, raising=False)
+
 
 class TestPreflightBlocksBadStartup:
     """Invalid config must prevent normal runtime from proceeding (AC 2, 3)."""

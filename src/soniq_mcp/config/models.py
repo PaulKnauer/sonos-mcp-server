@@ -59,9 +59,5 @@ class SoniqConfig(BaseModel):
         default=None,
         description="Optional default Sonos room name.",
     )
-    config_file: str | None = Field(
-        default=None,
-        description="Optional path to a config file (reserved for future use).",
-    )
 
-    model_config = {"str_strip_whitespace": True}
+    model_config = {"str_strip_whitespace": True, "extra": "forbid"}
