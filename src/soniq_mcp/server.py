@@ -1,4 +1,4 @@
-"""Application composition boundary for the SoniqMCP scaffold."""
+"""Application composition boundary for the SoniqMCP server."""
 
 from collections.abc import Mapping
 

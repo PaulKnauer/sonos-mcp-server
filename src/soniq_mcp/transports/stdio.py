@@ -1,4 +1,4 @@
-"""Minimal stdio transport placeholder for the Story 1.1 scaffold."""
+"""Minimal stdio transport placeholder for the SoniqMCP scaffold."""
 
 
 def stdio_transport_name() -> str:

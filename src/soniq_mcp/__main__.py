@@ -1,10 +1,10 @@
-"""CLI entry point for the Story 1.1 scaffold."""
+"""CLI entry point for the SoniqMCP server."""
 
 from soniq_mcp.server import create_application
 
 
 def main() -> None:
-    """Bootstrap the placeholder application without invoking Sonos behavior."""
+    """Bootstrap the application."""
     app = create_application()
     print(f"{app['name']} scaffold ready via {app['transport']}")
 

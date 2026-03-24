@@ -1,18 +1,24 @@
-UV ?= uv
+UV ?= $(shell command -v uv 2>/dev/null || printf '%s' "$(HOME)/.local/bin/uv")
 PACKAGE ?= soniq_mcp
 
-.PHONY: install run test check tree
+.PHONY: ensure-uv install run test check tree
 
-install:
+ensure-uv:
+	@command -v uv >/dev/null 2>&1 || test -x "$(UV)" || { \
+		echo "uv not found; installing to $(HOME)/.local/bin"; \
+		curl -LsSf https://astral.sh/uv/install.sh | sh; \
+	}
+
+install: ensure-uv
 	$(UV) sync
 
-run:
+run: ensure-uv
 	$(UV) run python -m $(PACKAGE)
 
-test:
+test: ensure-uv
 	$(UV) run pytest
 
-check:
+check: ensure-uv
 	$(UV) run python -m compileall src tests
 
 tree:
