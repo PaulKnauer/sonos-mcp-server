@@ -1,6 +1,6 @@
 # Story 1.2: Implement Typed Configuration and Validation
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -19,25 +19,25 @@ so that setup mistakes are caught early and explained clearly.
 
 ## Tasks / Subtasks
 
-- [ ] Build the configuration schema layer under `src/soniq_mcp/config/` (AC: 1, 4)
-  - [ ] Define typed config models in `models.py`
-  - [ ] Define sensible defaults in `defaults.py`
-  - [ ] Keep the config model aligned to single-household home use
-- [ ] Implement config loading and normalization (AC: 1)
-  - [ ] Support environment variables and file-based config inputs if both are part of the chosen design
-  - [ ] Normalize raw input before runtime use
-  - [ ] Keep the loader independent from transports and Sonos operations
-- [ ] Implement validation and preflight behavior (AC: 1, 2, 3, 4)
-  - [ ] Fail startup before normal runtime if required configuration is invalid
-  - [ ] Return actionable field-level validation messages
-  - [ ] Validate safe defaults and exposure posture inputs needed later by Story 1.4
-- [ ] Add example config artifacts (AC: 1, 3)
-  - [ ] Create or update `.env.example`
-  - [ ] Add minimal config examples or docs hooks that Story 1.5 can extend
-- [ ] Test the configuration boundary thoroughly (AC: 1, 2, 3, 4)
-  - [ ] Add unit tests for valid and invalid config permutations
-  - [ ] Add integration coverage for startup preflight failure behavior
-  - [ ] Use fixtures and fakes rather than real Sonos hardware
+- [x] Build the configuration schema layer under `src/soniq_mcp/config/` (AC: 1, 4)
+  - [x] Define typed config models in `models.py`
+  - [x] Define sensible defaults in `defaults.py`
+  - [x] Keep the config model aligned to single-household home use
+- [x] Implement config loading and normalization (AC: 1)
+  - [x] Support environment variables and file-based config inputs if both are part of the chosen design
+  - [x] Normalize raw input before runtime use
+  - [x] Keep the loader independent from transports and Sonos operations
+- [x] Implement validation and preflight behavior (AC: 1, 2, 3, 4)
+  - [x] Fail startup before normal runtime if required configuration is invalid
+  - [x] Return actionable field-level validation messages
+  - [x] Validate safe defaults and exposure posture inputs needed later by Story 1.4
+- [x] Add example config artifacts (AC: 1, 3)
+  - [x] Create or update `.env.example`
+  - [x] Add minimal config examples or docs hooks that Story 1.5 can extend
+- [x] Test the configuration boundary thoroughly (AC: 1, 2, 3, 4)
+  - [x] Add unit tests for valid and invalid config permutations
+  - [x] Add integration coverage for startup preflight failure behavior
+  - [x] Use fixtures and fakes rather than real Sonos hardware
 
 ## Dev Notes
 
@@ -78,10 +78,43 @@ so that setup mistakes are caught early and explained clearly.
 
 ### Agent Model Used
 
-gpt-5-codex
+claude-sonnet-4-6 (container-use environment: pumped-feline)
 
 ### Debug Log References
 
+- Restored Story 1.1 source files missing from environment before implementing Story 1.2.
+- Confirmed pydantic 2.12.5 available as transitive dep of `mcp[cli]` — no new dependency required.
+
 ### Completion Notes List
 
+- Implemented `SoniqConfig` pydantic v2 model with `TransportMode`, `ExposurePosture`, `LogLevel` enums — all with safe defaults for single-household use.
+- `load_config()` reads `SONIQ_MCP_*` env vars, applies defaults, normalises empty strings to None, accepts programmatic overrides.
+- `run_preflight()` wraps load_config and converts pydantic `ValidationError` into `ConfigValidationError` with field-named, user-safe messages.
+- `ExposurePosture.LOCAL` and enum stubs in place for Story 1.4 to extend.
+- 42 tests pass (34 unit + 8 integration); zero regressions against Story 1.1 smoke tests.
+
 ### File List
+
+- `src/soniq_mcp/config/__init__.py`
+- `src/soniq_mcp/config/models.py`
+- `src/soniq_mcp/config/defaults.py`
+- `src/soniq_mcp/config/loader.py`
+- `src/soniq_mcp/config/validation.py`
+- `src/soniq_mcp/__init__.py` (restored from Story 1.1)
+- `src/soniq_mcp/__main__.py` (restored from Story 1.1)
+- `src/soniq_mcp/server.py` (restored from Story 1.1)
+- `src/soniq_mcp/transports/bootstrap.py` (restored from Story 1.1)
+- `src/soniq_mcp/transports/stdio.py` (restored from Story 1.1)
+- `tests/unit/config/__init__.py`
+- `tests/unit/config/test_models.py`
+- `tests/unit/config/test_loader.py`
+- `tests/unit/config/test_validation.py`
+- `tests/unit/test_scaffold_smoke.py` (restored from Story 1.1)
+- `tests/integration/config/__init__.py`
+- `tests/integration/config/test_preflight_startup.py`
+- `tests/fixtures/configs/valid_defaults.env`
+- `.env.example`
+
+## Change Log
+
+- 2026-03-24: Story 1.2 implemented. Added typed config models (`SoniqConfig`, enums), `load_config()` loader (env vars + overrides), `run_preflight()` validation with `ConfigValidationError`. 42 tests (34 unit, 8 integration) all passing. Status → review.
