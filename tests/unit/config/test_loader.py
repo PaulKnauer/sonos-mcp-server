@@ -7,23 +7,32 @@ import pytest
 from soniq_mcp.config.loader import load_config
 from soniq_mcp.config.models import ExposurePosture, LogLevel, SoniqConfig, TransportMode
 
+_ALL_ENV_KEYS = [
+    "SONIQ_MCP_TRANSPORT",
+    "SONIQ_MCP_EXPOSURE",
+    "SONIQ_MCP_LOG_LEVEL",
+    "SONIQ_MCP_DEFAULT_ROOM",
+]
+
+
+@pytest.fixture(autouse=True)
+def _clear_soniq_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ensure no pre-existing SONIQ_MCP_* vars bleed into any test."""
+    for key in _ALL_ENV_KEYS:
+        monkeypatch.delenv(key, raising=False)
+
 
 class TestLoadConfigDefaults:
     def test_returns_soniq_config_instance(self) -> None:
         cfg = load_config()
         assert isinstance(cfg, SoniqConfig)
 
-    def test_defaults_without_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        for key in ["SONIQ_MCP_TRANSPORT", "SONIQ_MCP_EXPOSURE",
-                    "SONIQ_MCP_LOG_LEVEL", "SONIQ_MCP_DEFAULT_ROOM",
-                    "SONIQ_MCP_CONFIG_FILE"]:
-            monkeypatch.delenv(key, raising=False)
+    def test_defaults_without_env(self) -> None:
         cfg = load_config()
         assert cfg.transport == TransportMode.STDIO
         assert cfg.exposure == ExposurePosture.LOCAL
         assert cfg.log_level == LogLevel.INFO
         assert cfg.default_room is None
-        assert cfg.config_file is None
 
 
 class TestLoadConfigFromEnv:
@@ -62,3 +71,12 @@ class TestLoadConfigOverrides:
         from pydantic import ValidationError
         with pytest.raises(ValidationError):
             load_config(overrides={"transport": "not-a-transport"})
+
+    def test_unknown_override_key_raises_validation_error(self) -> None:
+        from pydantic import ValidationError
+        with pytest.raises(ValidationError):
+            load_config(overrides={"loglevel": "DEBUG"})
+
+    def test_whitespace_only_override_treated_as_none(self) -> None:
+        cfg = load_config(overrides={"default_room": "   "})
+        assert cfg.default_room is None
