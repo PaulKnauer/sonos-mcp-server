@@ -105,4 +105,4 @@ soniq-mcp
 }
 ```
 
-See [docs/setup/stdio.md](stdio.md) for a full walkthrough.
+See [docs/setup/stdio.md](../setup/stdio.md) for a full walkthrough.

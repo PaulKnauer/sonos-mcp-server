@@ -28,7 +28,7 @@ make install
 To verify the install:
 
 ```bash
-uv run python -m soniq_mcp --help   # or: soniq-mcp --help
+uv run python -c "import soniq_mcp; print('SoniqMCP import OK')"
 ```
 
 ---
@@ -41,6 +41,7 @@ Copy the example config and edit as needed:
 cp .env.example .env
 ```
 
+SoniqMCP automatically loads `.env` from the project root when you start it from this directory.
 Open `.env` in your editor. The key fields:
 
 ```dotenv
@@ -82,7 +83,7 @@ You should see startup log lines on stderr, ending with the server waiting for a
 2026-01-01T12:00:00 soniq_mcp.transports.stdio INFO Starting SoniqMCP over stdio transport
 ```
 
-The process then waits for an MCP client on stdin/stdout. This is normal — it is not hung.
+The process then waits for an MCP client on stdin/stdout. This is normal; it is not hung.
 
 ---
 

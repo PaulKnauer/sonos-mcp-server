@@ -75,6 +75,12 @@ claude-sonnet-4-6 (container-use environment: deep-dassie)
 ### Debug Log References
 
 - Docs cross-checked with grep against all `make` targets and `SONIQ_MCP_*` env vars — all match.
+- Review findings reproduced locally:
+  - `.env` ignored by runtime until loader support was added.
+  - `python -m soniq_mcp --help` starts the stdio server instead of printing help.
+  - Raw `tools/list` JSON over stdio fails before MCP initialization completes.
+- Regression coverage added in `tests/unit/config/test_loader.py`.
+- Validation run: `uv run pytest` → 120 passed.
 
 ### Completion Notes List
 
@@ -84,9 +90,20 @@ claude-sonnet-4-6 (container-use environment: deep-dassie)
 - `README.md`: quick start, config table, make targets table, docs index.
 - `.env.example`: all fields documented inline with guidance.
 - `Makefile`: `run-stdio` target added alongside existing targets.
+- `src/soniq_mcp/config/loader.py`: project-local `.env` files now load before exported env vars, so the documented local setup path matches runtime behavior.
+- `pyproject.toml`: `python-dotenv` declared as an explicit runtime dependency for `.env` loading.
+- `tests/unit/config/test_loader.py`: regression tests cover `.env` loading and env-over-dotenv precedence.
+- Story 1.5 review findings fixed:
+  - docs no longer claim `--help` exists;
+  - troubleshooting no longer recommends an invalid pre-initialization stdio request;
+  - example prompts now link to the correct setup guide path.
 
 ### File List
 
+- `src/soniq_mcp/config/loader.py`
+- `tests/unit/config/test_loader.py`
+- `pyproject.toml`
+- `uv.lock`
 - `docs/setup/stdio.md`
 - `docs/setup/troubleshooting.md`
 - `docs/prompts/example-uses.md`
@@ -97,3 +114,4 @@ claude-sonnet-4-6 (container-use environment: deep-dassie)
 ## Change Log
 
 - 2026-03-25: Story 1.5 implemented. Local setup guide, troubleshooting doc, example prompts, updated README and .env.example. All commands verified against Stories 1.1–1.4 implementation. Status → review.
+- 2026-03-25: Review findings fixed. Added project-local `.env` loading, regression tests, and doc corrections for install verification, stdio troubleshooting, and prompt guide links.

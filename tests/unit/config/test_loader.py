@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from soniq_mcp.config.loader import load_config
@@ -12,6 +14,8 @@ _ALL_ENV_KEYS = [
     "SONIQ_MCP_EXPOSURE",
     "SONIQ_MCP_LOG_LEVEL",
     "SONIQ_MCP_DEFAULT_ROOM",
+    "SONIQ_MCP_MAX_VOLUME_PCT",
+    "SONIQ_MCP_TOOLS_DISABLED",
 ]
 
 
@@ -55,6 +59,39 @@ class TestLoadConfigFromEnv:
     def test_whitespace_only_env_var_treated_as_none(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("SONIQ_MCP_DEFAULT_ROOM", "   ")
         assert load_config().default_room is None
+
+
+class TestLoadConfigFromDotenv:
+    def test_loads_values_from_project_dotenv(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".env").write_text(
+            "\n".join(
+                [
+                    "SONIQ_MCP_LOG_LEVEL=DEBUG",
+                    "SONIQ_MCP_DEFAULT_ROOM=Kitchen",
+                    "SONIQ_MCP_MAX_VOLUME_PCT=55",
+                ]
+            )
+        )
+
+        cfg = load_config()
+
+        assert cfg.log_level == LogLevel.DEBUG
+        assert cfg.default_room == "Kitchen"
+        assert cfg.max_volume_pct == 55
+
+    def test_environment_variables_override_project_dotenv(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".env").write_text("SONIQ_MCP_LOG_LEVEL=DEBUG\n")
+        monkeypatch.setenv("SONIQ_MCP_LOG_LEVEL", "ERROR")
+
+        cfg = load_config()
+
+        assert cfg.log_level == LogLevel.ERROR
 
 
 class TestLoadConfigOverrides:

@@ -27,7 +27,8 @@ See [docs/setup/stdio.md](docs/setup/stdio.md) for the full local setup guide.
 
 ## Configuration
 
-All configuration is via environment variables (or `.env`):
+All configuration is via a project-local `.env` file or environment variables.
+When both are present, environment variables win:
 
 | Variable | Default | Description |
 |---|---|---|

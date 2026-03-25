@@ -15,7 +15,7 @@ Common problems and fixes for SoniqMCP local stdio setup.
 
 **What's happening:** SoniqMCP validates all configuration before starting. Invalid values cause a clean exit with a message naming the offending field.
 
-**Fix:** Read the field name in the error message, check your `.env` or environment variables, and correct the value. Valid values:
+**Fix:** Read the field name in the error message, check your project `.env` or exported environment variables, and correct the value. Valid values:
 
 | Field | Valid values |
 |---|---|
@@ -103,11 +103,14 @@ Remove the tool name from the list and restart.
 
 **What's happening:** This is normal. The stdio transport waits for a client connection on stdin. When Claude Desktop launches the server, it connects immediately. The "hang" only happens when you run the server directly in a terminal without a client.
 
-To test the server in isolation, use:
+There is no useful raw terminal interaction before an MCP client completes the stdio initialization handshake. For a same-machine check:
 
 ```bash
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | uv run python -m soniq_mcp
+cp .env.example .env
+make run
 ```
+
+If you see the startup logs and no configuration error, the server is waiting correctly for Claude Desktop or another MCP client to connect.
 
 ---
 

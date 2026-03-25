@@ -850,6 +850,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "mcp", extra = ["cli"] },
+    { name = "python-dotenv" },
     { name = "soco" },
 ]
 
@@ -861,6 +862,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "mcp", extras = ["cli"], specifier = ">=1.26.0" },
+    { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "soco", specifier = ">=0.30.14" },
 ]
 

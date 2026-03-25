@@ -1,13 +1,16 @@
 """Configuration loading and normalization for SoniqMCP.
 
-Reads environment variables, applies defaults, and produces a validated
-SoniqConfig. Independent of transports and Sonos operations.
+Reads `.env` and environment variables, applies defaults, and produces a
+validated SoniqConfig. Independent of transports and Sonos operations.
 """
 
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Any
+
+from dotenv import dotenv_values
 
 from soniq_mcp.config.defaults import DEFAULTS
 from soniq_mcp.config.models import SoniqConfig
@@ -29,10 +32,13 @@ def load_config(overrides: dict[str, Any] | None = None) -> SoniqConfig:
 
     Resolution order (last wins):
       1. Hardcoded defaults
-      2. SONIQ_MCP_* environment variables
-      3. ``overrides`` dict (programmatic or test use)
+      2. Project-local ``.env`` file (if present)
+      3. SONIQ_MCP_* environment variables
+      4. ``overrides`` dict (programmatic or test use)
     """
     raw: dict[str, Any] = dict(DEFAULTS)
+
+    raw.update(_read_dotenv(Path.cwd() / ".env"))
 
     for env_key, field_name in _ENV_MAP.items():
         value = os.environ.get(env_key)
@@ -47,6 +53,19 @@ def load_config(overrides: dict[str, Any] | None = None) -> SoniqConfig:
 
     normalized = _normalize(raw)
     return SoniqConfig.model_validate(normalized)
+
+
+def _read_dotenv(path: Path) -> dict[str, Any]:
+    """Read supported SONIQ_MCP_* settings from a project-local `.env` file."""
+    if not path.is_file():
+        return {}
+
+    raw_dotenv = dotenv_values(path)
+    return {
+        field_name: value
+        for env_key, field_name in _ENV_MAP.items()
+        if (value := raw_dotenv.get(env_key)) is not None
+    }
 
 
 def _normalize(raw: dict[str, Any]) -> dict[str, Any]:
