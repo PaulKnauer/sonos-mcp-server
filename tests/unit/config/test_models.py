@@ -20,7 +20,6 @@ class TestSoniqConfigDefaults:
         assert cfg.exposure == ExposurePosture.LOCAL
         assert cfg.log_level == LogLevel.INFO
         assert cfg.default_room is None
-        assert cfg.config_file is None
 
     def test_transport_default_is_stdio(self) -> None:
         assert SoniqConfig().transport == TransportMode.STDIO
@@ -47,10 +46,6 @@ class TestSoniqConfigValidValues:
         cfg = SoniqConfig(default_room="Living Room")
         assert cfg.default_room == "Living Room"
 
-    def test_optional_config_file_accepts_path(self) -> None:
-        cfg = SoniqConfig(config_file="/etc/soniq/config.toml")
-        assert cfg.config_file == "/etc/soniq/config.toml"
-
 
 class TestSoniqConfigInvalidValues:
     def test_invalid_transport_raises(self) -> None:
@@ -74,3 +69,7 @@ class TestSoniqConfigInvalidValues:
     def test_whitespace_stripped_from_optional_string(self) -> None:
         cfg = SoniqConfig(default_room="  Bedroom  ")
         assert cfg.default_room == "Bedroom"
+
+    def test_unknown_field_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            SoniqConfig(config_file="/etc/soniq/config.toml")
