@@ -1,6 +1,6 @@
 # Story 1.3: Run SoniqMCP Locally over stdio
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
