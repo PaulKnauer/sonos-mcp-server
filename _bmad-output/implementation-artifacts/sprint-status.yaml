@@ -44,7 +44,7 @@ story_location: "_bmad-output/implementation-artifacts"
 development_status:
   epic-1: in-progress
   1-1-initialize-the-soniqmcp-application-scaffold: done
-  1-2-implement-typed-configuration-and-validation: review
+  1-2-implement-typed-configuration-and-validation: done
   1-3-run-soniqmcp-locally-over-stdio: review
   1-4-enforce-safe-defaults-and-tool-exposure-controls: review
   1-5-deliver-local-setup-and-troubleshooting-guidance: review

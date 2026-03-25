@@ -1,6 +1,6 @@
 # Story 1.2: Implement Typed Configuration and Validation
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -92,6 +92,7 @@ claude-sonnet-4-6 (container-use environment: pumped-feline)
 - `run_preflight()` wraps load_config and converts pydantic `ValidationError` into `ConfigValidationError` with field-named, user-safe messages.
 - `ExposurePosture.LOCAL` and enum stubs in place for Story 1.4 to extend.
 - 42 tests pass (34 unit + 8 integration); zero regressions against Story 1.1 smoke tests.
+- Post-review fixes verified in `master`; full suite now passes with 73/73 tests.
 
 ### File List
 
@@ -118,3 +119,4 @@ claude-sonnet-4-6 (container-use environment: pumped-feline)
 ## Change Log
 
 - 2026-03-24: Story 1.2 implemented. Added typed config models (`SoniqConfig`, enums), `load_config()` loader (env vars + overrides), `run_preflight()` validation with `ConfigValidationError`. 42 tests (34 unit, 8 integration) all passing. Status → review.
+- 2026-03-25: Review fixes verified on `master`. Full test suite passes (73/73). Status → done.
