@@ -2,12 +2,22 @@
 
 from __future__ import annotations
 
-import sys
-
 import pytest
 
 from soniq_mcp.__main__ import main
-from soniq_mcp.config.validation import ConfigValidationError
+
+_ALL_ENV_KEYS = [
+    "SONIQ_MCP_TRANSPORT",
+    "SONIQ_MCP_EXPOSURE",
+    "SONIQ_MCP_LOG_LEVEL",
+    "SONIQ_MCP_DEFAULT_ROOM",
+]
+
+
+@pytest.fixture(autouse=True)
+def _clear_soniq_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for key in _ALL_ENV_KEYS:
+        monkeypatch.delenv(key, raising=False)
 
 
 def test_main_exits_on_bad_config(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> None:
@@ -20,10 +30,8 @@ def test_main_exits_on_bad_config(monkeypatch: pytest.MonkeyPatch, capsys: pytes
     assert "config error" in captured.err
 
 
-def test_main_prints_scaffold_on_valid_config(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> None:
+def test_main_prints_scaffold_on_valid_config(capsys: pytest.CaptureFixture) -> None:
     """Valid config must reach the scaffold print without raising."""
-    for key in ["SONIQ_MCP_TRANSPORT", "SONIQ_MCP_EXPOSURE", "SONIQ_MCP_LOG_LEVEL", "SONIQ_MCP_DEFAULT_ROOM"]:
-        monkeypatch.delenv(key, raising=False)
     main()
     captured = capsys.readouterr()
     assert "scaffold ready" in captured.out
