@@ -71,7 +71,7 @@ class TestGetSystemTopologyContract:
 
     def test_tool_has_no_required_parameters(self, registered_app: FastMCP) -> None:
         tools = get_tools(registered_app)
-        schema = tools["get_system_topology"].inputSchema
+        schema = tools["get_system_topology"].parameters
         required = schema.get("required", [])
         assert required == [], f"get_system_topology should require no params, got: {required}"
 
