@@ -1,0 +1,159 @@
+# Local Setup Guide — stdio transport
+
+This guide walks you through installing SoniqMCP, configuring it, and connecting a same-machine AI client over stdio.
+
+---
+
+## Prerequisites
+
+| Requirement | Notes |
+|---|---|
+| Python 3.12 or later | `python3 --version` to check |
+| [uv](https://docs.astral.sh/uv/) | Fast Python package manager — `pip install uv` |
+| A Sonos system on your local network | Needed for Sonos tools (Epic 2+); not required to start the server |
+| Claude Desktop or another MCP client | For connecting an AI agent |
+
+---
+
+## 1. Install
+
+```bash
+git clone <repo-url> sonos-mcp-server
+cd sonos-mcp-server
+make install
+```
+
+`make install` runs `uv sync`, which creates a virtual environment and installs all dependencies.
+
+To verify the install:
+
+```bash
+uv run python -m soniq_mcp --help   # or: soniq-mcp --help
+```
+
+---
+
+## 2. Configure
+
+Copy the example config and edit as needed:
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` in your editor. The key fields:
+
+```dotenv
+# Transport — keep as stdio for local use
+SONIQ_MCP_TRANSPORT=stdio
+
+# Exposure — local means trusted home network only
+SONIQ_MCP_EXPOSURE=local
+
+# Log verbosity — DEBUG is useful during first setup
+SONIQ_MCP_LOG_LEVEL=INFO
+
+# Optional: set your main listening room
+SONIQ_MCP_DEFAULT_ROOM=Living Room
+
+# Safety cap: AI agents cannot set volume above this level
+SONIQ_MCP_MAX_VOLUME_PCT=80
+```
+
+SoniqMCP validates your configuration at startup. If a field is wrong, it will print which field to fix and exit — no server starts with bad config.
+
+---
+
+## 3. Run locally
+
+```bash
+make run
+# or explicitly:
+make run-stdio
+# or directly:
+uv run python -m soniq_mcp
+```
+
+You should see startup log lines on stderr, ending with the server waiting for a client connection:
+
+```
+2026-01-01T12:00:00 soniq_mcp.__main__ INFO SoniqMCP starting — transport=stdio exposure=local max_volume=80%
+2026-01-01T12:00:00 soniq_mcp.server INFO SoniqMCP server created — transport=stdio exposure=local max_volume=80%
+2026-01-01T12:00:00 soniq_mcp.transports.stdio INFO Starting SoniqMCP over stdio transport
+```
+
+The process then waits for an MCP client on stdin/stdout. This is normal — it is not hung.
+
+---
+
+## 4. Connect Claude Desktop
+
+Open your Claude Desktop config file:
+
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+Add a server entry:
+
+```json
+{
+  "mcpServers": {
+    "soniq-mcp": {
+      "command": "uv",
+      "args": ["run", "python", "-m", "soniq_mcp"],
+      "cwd": "/absolute/path/to/sonos-mcp-server",
+      "env": {
+        "SONIQ_MCP_LOG_LEVEL": "INFO",
+        "SONIQ_MCP_MAX_VOLUME_PCT": "80"
+      }
+    }
+  }
+}
+```
+
+Replace `/absolute/path/to/sonos-mcp-server` with the real path on your machine.
+
+Restart Claude Desktop. The Soniq tools will appear in the tools panel.
+
+### Alternatively — using the installed script
+
+If you installed the package (`pip install -e .` or `uv pip install -e .`):
+
+```json
+{
+  "mcpServers": {
+    "soniq-mcp": {
+      "command": "soniq-mcp"
+    }
+  }
+}
+```
+
+---
+
+## 5. Verify the connection
+
+In Claude Desktop, ask:
+
+> "Can you ping the SoniqMCP server?"
+
+Claude will call the `ping` tool and return `pong`. If it does, the full stdio path is working.
+
+Ask for server details:
+
+> "What is the SoniqMCP server configuration?"
+
+Claude calls `server_info` and returns the active transport, exposure posture, log level, and volume cap.
+
+---
+
+## Differences from remote deployment
+
+This guide covers same-machine stdio only. Remote deployment (Docker, Helm, Streamable HTTP) is covered in Epic 4 docs. Key differences:
+
+| | Local stdio | Remote HTTP (Epic 4) |
+|---|---|---|
+| Transport | stdin/stdout | Streamable HTTP |
+| Network | No port opened | Port 8080 (configurable) |
+| Client location | Same machine | Any network client |
+| Config | `.env` file or env vars | Same, plus TLS settings |
