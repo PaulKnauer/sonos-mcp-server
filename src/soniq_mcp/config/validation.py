@@ -18,7 +18,6 @@ class ConfigValidationError(ValueError):
 
     ``messages`` is a list of human-readable, field-level error strings.
     """
-
     def __init__(self, messages: list[str]) -> None:
         self.messages = messages
         super().__init__("\n".join(messages))

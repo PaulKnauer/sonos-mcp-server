@@ -1,21 +1,44 @@
 """CLI entry point for the SoniqMCP server."""
 
-import sys
+from __future__ import annotations
 
-from soniq_mcp.config.validation import ConfigValidationError, run_preflight
-from soniq_mcp.server import create_application
+import sys
 
 
 def main() -> None:
-    """Bootstrap the application."""
+    """Bootstrap SoniqMCP with full preflight and safe error reporting."""
+    from soniq_mcp.config import run_preflight
+    from soniq_mcp.config.validation import ConfigValidationError
+    from soniq_mcp.logging_config import setup_logging
+
+    # Preflight first, before imports that may depend on config.
     try:
-        run_preflight()
+        config = run_preflight()
     except ConfigValidationError as exc:
         for msg in exc.messages:
-            print(f"config error: {msg}", file=sys.stderr)
+            print(f"[soniq-mcp] configuration error: {msg}", file=sys.stderr)
+        print(
+            "[soniq-mcp] fix the above errors and restart.",
+            file=sys.stderr,
+        )
         sys.exit(1)
-    app = create_application()
-    print(f"{app['name']} scaffold ready via {app['transport']}")
+
+    setup_logging(config.log_level.value)
+
+    import logging
+
+    log = logging.getLogger(__name__)
+    log.info(
+        "SoniqMCP starting transport=%s exposure=%s",
+        config.transport.value,
+        config.exposure.value,
+    )
+
+    from soniq_mcp.server import create_server
+    from soniq_mcp.transports.bootstrap import run_transport
+
+    app = create_server(config)
+    run_transport(app, config)
 
 
 if __name__ == "__main__":

@@ -1,10 +1,9 @@
-"""Top-level package for the SoniqMCP server scaffold."""
+"""Top-level package for the SoniqMCP server."""
 
 
 def main() -> None:
-    """Backward-compatible console entry point for the package."""
+    """Console entry point used by the ``soniq-mcp`` CLI script."""
     from soniq_mcp.__main__ import main as entrypoint
-
     entrypoint()
 
 

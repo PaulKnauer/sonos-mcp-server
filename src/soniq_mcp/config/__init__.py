@@ -1,10 +1,10 @@
 """Configuration package for SoniqMCP.
 
 Public surface:
-  - ``SoniqConfig``        — the validated config model
-  - ``load_config()``      — loads and normalises config from env/overrides
-  - ``run_preflight()``    — validates config and raises before bad startup
-  - ``ConfigValidationError`` — raised on invalid config
+  - ``SoniqConfig`` - the validated config model
+  - ``load_config()`` - loads and normalizes config from env/overrides
+  - ``run_preflight()`` - validates config and raises before bad startup
+  - ``ConfigValidationError`` - raised on invalid config
 """
 
 from soniq_mcp.config.loader import load_config

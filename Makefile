@@ -1,7 +1,7 @@
 UV ?= $(shell command -v uv 2>/dev/null || printf '%s' "$(HOME)/.local/bin/uv")
 PACKAGE ?= soniq_mcp
 
-.PHONY: ensure-uv install run test check tree
+.PHONY: ensure-uv install run run-stdio test check tree
 
 ensure-uv:
 	@command -v uv >/dev/null 2>&1 || test -x "$(UV)" || { \
@@ -14,6 +14,9 @@ install: ensure-uv
 
 run: ensure-uv
 	$(UV) run python -m $(PACKAGE)
+
+run-stdio: ensure-uv
+	SONIQ_MCP_TRANSPORT=stdio $(UV) run python -m $(PACKAGE)
 
 test: ensure-uv
 	$(UV) run pytest

@@ -70,6 +70,10 @@ class TestSoniqConfigInvalidValues:
         cfg = SoniqConfig(default_room="  Bedroom  ")
         assert cfg.default_room == "Bedroom"
 
+    def test_config_file_is_supported(self) -> None:
+        cfg = SoniqConfig(config_file="/etc/soniq/config.toml")
+        assert cfg.config_file == "/etc/soniq/config.toml"
+
     def test_unknown_field_raises(self) -> None:
         with pytest.raises(ValidationError):
-            SoniqConfig(config_file="/etc/soniq/config.toml")
+            SoniqConfig(not_a_real_field="value")

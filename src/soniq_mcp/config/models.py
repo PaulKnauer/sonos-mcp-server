@@ -14,7 +14,6 @@ from pydantic import BaseModel, Field
 
 class TransportMode(str, Enum):
     """Supported server transport modes."""
-
     STDIO = "stdio"
 
 
@@ -23,13 +22,11 @@ class ExposurePosture(str, Enum):
 
     Story 1.4 will extend this with additional values.
     """
-
     LOCAL = "local"
 
 
 class LogLevel(str, Enum):
     """Standard Python log levels accepted by the server."""
-
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"
@@ -58,6 +55,10 @@ class SoniqConfig(BaseModel):
     default_room: str | None = Field(
         default=None,
         description="Optional default Sonos room name.",
+    )
+    config_file: str | None = Field(
+        default=None,
+        description="Optional path to an external configuration file.",
     )
 
     model_config = {"str_strip_whitespace": True, "extra": "forbid"}

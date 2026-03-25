@@ -9,8 +9,6 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from pydantic import ValidationError
-
 from soniq_mcp.config.defaults import DEFAULTS
 from soniq_mcp.config.models import SoniqConfig
 
@@ -20,6 +18,7 @@ _ENV_MAP: dict[str, str] = {
     "SONIQ_MCP_EXPOSURE": "exposure",
     "SONIQ_MCP_LOG_LEVEL": "log_level",
     "SONIQ_MCP_DEFAULT_ROOM": "default_room",
+    "SONIQ_MCP_CONFIG_FILE": "config_file",
 }
 
 
@@ -44,13 +43,13 @@ def load_config(overrides: dict[str, Any] | None = None) -> SoniqConfig:
     if overrides:
         raw.update(overrides)
 
-    return _normalize(raw)
-
-
-def _normalize(raw: dict[str, Any]) -> SoniqConfig:
-    """Coerce empty or whitespace-only strings to None for optional fields, then parse."""
-    normalized = {
-        k: (None if isinstance(v, str) and v.strip() == "" else v)
-        for k, v in raw.items()
-    }
+    normalized = _normalize(raw)
     return SoniqConfig.model_validate(normalized)
+
+
+def _normalize(raw: dict[str, Any]) -> dict[str, Any]:
+    """Coerce empty or whitespace-only strings to None for optional fields."""
+    return {
+        key: (None if isinstance(value, str) and value.strip() == "" else value)
+        for key, value in raw.items()
+    }

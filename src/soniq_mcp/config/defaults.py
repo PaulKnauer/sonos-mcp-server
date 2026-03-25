@@ -11,4 +11,5 @@ DEFAULTS: dict[str, object] = {
     "exposure": "local",
     "log_level": "INFO",
     "default_room": None,
+    "config_file": None,
 }
