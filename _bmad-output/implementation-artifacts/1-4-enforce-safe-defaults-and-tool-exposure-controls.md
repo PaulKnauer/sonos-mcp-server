@@ -1,6 +1,6 @@
 # Story 1.4: Enforce Safe Defaults and Tool Exposure Controls
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -19,24 +19,24 @@ so that AI clients cannot cause unnecessary disruption in my home environment.
 
 ## Tasks / Subtasks
 
-- [ ] Extend config and domain models for safety controls (AC: 1, 2, 3, 4)
-  - [ ] Add explicit safe-default exposure settings
-  - [ ] Add tool restriction configuration surfaces compatible with MCP client permission models
-  - [ ] Add safety-oriented settings for risky actions such as volume changes
-- [ ] Implement safety rule evaluation (AC: 1, 3, 4)
-  - [ ] Add domain safety helpers in `domain/safety.py`
-  - [ ] Ensure volume and trust-boundary checks can be reused by later control stories
-  - [ ] Keep the rule evaluation transport-agnostic
-- [ ] Wire tool exposure controls into startup and registration flow (AC: 2, 4)
-  - [ ] Ensure disabled or restricted capabilities are not exposed by default when configuration says so
-  - [ ] Keep the implementation compatible with local-first operation
-- [ ] Add diagnostics and validation feedback for safety config (AC: 1, 2, 3, 4)
-  - [ ] Explain invalid or conflicting safety settings clearly
-  - [ ] Avoid vague failure modes that force users to reverse engineer behavior
-- [ ] Test safety and permission behavior (AC: 1, 2, 3, 4)
-  - [ ] Add unit tests for safety rules and config combinations
-  - [ ] Add integration coverage for tool exposure behavior
-  - [ ] Cover malformed, risky, and out-of-range input cases
+- [x] Extend config and domain models for safety controls (AC: 1, 2, 3, 4)
+  - [x] Add explicit safe-default exposure settings
+  - [x] Add tool restriction configuration surfaces compatible with MCP client permission models
+  - [x] Add safety-oriented settings for risky actions such as volume changes
+- [x] Implement safety rule evaluation (AC: 1, 3, 4)
+  - [x] Add domain safety helpers in `domain/safety.py`
+  - [x] Ensure volume and trust-boundary checks can be reused by later control stories
+  - [x] Keep the rule evaluation transport-agnostic
+- [x] Wire tool exposure controls into startup and registration flow (AC: 2, 4)
+  - [x] Ensure disabled or restricted capabilities are not exposed by default when configuration says so
+  - [x] Keep the implementation compatible with local-first operation
+- [x] Add diagnostics and validation feedback for safety config (AC: 1, 2, 3, 4)
+  - [x] Explain invalid or conflicting safety settings clearly
+  - [x] Avoid vague failure modes that force users to reverse engineer behavior
+- [x] Test safety and permission behavior (AC: 1, 2, 3, 4)
+  - [x] Add unit tests for safety rules and config combinations
+  - [x] Add integration coverage for tool exposure behavior
+  - [x] Cover malformed, risky, and out-of-range input cases
 
 ## Dev Notes
 
@@ -75,10 +75,42 @@ so that AI clients cannot cause unnecessary disruption in my home environment.
 
 ### Agent Model Used
 
-gpt-5-codex
+claude-sonnet-4-6 (container-use environment: working-warthog)
 
 ### Debug Log References
 
+- Environment had no Python — installed python3.12 + uv via apt/pip.
+
 ### Completion Notes List
 
+- `SoniqConfig` extended with `max_volume_pct` (default 80, 0-100) and `tools_disabled` (default []).
+- `domain/safety.py`: `check_volume()` raises `VolumeCapExceeded` (not silent clamp), `is_tool_permitted()` / `assert_tool_permitted()`, `validate_exposure_posture()` hook for Story 4.
+- `domain/exceptions.py`: `SoniqDomainError`, `VolumeCapExceeded`, `ToolNotPermitted` — all with actionable messages.
+- `schemas/errors.py`: `ErrorResponse` pydantic model with factory methods for common error types.
+- Tool registration in `setup_support.py` skips tools listed in `tools_disabled` at startup time.
+- `server.py` calls `validate_exposure_posture()` and logs any warnings before creating the app.
+- Loader supports `SONIQ_MCP_MAX_VOLUME_PCT` and `SONIQ_MCP_TOOLS_DISABLED` (comma-separated).
+- 40 tests passing (unit domain + config + integration + contract).
+
 ### File List
+
+- `src/soniq_mcp/config/models.py`
+- `src/soniq_mcp/config/defaults.py`
+- `src/soniq_mcp/config/loader.py`
+- `src/soniq_mcp/config/validation.py`
+- `src/soniq_mcp/domain/exceptions.py`
+- `src/soniq_mcp/domain/safety.py`
+- `src/soniq_mcp/schemas/errors.py`
+- `src/soniq_mcp/tools/setup_support.py`
+- `src/soniq_mcp/server.py`
+- `tests/unit/domain/__init__.py`
+- `tests/unit/domain/test_safety.py`
+- `tests/unit/config/test_safety_config.py`
+- `tests/integration/domain/__init__.py`
+- `tests/integration/domain/test_tool_exposure.py`
+- `tests/contract/error_mapping/__init__.py`
+- `tests/contract/error_mapping/test_error_schemas.py`
+
+## Change Log
+
+- 2026-03-25: Story 1.4 implemented. Safety controls: volume cap, tool disable list, exposure posture validation, error schemas. 40 tests passing. Status → review.
