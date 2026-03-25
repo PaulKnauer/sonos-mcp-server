@@ -47,7 +47,7 @@ class TestListRoomsContract:
 
     def test_tool_has_no_required_parameters(self, registered_app: FastMCP) -> None:
         tools = get_tools(registered_app)
-        schema = tools["list_rooms"].inputSchema
+        schema = tools["list_rooms"].parameters
         required = schema.get("required", [])
         assert required == [], f"list_rooms should require no params, got: {required}"
 
