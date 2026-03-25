@@ -80,6 +80,7 @@ claude-sonnet-4-6 (container-use environment: mighty-lacewing)
 
 - Environment had no Python/uv — installed python3.12 via apt and uv via pip.
 - Subprocess-based smoke tests timed out in slow ARM64 container; replaced with direct main() calls.
+- Follow-up review fix added a real MCP stdio client/session smoke test to prove same-machine connectivity and `ping` tool invocation.
 
 ### Completion Notes List
 
@@ -90,6 +91,8 @@ claude-sonnet-4-6 (container-use environment: mighty-lacewing)
 - `transports/bootstrap.py` dispatches to `run_stdio()` based on config; extensible for Story 4.1.
 - `Makefile` gains `run-stdio` target.
 - 26 tests passing (unit + integration + smoke).
+- Review follow-up: `tests/smoke/stdio/test_entrypoint_smoke.py` now spawns `python -m soniq_mcp`, initializes an MCP `ClientSession` over stdio, lists tools, and calls `ping` to close the AC3 proof gap.
+- Full suite after review fix: 114 tests passing.
 
 ### File List
 
@@ -116,3 +119,4 @@ claude-sonnet-4-6 (container-use environment: mighty-lacewing)
 ## Change Log
 
 - 2026-03-25: Story 1.3 implemented. FastMCP stdio server with `ping`/`server_info` tools, safe logging, clean error handling. 26 tests passing. Status → review.
+- 2026-03-25: Review follow-up implemented. Added end-to-end stdio MCP connectivity smoke coverage for client initialize/list_tools/call_tool(`ping`). Full suite: 114 passing.
