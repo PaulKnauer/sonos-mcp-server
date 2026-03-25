@@ -4,6 +4,7 @@
 def main() -> None:
     """Console entry point used by the ``soniq-mcp`` CLI script."""
     from soniq_mcp.__main__ import main as entrypoint
+
     entrypoint()
 
 

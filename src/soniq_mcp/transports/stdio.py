@@ -1,7 +1,7 @@
 """stdio transport for SoniqMCP.
 
-Runs the MCP server over stdin/stdout for same-machine AI clients
-such as Claude Desktop.  No network socket is opened.
+Runs the MCP server over stdin/stdout for same-machine AI clients.
+No network socket is opened.
 """
 
 from __future__ import annotations
@@ -14,11 +14,7 @@ log = logging.getLogger(__name__)
 
 
 def run_stdio(app: FastMCP) -> None:
-    """Start the MCP server using the stdio transport.
-
-    This call blocks until the client disconnects or the process is
-    terminated.  It must only be called after preflight succeeds.
-    """
+    """Start the MCP server using the stdio transport."""
     log.info("Starting SoniqMCP over stdio transport")
     app.run(transport="stdio")
 

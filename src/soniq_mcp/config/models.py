@@ -1,19 +1,24 @@
 """Typed configuration models for SoniqMCP.
 
-Scoped to single-household Sonos use.  Multi-tenant and multi-household
-concerns are explicitly out of scope.  Later stories add HTTP transport
+Scoped to single-household Sonos use. Multi-tenant and multi-household
+concerns are explicitly out of scope. Later stories add HTTP transport
 and expanded exposure posture values.
+
+Story 1.4 extends the base model with safety controls:
+- ``max_volume_pct``: hard cap on volume actions (default 80)
+- ``tools_disabled``: explicit list of tool names to suppress at startup
 """
 
 from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class TransportMode(str, Enum):
     """Supported server transport modes."""
+
     STDIO = "stdio"
 
 
@@ -22,11 +27,13 @@ class ExposurePosture(str, Enum):
 
     Story 1.4 will extend this with additional values.
     """
+
     LOCAL = "local"
 
 
 class LogLevel(str, Enum):
     """Standard Python log levels accepted by the server."""
+
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"
@@ -34,11 +41,7 @@ class LogLevel(str, Enum):
 
 
 class SoniqConfig(BaseModel):
-    """Validated runtime configuration for SoniqMCP.
-
-    All fields have safe defaults so an empty environment still starts
-    correctly.  Optional fields are None when not provided.
-    """
+    """Validated runtime configuration for SoniqMCP."""
 
     transport: TransportMode = Field(
         default=TransportMode.STDIO,
@@ -60,5 +63,22 @@ class SoniqConfig(BaseModel):
         default=None,
         description="Optional path to an external configuration file.",
     )
+    max_volume_pct: int = Field(
+        default=80,
+        ge=0,
+        le=100,
+        description="Hard cap on volume actions (0-100). Default: 80.",
+    )
+    tools_disabled: list[str] = Field(
+        default_factory=list,
+        description="Tool names to suppress at startup.",
+    )
 
     model_config = {"str_strip_whitespace": True, "extra": "forbid"}
+
+    @field_validator("max_volume_pct")
+    @classmethod
+    def validate_volume_cap(cls, value: int) -> int:
+        if value < 0 or value > 100:
+            raise ValueError(f"max_volume_pct must be 0-100, got {value}")
+        return value

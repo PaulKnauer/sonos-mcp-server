@@ -17,10 +17,7 @@ def main() -> None:
     except ConfigValidationError as exc:
         for msg in exc.messages:
             print(f"[soniq-mcp] configuration error: {msg}", file=sys.stderr)
-        print(
-            "[soniq-mcp] fix the above errors and restart.",
-            file=sys.stderr,
-        )
+        print("[soniq-mcp] fix the above errors and restart.", file=sys.stderr)
         sys.exit(1)
 
     setup_logging(config.log_level.value)
@@ -29,9 +26,10 @@ def main() -> None:
 
     log = logging.getLogger(__name__)
     log.info(
-        "SoniqMCP starting transport=%s exposure=%s",
+        "SoniqMCP starting transport=%s exposure=%s max_volume=%s%%",
         config.transport.value,
         config.exposure.value,
+        config.max_volume_pct,
     )
 
     from soniq_mcp.server import create_server

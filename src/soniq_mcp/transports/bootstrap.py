@@ -1,8 +1,8 @@
 """Transport selection and bootstrap for SoniqMCP.
 
 Reads the validated config and dispatches to the appropriate transport
-runner.  New transports (e.g. Streamable HTTP in Story 4.1) are added
-here without touching server.py or __main__.py.
+runner. New transports are added here without touching server.py or
+__main__.py.
 """
 
 from __future__ import annotations
@@ -17,11 +17,7 @@ log = logging.getLogger(__name__)
 
 
 def run_transport(app: FastMCP, config: SoniqConfig) -> None:
-    """Start the appropriate transport for ``config.transport``.
-
-    Raises:
-        NotImplementedError: for transport modes not yet implemented.
-    """
+    """Start the appropriate transport for ``config.transport``."""
     if config.transport == TransportMode.STDIO:
         from soniq_mcp.transports.stdio import run_stdio
 
@@ -33,5 +29,5 @@ def run_transport(app: FastMCP, config: SoniqConfig) -> None:
 
 
 def bootstrap_transport() -> str:
-    """Return the default transport name (used by tests and docs)."""
+    """Return the default transport name used by tests and docs."""
     return "stdio"

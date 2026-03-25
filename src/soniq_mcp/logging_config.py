@@ -1,6 +1,6 @@
 """Logging configuration for SoniqMCP.
 
-Sets up structured, stderr-directed logging.  Never logs raw config
+Sets up structured, stderr-directed logging. Never logs raw config
 values to avoid leaking sensitive information in startup output.
 """
 
@@ -11,11 +11,7 @@ import sys
 
 
 def setup_logging(log_level: str = "INFO") -> None:
-    """Configure application logging.
-
-    Args:
-        log_level: One of DEBUG, INFO, WARNING, ERROR.
-    """
+    """Configure application logging."""
     logging.basicConfig(
         level=log_level,
         format="%(asctime)s %(name)s %(levelname)s %(message)s",

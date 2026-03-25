@@ -12,4 +12,6 @@ DEFAULTS: dict[str, object] = {
     "log_level": "INFO",
     "default_room": None,
     "config_file": None,
+    "max_volume_pct": 80,
+    "tools_disabled": [],
 }
