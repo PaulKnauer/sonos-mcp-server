@@ -10,9 +10,17 @@ disablement works correctly.
 from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 from soniq_mcp.config import SoniqConfig
 from soniq_mcp.domain.safety import assert_tool_permitted
+
+_READ_ONLY_TOOL_HINTS = ToolAnnotations(
+    readOnlyHint=True,
+    destructiveHint=False,
+    idempotentHint=True,
+    openWorldHint=False,
+)
 
 
 def register(app: FastMCP, config: SoniqConfig) -> None:
@@ -20,7 +28,10 @@ def register(app: FastMCP, config: SoniqConfig) -> None:
 
     if "ping" not in config.tools_disabled:
 
-        @app.tool()
+        @app.tool(
+            title="Ping",
+            annotations=_READ_ONLY_TOOL_HINTS,
+        )
         def ping() -> str:
             """Check whether the SoniqMCP server is responsive."""
             assert_tool_permitted("ping", config)
@@ -28,7 +39,10 @@ def register(app: FastMCP, config: SoniqConfig) -> None:
 
     if "server_info" not in config.tools_disabled:
 
-        @app.tool()
+        @app.tool(
+            title="Server Info",
+            annotations=_READ_ONLY_TOOL_HINTS,
+        )
         def server_info() -> dict[str, str]:
             """Return non-sensitive server metadata."""
             assert_tool_permitted("server_info", config)

@@ -6,6 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from soniq_mcp.config.models import SoniqConfig
+from soniq_mcp.config.validation import ConfigValidationError, run_preflight
 
 
 class TestMaxVolumePct:
@@ -44,6 +45,11 @@ class TestToolsDisabled:
         cfg = SoniqConfig(tools_disabled=["ping", "server_info"])
         assert set(cfg.tools_disabled) == {"ping", "server_info"}
 
+    def test_unknown_tool_rejected(self) -> None:
+        with pytest.raises(ValidationError) as exc_info:
+            SoniqConfig(tools_disabled=["typo_tool"])
+        assert any(e["loc"] == ("tools_disabled",) for e in exc_info.value.errors())
+
 
 class TestLoaderSafetyFields:
     def test_max_volume_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -56,3 +62,22 @@ class TestLoaderSafetyFields:
         from soniq_mcp.config.loader import load_config
         cfg = load_config()
         assert set(cfg.tools_disabled) == {"ping", "server_info"}
+
+
+class TestSafetyPreflightMessages:
+    def test_invalid_max_volume_from_env_reports_field_name(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("SONIQ_MCP_MAX_VOLUME_PCT", "abc")
+        with pytest.raises(ConfigValidationError) as exc_info:
+            run_preflight()
+        assert any("max_volume_pct" in msg for msg in exc_info.value.messages)
+
+    def test_unknown_disabled_tool_from_env_reports_allowed_values(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("SONIQ_MCP_TOOLS_DISABLED", "typo_tool")
+        with pytest.raises(ConfigValidationError) as exc_info:
+            run_preflight()
+        assert any("tools_disabled" in msg for msg in exc_info.value.messages)
+        assert any("ping" in msg for msg in exc_info.value.messages)

@@ -16,6 +16,9 @@ from enum import Enum
 from pydantic import BaseModel, Field, field_validator
 
 
+KNOWN_TOOL_NAMES: frozenset[str] = frozenset({"ping", "server_info"})
+
+
 class TransportMode(str, Enum):
     """Supported server transport modes."""
 
@@ -81,4 +84,17 @@ class SoniqConfig(BaseModel):
     def validate_volume_cap(cls, value: int) -> int:
         if value < 0 or value > 100:
             raise ValueError(f"max_volume_pct must be 0-100, got {value}")
+        return value
+
+    @field_validator("tools_disabled")
+    @classmethod
+    def validate_tools_disabled(cls, value: list[str]) -> list[str]:
+        unknown_tools = [tool_name for tool_name in value if tool_name not in KNOWN_TOOL_NAMES]
+        if unknown_tools:
+            allowed_tools = ", ".join(sorted(KNOWN_TOOL_NAMES))
+            unknown_values = ", ".join(unknown_tools)
+            raise ValueError(
+                f"tools_disabled contains unknown tool(s): {unknown_values}. "
+                f"Allowed values: {allowed_tools}."
+            )
         return value

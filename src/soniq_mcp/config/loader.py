@@ -37,9 +37,7 @@ def load_config(overrides: dict[str, Any] | None = None) -> SoniqConfig:
     for env_key, field_name in _ENV_MAP.items():
         value = os.environ.get(env_key)
         if value is not None and value.strip() != "":
-            if field_name == "max_volume_pct":
-                raw[field_name] = int(value.strip())
-            elif field_name == "tools_disabled":
+            if field_name == "tools_disabled":
                 raw[field_name] = [t.strip() for t in value.split(",") if t.strip()]
             else:
                 raw[field_name] = value.strip()

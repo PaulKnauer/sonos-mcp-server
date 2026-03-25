@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 from soniq_mcp.config.models import SoniqConfig
 from soniq_mcp.server import create_server
@@ -44,6 +45,25 @@ class TestToolExposureAtStartup:
         # server_info tool is present and reports the capped volume
         names = {t.name for t in app._tool_manager.list_tools()}
         assert "server_info" in names
+
+    def test_registered_tools_include_permission_hints(self) -> None:
+        cfg = SoniqConfig()
+        app = create_server(config=cfg)
+        tools = {tool.name: tool for tool in app._tool_manager.list_tools()}
+
+        ping_annotations = tools["ping"].annotations
+        assert isinstance(ping_annotations, ToolAnnotations)
+        assert ping_annotations.readOnlyHint is True
+        assert ping_annotations.destructiveHint is False
+        assert ping_annotations.idempotentHint is True
+        assert ping_annotations.openWorldHint is False
+
+        info_annotations = tools["server_info"].annotations
+        assert isinstance(info_annotations, ToolAnnotations)
+        assert info_annotations.readOnlyHint is True
+        assert info_annotations.destructiveHint is False
+        assert info_annotations.idempotentHint is True
+        assert info_annotations.openWorldHint is False
 
 
 class TestSafetyConfigPreflight:

@@ -80,6 +80,7 @@ claude-sonnet-4-6 (container-use environment: working-warthog)
 ### Debug Log References
 
 - Environment had no Python — installed python3.12 + uv via apt/pip.
+- Review follow-up pass: ran targeted safety tests, then full `pytest` (`118 passed`).
 
 ### Completion Notes List
 
@@ -91,6 +92,10 @@ claude-sonnet-4-6 (container-use environment: working-warthog)
 - `server.py` calls `validate_exposure_posture()` and logs any warnings before creating the app.
 - Loader supports `SONIQ_MCP_MAX_VOLUME_PCT` and `SONIQ_MCP_TOOLS_DISABLED` (comma-separated).
 - 40 tests passing (unit domain + config + integration + contract).
+- Review findings addressed: `tools_disabled` now rejects unknown tool names with corrective messages.
+- Review findings addressed: invalid `SONIQ_MCP_MAX_VOLUME_PCT` values now flow through field-level validation so preflight errors name `max_volume_pct`.
+- Review findings addressed: setup-support tools now publish MCP `ToolAnnotations` safety hints for permission-aware clients.
+- Full suite currently passing: `118` tests.
 
 ### File List
 
@@ -114,3 +119,4 @@ claude-sonnet-4-6 (container-use environment: working-warthog)
 ## Change Log
 
 - 2026-03-25: Story 1.4 implemented. Safety controls: volume cap, tool disable list, exposure posture validation, error schemas. 40 tests passing. Status → review.
+- 2026-03-25: Review follow-up fixes. Added `tools_disabled` validation, improved `max_volume_pct` env validation messaging, added MCP tool safety annotations, expanded tests. Full suite passing (`118`).
