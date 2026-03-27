@@ -40,3 +40,29 @@ class ToolNotPermitted(SoniqDomainError):
         super().__init__(
             f"Tool '{tool_name}' is disabled by server configuration."
         )
+
+
+class RoomNotFoundError(SoniqDomainError):
+    """Raised when a requested room name does not match any discovered zone.
+
+    Args:
+        room_name: The room name that could not be found.
+    """
+
+    def __init__(self, room_name: str) -> None:
+        self.room_name = room_name
+        super().__init__(
+            f"Room '{room_name}' was not found in the Sonos household. "
+            "Use 'list_rooms' to see available rooms."
+        )
+
+
+class SonosDiscoveryError(SoniqDomainError):
+    """Raised when Sonos network discovery fails due to a connectivity problem.
+
+    Args:
+        message: Human-readable description of the failure.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)

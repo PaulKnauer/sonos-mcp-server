@@ -16,7 +16,9 @@ from enum import Enum
 from pydantic import BaseModel, Field, field_validator
 
 
-KNOWN_TOOL_NAMES: frozenset[str] = frozenset({"ping", "server_info"})
+KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
+    {"ping", "server_info", "list_rooms", "get_system_topology"}
+)
 
 
 class TransportMode(str, Enum):
