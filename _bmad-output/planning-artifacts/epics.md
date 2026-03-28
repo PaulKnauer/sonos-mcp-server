@@ -452,6 +452,22 @@ So that I can choose the right runtime model for my environment.
 **And** the docs explain the difference between local `stdio` and remote `Streamable HTTP`
 **And** the docs include representative networking and troubleshooting guidance
 
+### Story 4.5: Establish CI, Quality Gates, and Release Automation
+
+As a maintainer,
+I want automated verification and release workflows,
+So that production regressions, packaging drift, and deployment breakage are caught before release.
+
+**Acceptance Criteria:**
+
+**Given** a pull request or branch update
+**When** the CI workflow runs
+**Then** the project executes the agreed automated quality gates including tests, linting, type checks, and build verification
+**And** meaningful test coverage is reported and enforceable without incentivizing vanity metrics
+**And** dependency or supply-chain checks are part of the automated verification path
+**And** release automation exists for supported publish targets such as Python packaging and container artifacts
+**And** the documented command surface and automation workflows stay aligned
+
 ## Epic 5: Integration, Diagnostics, and Productized Adoption
 
 Complete the MVP by supporting agent-mediated integrations, consistent troubleshooting, and the polished docs/examples needed for users to adopt `Soniq` confidently across AI clients and automation workflows.
@@ -500,3 +516,18 @@ So that I can adopt the product quickly and use it confidently.
 **And** the `Makefile` exposes the agreed developer and operator commands
 **And** documentation treats examples, diagnostics, and onboarding as first-class product assets
 **And** the docs remain aligned with the actual implementation and deployment paths
+
+### Story 5.4: Publish Operational Security and Release Guidance
+
+As a self-hosting operator,
+I want explicit security and release guidance,
+So that I can run, upgrade, and expose the product without relying on guesswork.
+
+**Acceptance Criteria:**
+
+**Given** a user evaluates the product for home or home-lab deployment
+**When** they review the operational documentation
+**Then** they can understand the default trust model, supported exposure boundaries, and recommended protections for remote operation
+**And** the project includes a clear security contact or policy for reporting issues
+**And** release, upgrade, and compatibility expectations are documented for supported deployment paths
+**And** examples and logs avoid exposing unnecessary sensitive information by default
