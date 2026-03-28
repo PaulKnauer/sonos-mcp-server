@@ -145,3 +145,41 @@ class VolumeStateResponse(BaseModel):
             volume=state.volume,
             is_muted=state.is_muted,
         )
+
+
+class QueueItemResponse(BaseModel):
+    """Serialisable representation of a single Sonos queue item."""
+
+    position: int
+    uri: str
+    title: str | None = None
+    artist: str | None = None
+    album: str | None = None
+    album_art_uri: str | None = None
+
+    @classmethod
+    def from_domain(cls, item: QueueItem) -> "QueueItemResponse":
+        return cls(
+            position=item.position,
+            uri=item.uri,
+            title=item.title,
+            artist=item.artist,
+            album=item.album,
+            album_art_uri=item.album_art_uri,
+        )
+
+
+class QueueResponse(BaseModel):
+    """Response for the ``get_queue`` tool."""
+
+    room: str
+    items: list[QueueItemResponse]
+    count: int
+
+    @classmethod
+    def from_domain(cls, room_name: str, items: list[QueueItem]) -> "QueueResponse":
+        return cls(
+            room=room_name,
+            items=[QueueItemResponse.from_domain(item) for item in items],
+            count=len(items),
+        )
