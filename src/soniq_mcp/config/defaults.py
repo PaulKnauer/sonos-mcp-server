@@ -14,4 +14,6 @@ DEFAULTS: dict[str, object] = {
     "config_file": None,
     "max_volume_pct": 80,
     "tools_disabled": [],
+    "http_host": "127.0.0.1",
+    "http_port": 8000,
 }
