@@ -51,3 +51,18 @@ class SystemTopology:
             coordinator_count=sum(1 for r in rooms if r.is_coordinator),
             total_count=len(rooms),
         )
+
+
+@dataclass(frozen=True)
+class VolumeState:
+    """Current volume and mute state for a single Sonos room.
+
+    Attributes:
+        room_name: Human-readable room name.
+        volume: Current volume level (0-100).
+        is_muted: True if the zone is currently muted.
+    """
+
+    room_name: str
+    volume: int
+    is_muted: bool
