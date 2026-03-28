@@ -64,7 +64,7 @@ development_status:
   epic-3-retrospective: optional
 
   epic-4: in-progress
-  4-1-run-soniqmcp-over-streamable-http: in-progress
+  4-1-run-soniqmcp-over-streamable-http: review
   4-2-package-the-server-as-a-docker-image: backlog
   4-3-provide-a-helm-chart-for-self-hosted-deployment: backlog
   4-4-document-remote-docker-helm-and-cross-device-usage: backlog
