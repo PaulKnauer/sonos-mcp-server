@@ -56,15 +56,14 @@ class TransportMode(str, Enum):
     """Supported server transport modes."""
 
     STDIO = "stdio"
+    HTTP = "http"
 
 
 class ExposurePosture(str, Enum):
-    """Allowed network exposure postures.
-
-    Story 1.4 will extend this with additional values.
-    """
+    """Allowed network exposure postures."""
 
     LOCAL = "local"
+    HOME_NETWORK = "home-network"
 
 
 class LogLevel(str, Enum):
