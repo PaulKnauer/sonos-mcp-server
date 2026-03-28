@@ -7,8 +7,8 @@ playback and volume capability layers. Higher layers must not import
 
 from __future__ import annotations
 
-from soniq_mcp.domain.exceptions import PlaybackError, VolumeError
-from soniq_mcp.domain.models import PlaybackState, TrackInfo
+from soniq_mcp.domain.exceptions import PlaybackError, QueueError, VolumeError
+from soniq_mcp.domain.models import PlaybackState, QueueItem, TrackInfo
 
 _EMPTY_SENTINELS = {"", "NOT_IMPLEMENTED"}
 
