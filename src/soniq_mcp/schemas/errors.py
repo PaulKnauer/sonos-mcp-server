@@ -91,3 +91,14 @@ class ErrorResponse(BaseModel):
                 "Some operations require a non-empty queue or a valid queue position."
             ),
         )
+
+    @classmethod
+    def from_group_error(cls, exc: Exception) -> "ErrorResponse":
+        return cls(
+            error=str(exc),
+            field="group",
+            suggestion=(
+                "Check that all rooms are reachable and on the same Sonos network. "
+                "Use 'list_rooms' to verify available rooms before grouping operations."
+            ),
+        )

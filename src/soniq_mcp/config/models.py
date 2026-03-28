@@ -39,6 +39,15 @@ KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
         "play_favourite",
         "list_playlists",
         "play_playlist",
+        "get_queue",
+        "add_to_queue",
+        "remove_from_queue",
+        "clear_queue",
+        "play_from_queue",
+        "get_group_topology",
+        "join_group",
+        "unjoin_room",
+        "party_mode",
     }
 )
 

@@ -227,3 +227,45 @@ class QueueResponse(BaseModel):
             items=[QueueItemResponse.from_domain(item) for item in items],
             count=len(items),
         )
+
+
+class GroupResponse(BaseModel):
+    """A single Sonos group with its coordinator and member room names."""
+
+    coordinator: str
+    members: list[str]
+
+
+class GroupTopologyResponse(BaseModel):
+    """Current grouping state of the Sonos household."""
+
+    groups: list[GroupResponse]
+    total_groups: int
+    total_rooms: int
+
+    @classmethod
+    def from_rooms(cls, rooms: list[Room]) -> "GroupTopologyResponse":
+        """Derive group topology from Room domain objects.
+
+        Uses Room.is_coordinator and Room.group_coordinator_uid to
+        reconstruct which rooms belong to which group.
+        """
+        uid_to_name: dict[str, str] = {r.uid: r.name for r in rooms}
+        groups_map: dict[str, list[str]] = {}  # coordinator_uid -> member names
+
+        for room in rooms:
+            if room.is_coordinator:
+                # Coordinator is always the first member of its own group
+                groups_map.setdefault(room.uid, []).insert(0, room.name)
+            else:
+                coord_uid = room.group_coordinator_uid or room.uid
+                groups_map.setdefault(coord_uid, []).append(room.name)
+
+        groups = [
+            GroupResponse(
+                coordinator=uid_to_name.get(coord_uid, coord_uid),
+                members=members,
+            )
+            for coord_uid, members in groups_map.items()
+        ]
+        return cls(groups=groups, total_groups=len(groups), total_rooms=len(rooms))

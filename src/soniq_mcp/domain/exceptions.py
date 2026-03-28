@@ -112,3 +112,14 @@ class QueueError(SoniqDomainError):
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
+
+
+class GroupError(SoniqDomainError):
+    """Raised when a Sonos grouping operation fails.
+
+    Args:
+        message: Human-readable description of the failure.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)

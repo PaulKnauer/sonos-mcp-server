@@ -7,7 +7,7 @@ playback and volume capability layers. Higher layers must not import
 
 from __future__ import annotations
 
-from soniq_mcp.domain.exceptions import FavouritesError, PlaybackError, QueueError, VolumeError
+from soniq_mcp.domain.exceptions import FavouritesError, GroupError, PlaybackError, QueueError, VolumeError
 from soniq_mcp.domain.models import Favourite, PlaybackState, QueueItem, SonosPlaylist, TrackInfo
 
 _EMPTY_SENTINELS = {"", "NOT_IMPLEMENTED"}
@@ -221,6 +221,28 @@ class SoCoAdapter:
             raise
         except Exception as exc:
             raise QueueError(f"Failed to play from queue on {ip_address}: {exc}") from exc
+
+    def join_group(self, ip_address: str, coordinator_ip: str) -> None:
+        try:
+            zone = self._make_zone(ip_address)
+            coordinator_zone = self._make_zone(coordinator_ip)
+            zone.join(coordinator_zone)
+        except Exception as exc:
+            raise GroupError(f"Failed to join group: {exc}") from exc
+
+    def unjoin_room(self, ip_address: str) -> None:
+        try:
+            zone = self._make_zone(ip_address)
+            zone.unjoin()
+        except Exception as exc:
+            raise GroupError(f"Failed to unjoin room: {exc}") from exc
+
+    def party_mode(self, ip_address: str) -> None:
+        try:
+            zone = self._make_zone(ip_address)
+            zone.partymode()
+        except Exception as exc:
+            raise GroupError(f"Failed to activate party mode: {exc}") from exc
 
     def _call_playback(self, ip_address: str, action) -> None:
         try:
