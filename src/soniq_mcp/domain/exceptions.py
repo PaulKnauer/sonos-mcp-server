@@ -57,6 +57,17 @@ class RoomNotFoundError(SoniqDomainError):
         )
 
 
+class VolumeError(SoniqDomainError):
+    """Raised when a SoCo volume or mute operation fails.
+
+    Args:
+        message: Human-readable description of the failure.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
 class SonosDiscoveryError(SoniqDomainError):
     """Raised when Sonos network discovery fails due to a connectivity problem.
 
