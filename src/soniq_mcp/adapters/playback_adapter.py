@@ -28,6 +28,22 @@ def _coerce_str(val: object) -> str | None:
     return stripped
 
 
+def _coerce_queue_position(val: object) -> int | None:
+    """Return a positive queue position integer or None."""
+    if isinstance(val, str):
+        val = val.strip()
+        if not val:
+            return None
+        try:
+            parsed = int(val)
+        except ValueError:
+            return None
+        return parsed if parsed > 0 else None
+    if isinstance(val, int):
+        return val if val > 0 else None
+    return None
+
+
 class PlaybackAdapter:
     """Wraps SoCo zone playback operations for a room identified by IP address.
 
@@ -128,11 +144,6 @@ class PlaybackAdapter:
             zone = soco.SoCo(ip_address)
             raw = zone.get_current_track_info()
 
-            queue_pos_raw = raw.get("playlist_position")
-            queue_position: int | None = None
-            if isinstance(queue_pos_raw, int) and queue_pos_raw > 0:
-                queue_position = queue_pos_raw
-
             return TrackInfo(
                 title=_coerce_str(raw.get("title")),
                 artist=_coerce_str(raw.get("artist")),
@@ -141,7 +152,7 @@ class PlaybackAdapter:
                 position=_coerce_str(raw.get("position")),
                 uri=_coerce_str(raw.get("uri")),
                 album_art_uri=_coerce_str(raw.get("album_art")),
-                queue_position=queue_position,
+                queue_position=_coerce_queue_position(raw.get("playlist_position")),
             )
         except PlaybackError:
             raise

@@ -1,6 +1,6 @@
 # Story 2.2: Control Core Playback in a Target Room
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -327,12 +327,17 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- 2026-03-28: Follow-up patch for code review findings. Fixed grouped-room `get_track_info()` routing to use the coordinator zone when `group_coordinator_uid` is present.
+- 2026-03-28: Fixed `playlist_position` normalization to accept SoCo string values and convert them to positive integers.
+
 ### Completion Notes List
 
-- All 8 tasks completed. 266 tests passing (80 new tests added: 12 adapter, 12 service, 14 schema, 19 tools, 26 contract — plus 3 domain model tests).
+- All 8 tasks completed. Follow-up fix verified review findings closed. `make test` now passes with 269 tests passing, 3 skipped.
 - `PlaybackState` and `TrackInfo` are frozen dataclasses in `domain/models.py`; `PlaybackError` in `domain/exceptions.py`.
 - `PlaybackAdapter` normalizes SoCo empty strings and `"NOT_IMPLEMENTED"` duration to `None` via `_coerce_str()`.
+- `PlaybackAdapter` now also normalizes string-valued `playlist_position` fields from SoCo into positive integer `queue_position` values.
 - `PlaybackService` uses constructor-injected `room_service` and `adapter`; all error types propagate naturally.
+- `PlaybackService.get_track_info()` now routes grouped member rooms through their coordinator room when available, preventing stale track metadata from non-coordinator zones.
 - `tools/playback.py` follows the exact `tools/system.py` pattern with `_CONTROL_TOOL_HINTS` / `_READ_ONLY_TOOL_HINTS`.
 - `KNOWN_TOOL_NAMES` updated to 11 tool names total.
 - `tools/__init__.py` reuses the existing `room_service` instance for `PlaybackService` (no duplicate RoomService).
@@ -357,3 +362,8 @@ claude-sonnet-4-6
 - `src/soniq_mcp/config/models.py` — added 7 tool names to `KNOWN_TOOL_NAMES`
 - `tests/unit/domain/test_models.py` — extended with `PlaybackState`, `TrackInfo` tests
 - `tests/unit/schemas/test_responses.py` — extended with `PlaybackStateResponse`, `TrackInfoResponse` tests
+- `src/soniq_mcp/adapters/playback_adapter.py` — fixed string `playlist_position` normalization for queue metadata
+- `src/soniq_mcp/services/playback_service.py` — route grouped-room track info queries through the coordinator zone
+- `tests/unit/adapters/test_playback_adapter.py` — added regression test for string `playlist_position`
+- `tests/unit/services/test_playback_service.py` — added regression tests for grouped-room coordinator routing and fallback behavior
+- `_bmad-output/implementation-artifacts/2-2-control-core-playback-in-a-target-room.md` — updated Dev Agent Record for the follow-up fix

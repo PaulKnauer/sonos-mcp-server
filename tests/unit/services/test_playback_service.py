@@ -13,8 +13,16 @@ def make_room(
     name: str = "Living Room",
     uid: str = "RINCON_001",
     ip_address: str = "192.168.1.10",
+    is_coordinator: bool = True,
+    group_coordinator_uid: str | None = None,
 ) -> Room:
-    return Room(name=name, uid=uid, ip_address=ip_address, is_coordinator=True)
+    return Room(
+        name=name,
+        uid=uid,
+        ip_address=ip_address,
+        is_coordinator=is_coordinator,
+        group_coordinator_uid=group_coordinator_uid,
+    )
 
 
 class FakeRoomService:
@@ -33,6 +41,11 @@ class FakeRoomService:
         if normalised not in self._rooms:
             raise RoomNotFoundError(name)
         return self._rooms[normalised]
+
+    def list_rooms(self, timeout: float = 5.0) -> list[Room]:
+        if self._raise_discovery:
+            raise SonosDiscoveryError("network unreachable")
+        return list(self._rooms.values())
 
 
 class FakePlaybackAdapter:
@@ -163,3 +176,34 @@ class TestPlaybackServiceGetTrackInfo:
         svc, _ = make_service(rooms=[])
         with pytest.raises(RoomNotFoundError):
             svc.get_track_info("Nowhere")
+
+    def test_group_member_uses_coordinator_ip_for_track_info(self) -> None:
+        coordinator = make_room(
+            "Living Room",
+            uid="RINCON_COORD",
+            ip_address="192.168.1.10",
+            is_coordinator=True,
+        )
+        member = make_room(
+            "Kitchen",
+            uid="RINCON_MEMBER",
+            ip_address="192.168.1.11",
+            is_coordinator=False,
+            group_coordinator_uid="RINCON_COORD",
+        )
+        svc, adapter = make_service(rooms=[coordinator, member])
+        info = svc.get_track_info("Kitchen")
+        assert isinstance(info, TrackInfo)
+        assert ("get_track_info", "192.168.1.10") in adapter.calls
+
+    def test_group_member_falls_back_when_coordinator_missing(self) -> None:
+        member = make_room(
+            "Kitchen",
+            uid="RINCON_MEMBER",
+            ip_address="192.168.1.11",
+            is_coordinator=False,
+            group_coordinator_uid="RINCON_COORD",
+        )
+        svc, adapter = make_service(rooms=[member])
+        svc.get_track_info("Kitchen")
+        assert ("get_track_info", "192.168.1.11") in adapter.calls

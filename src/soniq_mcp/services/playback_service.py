@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 
-from soniq_mcp.domain.models import PlaybackState, TrackInfo
+from soniq_mcp.domain.models import PlaybackState, Room, TrackInfo
 
 log = logging.getLogger(__name__)
 
@@ -105,5 +105,29 @@ class PlaybackService:
             SonosDiscoveryError: If network discovery fails.
             PlaybackError: If the SoCo operation fails.
         """
-        room = self._room_service.get_room(room_name)
+        room = self._resolve_track_info_room(room_name)
         return self._adapter.get_track_info(room.ip_address)
+
+    def _resolve_track_info_room(self, room_name: str) -> Room:
+        """Use the group coordinator for track metadata when applicable."""
+        room = self._room_service.get_room(room_name)
+        coordinator_uid = room.group_coordinator_uid
+        if not coordinator_uid:
+            return room
+
+        rooms = self._room_service.list_rooms()
+        for candidate in rooms:
+            if candidate.uid == coordinator_uid:
+                log.debug(
+                    "get_track_info: room=%r routed to coordinator=%r",
+                    room_name,
+                    candidate.name,
+                )
+                return candidate
+
+        log.debug(
+            "get_track_info: coordinator uid %r not found for room=%r; using room ip",
+            coordinator_uid,
+            room_name,
+        )
+        return room

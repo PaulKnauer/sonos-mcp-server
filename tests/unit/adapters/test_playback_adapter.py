@@ -150,6 +150,23 @@ class TestPlaybackAdapterGetTrackInfo:
         assert info.position is None
         assert info.queue_position is None
 
+    def test_string_playlist_position_becomes_int(self) -> None:
+        adapter = PlaybackAdapter()
+        zone = MagicMock()
+        zone.get_current_track_info.return_value = {
+            "title": "Song",
+            "artist": "Artist",
+            "album": "Album",
+            "duration": "0:03:45",
+            "position": "0:01:00",
+            "uri": "x-sonos-http://track.mp3",
+            "album_art": "http://example.com/art.jpg",
+            "playlist_position": "3",
+        }
+        with _patch_soco(zone, "192.168.1.10"):
+            info = adapter.get_track_info("192.168.1.10")
+        assert info.queue_position == 3
+
     def test_soco_exception_raises_playback_error(self) -> None:
         adapter = PlaybackAdapter()
         zone = make_fake_zone()
