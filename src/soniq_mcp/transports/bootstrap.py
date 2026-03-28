@@ -22,6 +22,10 @@ def run_transport(app: FastMCP, config: SoniqConfig) -> None:
         from soniq_mcp.transports.stdio import run_stdio
 
         run_stdio(app)
+    elif config.transport == TransportMode.HTTP:
+        from soniq_mcp.transports.streamable_http import run_streamable_http
+
+        run_streamable_http(app, config)
     else:
         raise NotImplementedError(
             f"Transport '{config.transport.value}' is not yet implemented"
