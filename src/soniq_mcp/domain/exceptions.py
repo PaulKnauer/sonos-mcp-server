@@ -98,3 +98,17 @@ class FavouritesError(SoniqDomainError):
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
+
+
+class QueueError(SoniqDomainError):
+    """Raised when a Sonos queue operation fails.
+
+    Wraps SoCo UPnP errors and queue-level failures so they never
+    leak past the adapter layer.
+
+    Args:
+        message: Human-readable description of the failure.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
