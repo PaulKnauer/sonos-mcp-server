@@ -134,3 +134,33 @@ class VolumeState:
     room_name: str
     volume: int
     is_muted: bool
+
+
+@dataclass(frozen=True)
+class Favourite:
+    """A saved Sonos favourite item.
+
+    Attributes:
+        title: Human-readable title of the favourite.
+        uri: Content URI used to play the favourite.
+        meta: DIDL-Lite XML string used when calling play_uri. Optional.
+    """
+
+    title: str
+    uri: str
+    meta: str | None = field(default=None)
+
+
+@dataclass(frozen=True)
+class SonosPlaylist:
+    """A saved Sonos playlist.
+
+    Attributes:
+        title: Human-readable title of the playlist.
+        uri: Content URI used to add the playlist to a queue.
+        item_id: Optional playlist item identifier.
+    """
+
+    title: str
+    uri: str
+    item_id: str | None = field(default=None)

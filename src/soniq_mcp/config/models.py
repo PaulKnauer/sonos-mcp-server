@@ -35,6 +35,10 @@ KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
         "mute",
         "unmute",
         "get_mute",
+        "list_favourites",
+        "play_favourite",
+        "list_playlists",
+        "play_playlist",
     }
 )
 

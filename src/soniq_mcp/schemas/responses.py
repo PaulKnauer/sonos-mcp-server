@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from soniq_mcp.domain.models import PlaybackState, Room, Speaker, SystemTopology, TrackInfo, VolumeState
+from soniq_mcp.domain.models import Favourite, PlaybackState, Room, SonosPlaylist, Speaker, SystemTopology, TrackInfo, VolumeState
 
 
 class RoomResponse(BaseModel):
@@ -145,3 +145,47 @@ class VolumeStateResponse(BaseModel):
             volume=state.volume,
             is_muted=state.is_muted,
         )
+
+
+class FavouriteResponse(BaseModel):
+    """Serialisable representation of a single Sonos favourite."""
+
+    title: str
+    uri: str
+
+    @classmethod
+    def from_domain(cls, fav: Favourite) -> "FavouriteResponse":
+        return cls(title=fav.title, uri=fav.uri)
+
+
+class FavouritesListResponse(BaseModel):
+    """Response for the ``list_favourites`` tool."""
+
+    items: list[FavouriteResponse]
+    count: int
+
+    @classmethod
+    def from_domain(cls, items: list[Favourite]) -> "FavouritesListResponse":
+        return cls(items=[FavouriteResponse.from_domain(f) for f in items], count=len(items))
+
+
+class PlaylistResponse(BaseModel):
+    """Serialisable representation of a single Sonos playlist."""
+
+    title: str
+    uri: str
+
+    @classmethod
+    def from_domain(cls, pl: SonosPlaylist) -> "PlaylistResponse":
+        return cls(title=pl.title, uri=pl.uri)
+
+
+class PlaylistsListResponse(BaseModel):
+    """Response for the ``list_playlists`` tool."""
+
+    items: list[PlaylistResponse]
+    count: int
+
+    @classmethod
+    def from_domain(cls, items: list[SonosPlaylist]) -> "PlaylistsListResponse":
+        return cls(items=[PlaylistResponse.from_domain(p) for p in items], count=len(items))

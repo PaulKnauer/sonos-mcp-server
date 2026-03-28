@@ -7,8 +7,8 @@ playback and volume capability layers. Higher layers must not import
 
 from __future__ import annotations
 
-from soniq_mcp.domain.exceptions import PlaybackError, VolumeError
-from soniq_mcp.domain.models import PlaybackState, TrackInfo
+from soniq_mcp.domain.exceptions import FavouritesError, PlaybackError, VolumeError
+from soniq_mcp.domain.models import Favourite, PlaybackState, SonosPlaylist, TrackInfo
 
 _EMPTY_SENTINELS = {"", "NOT_IMPLEMENTED"}
 
@@ -114,6 +114,51 @@ class SoCoAdapter:
             zone.mute = muted
         except Exception as exc:
             raise VolumeError(f"Failed to set mute on {ip_address}: {exc}") from exc
+
+    def get_favourites(self, ip_address: str) -> list[Favourite]:
+        try:
+            zone = self._make_zone(ip_address)
+            results = zone.music_library.get_sonos_favorites()
+            favourites = []
+            for item in results:
+                meta = getattr(item, "to_didl_string", lambda: "")()
+                favourites.append(
+                    Favourite(title=item.title, uri=item.uri, meta=meta or None)
+                )
+            return favourites
+        except Exception as exc:
+            raise FavouritesError(f"Failed to get favourites: {exc}") from exc
+
+    def play_favourite(self, ip_address: str, uri: str, meta: str | None) -> None:
+        try:
+            zone = self._make_zone(ip_address)
+            zone.play_uri(uri=uri, meta=meta or "")
+        except Exception as exc:
+            raise FavouritesError(f"Failed to play favourite: {exc}") from exc
+
+    def get_playlists(self, ip_address: str) -> list[SonosPlaylist]:
+        try:
+            zone = self._make_zone(ip_address)
+            results = zone.music_library.get_music_library_information("sonos_playlists")
+            return [
+                SonosPlaylist(
+                    title=item.title,
+                    uri=item.uri,
+                    item_id=getattr(item, "item_id", None),
+                )
+                for item in results
+            ]
+        except Exception as exc:
+            raise FavouritesError(f"Failed to get playlists: {exc}") from exc
+
+    def play_playlist(self, ip_address: str, uri: str) -> None:
+        try:
+            zone = self._make_zone(ip_address)
+            zone.clear_queue()
+            zone.add_uri_to_queue(uri)
+            zone.play_from_queue(0)
+        except Exception as exc:
+            raise FavouritesError(f"Failed to play playlist: {exc}") from exc
 
     def _call_playback(self, ip_address: str, action) -> None:
         try:

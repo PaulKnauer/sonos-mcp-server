@@ -16,11 +16,14 @@ def register_all(app: FastMCP, config: SoniqConfig) -> None:
     """Register all available tools, respecting tools_disabled."""
     from soniq_mcp.adapters.discovery_adapter import DiscoveryAdapter
     from soniq_mcp.adapters.soco_adapter import SoCoAdapter
+    from soniq_mcp.services.favourites_service import FavouritesService
     from soniq_mcp.services.playback_service import PlaybackService
     from soniq_mcp.services.room_service import RoomService
     from soniq_mcp.services.sonos_service import SonosService
     from soniq_mcp.services.volume_service import VolumeService
+    from soniq_mcp.tools.favourites import register as register_favourites
     from soniq_mcp.tools.playback import register as register_playback
+    from soniq_mcp.tools.playlists import register as register_playlists
     from soniq_mcp.tools.setup_support import register as register_setup
     from soniq_mcp.tools.system import register as register_system
     from soniq_mcp.tools.volume import register as register_volume
@@ -36,3 +39,7 @@ def register_all(app: FastMCP, config: SoniqConfig) -> None:
 
     volume_service = VolumeService(sonos_service=sonos_service)
     register_volume(app, config, volume_service)
+
+    favourites_service = FavouritesService(room_service, SoCoAdapter())
+    register_favourites(app, config, favourites_service)
+    register_playlists(app, config, favourites_service)

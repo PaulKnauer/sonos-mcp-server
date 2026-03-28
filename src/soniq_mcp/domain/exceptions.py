@@ -91,3 +91,10 @@ class PlaybackError(SoniqDomainError):
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
+
+
+class FavouritesError(SoniqDomainError):
+    """Raised when a Sonos favourites or playlists operation fails."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)

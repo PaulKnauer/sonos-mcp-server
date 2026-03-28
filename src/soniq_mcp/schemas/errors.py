@@ -69,3 +69,14 @@ class ErrorResponse(BaseModel):
             field="sonos_volume",
             suggestion="Check that the Sonos speaker is reachable and try again.",
         )
+
+    @classmethod
+    def from_favourites_error(cls, exc: Exception) -> "ErrorResponse":
+        return cls(
+            error=str(exc),
+            field="favourites",
+            suggestion=(
+                "Check that the Sonos system is reachable and has saved favourites or playlists. "
+                "Use 'list_rooms' to verify the network is discoverable."
+            ),
+        )

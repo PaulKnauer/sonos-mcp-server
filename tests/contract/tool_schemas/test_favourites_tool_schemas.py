@@ -1,0 +1,72 @@
+"""Contract tests for favourites tool schemas.
+
+Validates that tool names, descriptions, and parameter schemas remain stable.
+These tests act as a breaking-change guard for MCP clients that depend on the
+tool surface.
+"""
+
+from __future__ import annotations
+
+import pytest
+from mcp.server.fastmcp import FastMCP
+
+from soniq_mcp.config import SoniqConfig
+from soniq_mcp.domain.models import Favourite
+from soniq_mcp.tools.favourites import register
+
+
+class FakeFavouritesService:
+    def get_favourites(self) -> list[Favourite]:
+        return []
+
+    def play_favourite(self, room_name: str, uri: str, meta: str | None) -> None:
+        pass
+
+
+@pytest.fixture()
+def registered_app() -> FastMCP:
+    app = FastMCP("contract-test")
+    config = SoniqConfig()
+    register(app, config, FakeFavouritesService())
+    return app
+
+
+def get_tools(app: FastMCP) -> dict:
+    return {t.name: t for t in app._tool_manager.list_tools()}
+
+
+class TestListFavouritesContract:
+    def test_tool_name_is_stable(self, registered_app: FastMCP) -> None:
+        assert "list_favourites" in get_tools(registered_app)
+
+    def test_tool_description_is_present(self, registered_app: FastMCP) -> None:
+        desc = get_tools(registered_app)["list_favourites"].description
+        assert desc and len(desc) > 0
+
+    def test_has_no_required_parameters(self, registered_app: FastMCP) -> None:
+        schema = get_tools(registered_app)["list_favourites"].parameters
+        assert schema.get("required", []) == []
+
+    def test_is_read_only(self, registered_app: FastMCP) -> None:
+        ann = get_tools(registered_app)["list_favourites"].annotations
+        assert ann.readOnlyHint is True
+        assert ann.destructiveHint is False
+
+
+class TestPlayFavouriteContract:
+    def test_tool_name_is_stable(self, registered_app: FastMCP) -> None:
+        assert "play_favourite" in get_tools(registered_app)
+
+    def test_tool_description_is_present(self, registered_app: FastMCP) -> None:
+        desc = get_tools(registered_app)["play_favourite"].description
+        assert desc and len(desc) > 0
+
+    def test_requires_room_and_uri_parameters(self, registered_app: FastMCP) -> None:
+        schema = get_tools(registered_app)["play_favourite"].parameters
+        assert "room" in schema["properties"]
+        assert "uri" in schema["properties"]
+        assert set(schema["required"]) == {"room", "uri"}
+
+    def test_is_control_tool(self, registered_app: FastMCP) -> None:
+        ann = get_tools(registered_app)["play_favourite"].annotations
+        assert ann.readOnlyHint is False
