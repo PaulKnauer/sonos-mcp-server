@@ -59,3 +59,19 @@ class SystemTopologyResponse(BaseModel):
             coordinator_count=topology.coordinator_count,
             total_count=topology.total_count,
         )
+
+
+class VolumeStateResponse(BaseModel):
+    """Response for volume and mute state tools."""
+
+    room_name: str
+    volume: int
+    is_muted: bool
+
+    @classmethod
+    def from_domain(cls, state: VolumeState) -> "VolumeStateResponse":
+        return cls(
+            room_name=state.room_name,
+            volume=state.volume,
+            is_muted=state.is_muted,
+        )
