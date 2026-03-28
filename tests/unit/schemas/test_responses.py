@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from soniq_mcp.domain.models import Room, SystemTopology
+from soniq_mcp.domain.models import Room, SystemTopology, VolumeState
 from soniq_mcp.schemas.responses import (
     RoomListResponse,
     RoomResponse,
     SystemTopologyResponse,
+    VolumeStateResponse,
 )
 
 
