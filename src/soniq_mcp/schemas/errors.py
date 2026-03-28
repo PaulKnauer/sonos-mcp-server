@@ -50,3 +50,14 @@ class ErrorResponse(BaseModel):
             field="room",
             suggestion="Use 'list_rooms' to see available rooms and check spelling.",
         )
+
+    @classmethod
+    def from_playback_error(cls, exc: Exception) -> "ErrorResponse":
+        return cls(
+            error=str(exc),
+            field="playback",
+            suggestion=(
+                "Check that the room is reachable and has active playback. "
+                "Some operations (next/previous) require a queue or loaded track."
+            ),
+        )

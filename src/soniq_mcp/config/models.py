@@ -17,7 +17,19 @@ from pydantic import BaseModel, Field, field_validator
 
 
 KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
-    {"ping", "server_info", "list_rooms", "get_system_topology"}
+    {
+        "ping",
+        "server_info",
+        "list_rooms",
+        "get_system_topology",
+        "play",
+        "pause",
+        "stop",
+        "next_track",
+        "previous_track",
+        "get_playback_state",
+        "get_track_info",
+    }
 )
 
 

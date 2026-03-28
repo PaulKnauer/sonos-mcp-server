@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 
 from soniq_mcp.domain.exceptions import RoomNotFoundError
-from soniq_mcp.domain.models import Room, SystemTopology
+from soniq_mcp.domain.models import Room, Speaker, SystemTopology
 
 log = logging.getLogger(__name__)
 
@@ -53,10 +53,12 @@ class RoomService:
             SonosDiscoveryError: If discovery fails due to a network error.
         """
         rooms = self.list_rooms(timeout=timeout)
-        topology = SystemTopology.from_rooms(rooms)
+        speakers: list[Speaker] = self._adapter.discover_speakers(timeout=timeout)
+        topology = SystemTopology.from_rooms(rooms, speakers=speakers)
         log.debug(
-            "Topology: %d room(s), %d coordinator(s)",
+            "Topology: %d room(s), %d speaker(s), %d coordinator(s)",
             topology.total_count,
+            topology.speaker_count,
             topology.coordinator_count,
         )
         return topology

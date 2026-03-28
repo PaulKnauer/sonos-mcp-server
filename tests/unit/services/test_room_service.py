@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from soniq_mcp.domain.exceptions import RoomNotFoundError, SonosDiscoveryError
-from soniq_mcp.domain.models import Room
+from soniq_mcp.domain.models import Room, Speaker
 from soniq_mcp.services.room_service import RoomService
 
 
@@ -27,6 +27,17 @@ class FakeAdapter:
 
     def __init__(self, rooms: list[Room], raise_error: bool = False) -> None:
         self._rooms = rooms
+        self._speakers = [
+            Speaker(
+                name=room.name,
+                uid=room.uid,
+                ip_address=room.ip_address,
+                room_name=room.name,
+                room_uid=room.uid,
+                is_visible=True,
+            )
+            for room in rooms
+        ]
         self._raise_error = raise_error
         self.discover_calls: list[float] = []
 
@@ -35,6 +46,12 @@ class FakeAdapter:
         if self._raise_error:
             raise SonosDiscoveryError("network unreachable")
         return list(self._rooms)
+
+    def discover_speakers(self, timeout: float = 5.0) -> list[Speaker]:
+        self.discover_calls.append(timeout)
+        if self._raise_error:
+            raise SonosDiscoveryError("network unreachable")
+        return list(self._speakers)
 
 
 class TestRoomServiceListRooms:
@@ -79,6 +96,7 @@ class TestRoomServiceGetTopology:
         topo = svc.get_topology()
         assert topo.total_count == 0
         assert topo.coordinator_count == 0
+        assert topo.speaker_count == 0
 
     def test_topology_counts(self) -> None:
         rooms = [
@@ -89,6 +107,7 @@ class TestRoomServiceGetTopology:
         topo = svc.get_topology()
         assert topo.total_count == 2
         assert topo.coordinator_count == 1
+        assert topo.speaker_count == 2
 
     def test_topology_rooms_match_list_rooms_order(self) -> None:
         rooms = [
@@ -99,6 +118,13 @@ class TestRoomServiceGetTopology:
         topo = svc.get_topology()
         assert topo.rooms[0].name == "Apple"
         assert topo.rooms[1].name == "Zebra"
+
+    def test_topology_includes_speakers(self) -> None:
+        rooms = [make_room("Living Room", "RINCON_001")]
+        svc = RoomService(FakeAdapter(rooms))
+        topo = svc.get_topology()
+        assert topo.speakers[0].room_name == "Living Room"
+        assert topo.speakers[0].uid == "RINCON_001"
 
 
 class TestRoomServiceGetRoom:

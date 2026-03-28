@@ -1,0 +1,248 @@
+"""Unit tests for playback tools using a fake PlaybackService."""
+
+from __future__ import annotations
+
+import json
+
+import pytest
+from mcp.server.fastmcp import FastMCP
+
+from soniq_mcp.config import SoniqConfig
+from soniq_mcp.domain.exceptions import PlaybackError, RoomNotFoundError, SonosDiscoveryError
+from soniq_mcp.domain.models import PlaybackState, TrackInfo
+from soniq_mcp.tools.playback import register
+
+
+class FakePlaybackService:
+    def __init__(
+        self,
+        raise_room_not_found: bool = False,
+        raise_playback_error: bool = False,
+        raise_discovery_error: bool = False,
+        room_name: str = "Living Room",
+    ) -> None:
+        self._raise_room_not_found = raise_room_not_found
+        self._raise_playback_error = raise_playback_error
+        self._raise_discovery_error = raise_discovery_error
+        self._room_name = room_name
+        self.calls: list[tuple[str, str]] = []
+
+    def _check_errors(self, room: str) -> None:
+        if self._raise_room_not_found:
+            raise RoomNotFoundError(room)
+        if self._raise_playback_error:
+            raise PlaybackError("zone unreachable")
+        if self._raise_discovery_error:
+            raise SonosDiscoveryError("network unreachable")
+
+    def play(self, room: str) -> None:
+        self.calls.append(("play", room))
+        self._check_errors(room)
+
+    def pause(self, room: str) -> None:
+        self.calls.append(("pause", room))
+        self._check_errors(room)
+
+    def stop(self, room: str) -> None:
+        self.calls.append(("stop", room))
+        self._check_errors(room)
+
+    def next_track(self, room: str) -> None:
+        self.calls.append(("next_track", room))
+        self._check_errors(room)
+
+    def previous_track(self, room: str) -> None:
+        self.calls.append(("previous_track", room))
+        self._check_errors(room)
+
+    def get_playback_state(self, room: str) -> PlaybackState:
+        self.calls.append(("get_playback_state", room))
+        self._check_errors(room)
+        return PlaybackState(transport_state="PLAYING", room_name=self._room_name)
+
+    def get_track_info(self, room: str) -> TrackInfo:
+        self.calls.append(("get_track_info", room))
+        self._check_errors(room)
+        return TrackInfo(title="Test Song", artist="Test Artist", duration="0:03:45")
+
+
+def make_app(
+    raise_room_not_found: bool = False,
+    raise_playback_error: bool = False,
+    raise_discovery_error: bool = False,
+    tools_disabled: list[str] | None = None,
+) -> tuple[FastMCP, FakePlaybackService]:
+    config = SoniqConfig(tools_disabled=tools_disabled or [])
+    svc = FakePlaybackService(
+        raise_room_not_found=raise_room_not_found,
+        raise_playback_error=raise_playback_error,
+        raise_discovery_error=raise_discovery_error,
+    )
+    app = FastMCP("test")
+    register(app, config, svc)
+    return app, svc
+
+
+def get_tool(app: FastMCP, name: str):
+    tools = {t.name: t for t in app._tool_manager.list_tools()}
+    return tools.get(name)
+
+
+async def call_and_parse(app: FastMCP, tool: str, args: dict) -> dict:
+    result = await app.call_tool(tool, args)
+    return json.loads(result[0].text)
+
+
+# ── Registration ────────────────────────────────────────────────────────────
+
+class TestToolRegistration:
+    TOOL_NAMES = ["play", "pause", "stop", "next_track", "previous_track",
+                  "get_playback_state", "get_track_info"]
+
+    def test_all_tools_registered(self) -> None:
+        app, _ = make_app()
+        for name in self.TOOL_NAMES:
+            assert get_tool(app, name) is not None, f"{name} not registered"
+
+    def test_tool_disabled_when_in_tools_disabled(self) -> None:
+        for name in self.TOOL_NAMES:
+            app, _ = make_app(tools_disabled=[name])
+            assert get_tool(app, name) is None, f"{name} should be disabled"
+
+
+# ── Play ─────────────────────────────────────────────────────────────────────
+
+class TestPlayTool:
+    @pytest.mark.anyio
+    async def test_success_returns_ok(self) -> None:
+        app, _ = make_app()
+        data = await call_and_parse(app, "play", {"room": "Living Room"})
+        assert data["status"] == "ok"
+        assert data["room"] == "Living Room"
+
+    @pytest.mark.anyio
+    async def test_room_not_found(self) -> None:
+        app, _ = make_app(raise_room_not_found=True)
+        data = await call_and_parse(app, "play", {"room": "Nowhere"})
+        assert "error" in data
+        assert data["field"] == "room"
+
+    @pytest.mark.anyio
+    async def test_playback_error(self) -> None:
+        app, _ = make_app(raise_playback_error=True)
+        data = await call_and_parse(app, "play", {"room": "Living Room"})
+        assert "error" in data
+        assert data["field"] == "playback"
+
+    @pytest.mark.anyio
+    async def test_discovery_error(self) -> None:
+        app, _ = make_app(raise_discovery_error=True)
+        data = await call_and_parse(app, "play", {"room": "Living Room"})
+        assert "error" in data
+        assert data["field"] == "sonos_network"
+
+    def test_has_control_annotations(self) -> None:
+        app, _ = make_app()
+        tool = get_tool(app, "play")
+        assert tool.annotations.readOnlyHint is False
+        assert tool.annotations.destructiveHint is False
+
+
+# ── Pause ─────────────────────────────────────────────────────────────────────
+
+class TestPauseTool:
+    @pytest.mark.anyio
+    async def test_success_returns_ok(self) -> None:
+        app, _ = make_app()
+        data = await call_and_parse(app, "pause", {"room": "Living Room"})
+        assert data["status"] == "ok"
+
+    @pytest.mark.anyio
+    async def test_room_not_found(self) -> None:
+        app, _ = make_app(raise_room_not_found=True)
+        data = await call_and_parse(app, "pause", {"room": "X"})
+        assert "error" in data
+
+
+# ── Stop ──────────────────────────────────────────────────────────────────────
+
+class TestStopTool:
+    @pytest.mark.anyio
+    async def test_success_returns_ok(self) -> None:
+        app, _ = make_app()
+        data = await call_and_parse(app, "stop", {"room": "Living Room"})
+        assert data["status"] == "ok"
+
+
+# ── Next Track ────────────────────────────────────────────────────────────────
+
+class TestNextTrackTool:
+    @pytest.mark.anyio
+    async def test_success_returns_ok(self) -> None:
+        app, _ = make_app()
+        data = await call_and_parse(app, "next_track", {"room": "Living Room"})
+        assert data["status"] == "ok"
+
+    @pytest.mark.anyio
+    async def test_playback_error(self) -> None:
+        app, _ = make_app(raise_playback_error=True)
+        data = await call_and_parse(app, "next_track", {"room": "Living Room"})
+        assert "error" in data
+        assert data["field"] == "playback"
+
+
+# ── Previous Track ────────────────────────────────────────────────────────────
+
+class TestPreviousTrackTool:
+    @pytest.mark.anyio
+    async def test_success_returns_ok(self) -> None:
+        app, _ = make_app()
+        data = await call_and_parse(app, "previous_track", {"room": "Living Room"})
+        assert data["status"] == "ok"
+
+
+# ── Get Playback State ────────────────────────────────────────────────────────
+
+class TestGetPlaybackStateTool:
+    @pytest.mark.anyio
+    async def test_returns_state(self) -> None:
+        app, _ = make_app()
+        data = await call_and_parse(app, "get_playback_state", {"room": "Living Room"})
+        assert data["transport_state"] == "PLAYING"
+        assert data["room_name"] == "Living Room"
+
+    @pytest.mark.anyio
+    async def test_room_not_found(self) -> None:
+        app, _ = make_app(raise_room_not_found=True)
+        data = await call_and_parse(app, "get_playback_state", {"room": "X"})
+        assert "error" in data
+        assert data["field"] == "room"
+
+    def test_has_read_only_annotations(self) -> None:
+        app, _ = make_app()
+        tool = get_tool(app, "get_playback_state")
+        assert tool.annotations.readOnlyHint is True
+
+
+# ── Get Track Info ────────────────────────────────────────────────────────────
+
+class TestGetTrackInfoTool:
+    @pytest.mark.anyio
+    async def test_returns_track_info(self) -> None:
+        app, _ = make_app()
+        data = await call_and_parse(app, "get_track_info", {"room": "Living Room"})
+        assert data["title"] == "Test Song"
+        assert data["artist"] == "Test Artist"
+        assert data["duration"] == "0:03:45"
+        assert data["room_name"] == "Living Room"
+
+    @pytest.mark.anyio
+    async def test_room_not_found(self) -> None:
+        app, _ = make_app(raise_room_not_found=True)
+        data = await call_and_parse(app, "get_track_info", {"room": "X"})
+        assert "error" in data
+
+    def test_has_read_only_annotations(self) -> None:
+        app, _ = make_app()
+        tool = get_tool(app, "get_track_info")
+        assert tool.annotations.readOnlyHint is True

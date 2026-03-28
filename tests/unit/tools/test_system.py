@@ -7,7 +7,7 @@ from mcp.server.fastmcp import FastMCP
 
 from soniq_mcp.config import SoniqConfig
 from soniq_mcp.domain.exceptions import SonosDiscoveryError
-from soniq_mcp.domain.models import Room, SystemTopology
+from soniq_mcp.domain.models import Room, Speaker, SystemTopology
 from soniq_mcp.tools.system import register
 
 
@@ -41,7 +41,19 @@ class FakeRoomService:
     def get_topology(self, timeout: float = 5.0) -> SystemTopology:
         if self._raise_error:
             raise SonosDiscoveryError("network unreachable")
-        return SystemTopology.from_rooms(self._rooms)
+        speakers = [
+            Speaker(
+                name=room.name,
+                uid=room.uid,
+                ip_address=room.ip_address,
+                room_name=room.name,
+                room_uid=room.uid,
+                model_name="Sonos One",
+                is_visible=True,
+            )
+            for room in self._rooms
+        ]
+        return SystemTopology.from_rooms(self._rooms, speakers=speakers)
 
 
 def make_app_with_service(
@@ -122,7 +134,9 @@ class TestGetSystemTopologyTool:
         data = json.loads(result[0].text)  # type: ignore[attr-defined]
         assert data["total_count"] == 2
         assert data["coordinator_count"] == 1
+        assert data["speaker_count"] == 2
         assert len(data["rooms"]) == 2
+        assert len(data["speakers"]) == 2
 
     @pytest.mark.anyio
     async def test_returns_error_on_discovery_failure(self) -> None:

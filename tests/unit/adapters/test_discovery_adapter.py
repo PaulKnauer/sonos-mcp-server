@@ -12,7 +12,7 @@ import pytest
 
 from soniq_mcp.adapters.discovery_adapter import DiscoveryAdapter
 from soniq_mcp.domain.exceptions import SonosDiscoveryError
-from soniq_mcp.domain.models import Room
+from soniq_mcp.domain.models import Room, Speaker
 
 
 def make_fake_zone(
@@ -71,6 +71,40 @@ class TestDiscoveryAdapterZoneToRoom:
         room = DiscoveryAdapter._zone_to_room(zone)
         assert room.group_coordinator_uid is None
 
+    def test_zone_missing_uid_raises_discovery_error(self) -> None:
+        zone = make_fake_zone()
+        zone.uid = None
+        with pytest.raises(SonosDiscoveryError, match="missing required uid"):
+            DiscoveryAdapter._zone_to_room(zone)
+
+
+class TestDiscoveryAdapterZoneToSpeaker:
+    def test_maps_zone_to_speaker(self) -> None:
+        zone = make_fake_zone()
+        zone.is_visible = True
+        zone.get_speaker_info.return_value = {
+            "zone_name": "Living Room",
+            "model_name": "Sonos One",
+        }
+
+        speaker = DiscoveryAdapter._zone_to_speaker(zone)
+
+        assert isinstance(speaker, Speaker)
+        assert speaker.room_name == "Living Room"
+        assert speaker.model_name == "Sonos One"
+        assert speaker.room_uid == "RINCON_001"
+
+    def test_speaker_info_falls_back_to_zone_name(self) -> None:
+        zone = make_fake_zone()
+        zone.is_visible = False
+        zone.get_speaker_info.side_effect = RuntimeError("boom")
+
+        speaker = DiscoveryAdapter._zone_to_speaker(zone)
+
+        assert speaker.room_name == "Living Room"
+        assert speaker.room_uid is None
+        assert speaker.is_visible is False
+
 
 class TestDiscoveryAdapterDiscoverRooms:
     def test_returns_empty_list_when_no_zones(self) -> None:
@@ -118,3 +152,33 @@ class TestDiscoveryAdapterDiscoverRooms:
         with patch("soco.discover", side_effect=original):
             with pytest.raises(SonosDiscoveryError, match="already a domain error"):
                 adapter.discover_rooms(timeout=1.0)
+
+
+class TestDiscoveryAdapterDiscoverSpeakers:
+    def test_returns_empty_list_when_no_zones(self) -> None:
+        adapter = DiscoveryAdapter()
+        with patch("soco.discover", return_value=None):
+            speakers = adapter.discover_speakers(timeout=1.0)
+        assert speakers == []
+
+    def test_uses_household_all_zones_for_speakers(self) -> None:
+        adapter = DiscoveryAdapter()
+        visible_zone = make_fake_zone("Living Room", "RINCON_001")
+        visible_zone.is_visible = True
+        visible_zone.get_speaker_info.return_value = {
+            "zone_name": "Living Room",
+            "model_name": "Sonos One",
+        }
+        hidden_zone = make_fake_zone("Living Room LS", "RINCON_002")
+        hidden_zone.is_visible = False
+        hidden_zone.get_speaker_info.return_value = {
+            "zone_name": "Living Room",
+            "model_name": "Sonos One SL",
+        }
+        visible_zone.all_zones = {visible_zone, hidden_zone}
+
+        with patch("soco.discover", return_value={visible_zone}):
+            speakers = adapter.discover_speakers(timeout=1.0)
+
+        assert len(speakers) == 2
+        assert {speaker.uid for speaker in speakers} == {"RINCON_001", "RINCON_002"}

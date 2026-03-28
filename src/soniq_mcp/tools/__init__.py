@@ -15,7 +15,10 @@ from soniq_mcp.config import SoniqConfig
 def register_all(app: FastMCP, config: SoniqConfig) -> None:
     """Register all available tools, respecting tools_disabled."""
     from soniq_mcp.adapters.discovery_adapter import DiscoveryAdapter
+    from soniq_mcp.adapters.playback_adapter import PlaybackAdapter
+    from soniq_mcp.services.playback_service import PlaybackService
     from soniq_mcp.services.room_service import RoomService
+    from soniq_mcp.tools.playback import register as register_playback
     from soniq_mcp.tools.setup_support import register as register_setup
     from soniq_mcp.tools.system import register as register_system
 
@@ -23,3 +26,6 @@ def register_all(app: FastMCP, config: SoniqConfig) -> None:
 
     room_service = RoomService(DiscoveryAdapter())
     register_system(app, config, room_service)
+
+    playback_service = PlaybackService(room_service, PlaybackAdapter())
+    register_playback(app, config, playback_service)

@@ -81,3 +81,12 @@ class TestGetSystemTopologyContract:
         assert annotations is not None
         assert annotations.readOnlyHint is True
         assert annotations.destructiveHint is False
+
+    @pytest.mark.anyio
+    async def test_tool_response_includes_speaker_fields(self, registered_app: FastMCP) -> None:
+        result = await registered_app.call_tool("get_system_topology", {})
+        import json
+
+        data = json.loads(result[0].text)  # type: ignore[attr-defined]
+        assert "speakers" in data
+        assert "speaker_count" in data

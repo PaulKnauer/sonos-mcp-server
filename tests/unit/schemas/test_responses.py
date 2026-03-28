@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
-from soniq_mcp.domain.models import Room, SystemTopology
+from soniq_mcp.domain.models import PlaybackState, Room, Speaker, SystemTopology, TrackInfo
 from soniq_mcp.schemas.responses import (
+    PlaybackStateResponse,
     RoomListResponse,
     RoomResponse,
+    SpeakerResponse,
     SystemTopologyResponse,
+    TrackInfoResponse,
 )
 
 
@@ -56,13 +59,32 @@ class TestRoomListResponse:
         assert d["rooms"][0]["name"] == "Living Room"
 
 
+class TestSpeakerResponse:
+    def test_from_domain(self) -> None:
+        speaker = Speaker(
+            name="Living Room",
+            uid="RINCON_001",
+            ip_address="192.168.1.10",
+            room_name="Living Room",
+            room_uid="RINCON_001",
+            model_name="Sonos One",
+            is_visible=True,
+        )
+        resp = SpeakerResponse.from_domain(speaker)
+        assert resp.room_name == "Living Room"
+        assert resp.model_name == "Sonos One"
+        assert resp.is_visible is True
+
+
 class TestSystemTopologyResponse:
     def test_from_empty_topology(self) -> None:
         topo = SystemTopology.from_rooms([])
         resp = SystemTopologyResponse.from_domain(topo)
         assert resp.total_count == 0
         assert resp.coordinator_count == 0
+        assert resp.speaker_count == 0
         assert resp.rooms == []
+        assert resp.speakers == []
 
     def test_from_topology_with_rooms(self) -> None:
         rooms = [
@@ -73,6 +95,7 @@ class TestSystemTopologyResponse:
         resp = SystemTopologyResponse.from_domain(topo)
         assert resp.total_count == 2
         assert resp.coordinator_count == 1
+        assert resp.speaker_count == 2
         assert len(resp.rooms) == 2
 
     def test_model_dump_serialisable(self) -> None:
@@ -83,3 +106,52 @@ class TestSystemTopologyResponse:
         assert "total_count" in d
         assert "coordinator_count" in d
         assert "rooms" in d
+        assert "speakers" in d
+        assert "speaker_count" in d
+
+
+class TestPlaybackStateResponse:
+    def test_from_domain(self) -> None:
+        state = PlaybackState(transport_state="PLAYING", room_name="Living Room")
+        resp = PlaybackStateResponse.from_domain(state)
+        assert resp.transport_state == "PLAYING"
+        assert resp.room_name == "Living Room"
+
+    def test_model_dump_snake_case(self) -> None:
+        state = PlaybackState(transport_state="STOPPED", room_name="Kitchen")
+        d = PlaybackStateResponse.from_domain(state).model_dump()
+        assert "transport_state" in d
+        assert "room_name" in d
+
+
+class TestTrackInfoResponse:
+    def test_from_domain_with_values(self) -> None:
+        info = TrackInfo(
+            title="Song",
+            artist="Artist",
+            album="Album",
+            duration="0:03:45",
+            position="0:01:00",
+            uri="x-sonos-http://track.mp3",
+            album_art_uri="http://example.com/art.jpg",
+            queue_position=2,
+        )
+        resp = TrackInfoResponse.from_domain(info, room_name="Living Room")
+        assert resp.title == "Song"
+        assert resp.artist == "Artist"
+        assert resp.room_name == "Living Room"
+        assert resp.queue_position == 2
+
+    def test_from_domain_all_none(self) -> None:
+        info = TrackInfo()
+        resp = TrackInfoResponse.from_domain(info, room_name="Kitchen")
+        assert resp.title is None
+        assert resp.artist is None
+        assert resp.queue_position is None
+
+    def test_model_dump_serialisable(self) -> None:
+        info = TrackInfo(title="Test")
+        d = TrackInfoResponse.from_domain(info, "Living Room").model_dump()
+        assert isinstance(d, dict)
+        assert "title" in d
+        assert "room_name" in d

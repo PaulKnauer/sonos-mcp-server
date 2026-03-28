@@ -66,3 +66,17 @@ class SonosDiscoveryError(SoniqDomainError):
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
+
+
+class PlaybackError(SoniqDomainError):
+    """Raised when a Sonos playback operation fails.
+
+    Wraps SoCo UPnP errors and other zone-level failures so they never
+    leak past the adapter layer.
+
+    Args:
+        message: Human-readable description of the failure.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
