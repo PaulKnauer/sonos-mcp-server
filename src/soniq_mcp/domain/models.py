@@ -122,6 +122,27 @@ class TrackInfo:
 
 
 @dataclass(frozen=True)
+class QueueItem:
+    """A single item in a Sonos zone's playback queue.
+
+    Attributes:
+        position: 1-based position in the queue.
+        uri: Content URI for the queue item.
+        title: Track title, or None if not available.
+        artist: Artist name, or None if not available.
+        album: Album name, or None if not available.
+        album_art_uri: Album art URI, or None if not available.
+    """
+
+    position: int
+    uri: str
+    title: str | None = field(default=None)
+    artist: str | None = field(default=None)
+    album: str | None = field(default=None)
+    album_art_uri: str | None = field(default=None)
+
+
+@dataclass(frozen=True)
 class VolumeState:
     """Current volume and mute state for a single Sonos room.
 
