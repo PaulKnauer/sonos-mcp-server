@@ -1,6 +1,6 @@
 # Story 3.1: Manage the Sonos Queue
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
