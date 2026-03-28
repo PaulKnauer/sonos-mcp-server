@@ -24,6 +24,8 @@ _ENV_MAP: dict[str, str] = {
     "SONIQ_MCP_CONFIG_FILE": "config_file",
     "SONIQ_MCP_MAX_VOLUME_PCT": "max_volume_pct",
     "SONIQ_MCP_TOOLS_DISABLED": "tools_disabled",
+    "SONIQ_MCP_HTTP_HOST": "http_host",
+    "SONIQ_MCP_HTTP_PORT": "http_port",
 }
 
 
