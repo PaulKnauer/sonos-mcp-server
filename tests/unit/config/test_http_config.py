@@ -32,7 +32,7 @@ class TestExposurePostureEnum:
         assert ExposurePosture.LOCAL == "local"
 
     def test_home_network_is_valid_posture(self) -> None:
-        cfg = SoniqConfig(exposure=ExposurePosture.HOME_NETWORK)
+        cfg = SoniqConfig(exposure=ExposurePosture.HOME_NETWORK, http_host="0.0.0.0")
         assert cfg.exposure == ExposurePosture.HOME_NETWORK
 
     def test_invalid_exposure_rejected(self) -> None:
@@ -46,12 +46,36 @@ class TestHttpHostField:
         assert cfg.http_host == "127.0.0.1"
 
     def test_custom_host_accepted(self) -> None:
-        cfg = SoniqConfig(http_host="0.0.0.0")
+        cfg = SoniqConfig(
+            transport=TransportMode.HTTP,
+            exposure=ExposurePosture.HOME_NETWORK,
+            http_host="0.0.0.0",
+        )
         assert cfg.http_host == "0.0.0.0"
 
     def test_arbitrary_ip_accepted(self) -> None:
-        cfg = SoniqConfig(http_host="192.168.1.100")
+        cfg = SoniqConfig(
+            transport=TransportMode.HTTP,
+            exposure=ExposurePosture.HOME_NETWORK,
+            http_host="192.168.1.100",
+        )
         assert cfg.http_host == "192.168.1.100"
+
+    def test_local_http_rejects_non_loopback_bind(self) -> None:
+        with pytest.raises(Exception):
+            SoniqConfig(
+                transport=TransportMode.HTTP,
+                exposure=ExposurePosture.LOCAL,
+                http_host="0.0.0.0",
+            )
+
+    def test_home_network_rejects_loopback_bind(self) -> None:
+        with pytest.raises(Exception):
+            SoniqConfig(
+                transport=TransportMode.HTTP,
+                exposure=ExposurePosture.HOME_NETWORK,
+                http_host="127.0.0.1",
+            )
 
 
 class TestHttpPortField:
@@ -104,8 +128,23 @@ class TestHttpEnvVarLoading:
 
     def test_exposure_home_network_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("SONIQ_MCP_EXPOSURE", "home-network")
+        monkeypatch.setenv("SONIQ_MCP_HTTP_HOST", "0.0.0.0")
         cfg = load_config()
         assert cfg.exposure == ExposurePosture.HOME_NETWORK
+
+    def test_http_local_env_rejects_non_loopback_bind(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("SONIQ_MCP_TRANSPORT", "http")
+        monkeypatch.setenv("SONIQ_MCP_EXPOSURE", "local")
+        monkeypatch.setenv("SONIQ_MCP_HTTP_HOST", "0.0.0.0")
+        with pytest.raises(Exception):
+            load_config()
+
+    def test_http_home_network_env_rejects_loopback_bind(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("SONIQ_MCP_TRANSPORT", "http")
+        monkeypatch.setenv("SONIQ_MCP_EXPOSURE", "home-network")
+        monkeypatch.setenv("SONIQ_MCP_HTTP_HOST", "127.0.0.1")
+        with pytest.raises(Exception):
+            load_config()
 
     def test_defaults_used_when_no_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("SONIQ_MCP_HTTP_HOST", raising=False)

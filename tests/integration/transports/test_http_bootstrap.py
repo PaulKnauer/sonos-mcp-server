@@ -13,6 +13,39 @@ from soniq_mcp.server import create_server
 from soniq_mcp.transports.bootstrap import run_transport
 from soniq_mcp.transports.streamable_http import streamable_http_transport_name
 
+EXPECTED_TOOL_NAMES = {
+    "add_to_queue",
+    "adjust_volume",
+    "clear_queue",
+    "get_group_topology",
+    "get_mute",
+    "get_playback_state",
+    "get_queue",
+    "get_system_topology",
+    "get_track_info",
+    "get_volume",
+    "join_group",
+    "list_favourites",
+    "list_playlists",
+    "list_rooms",
+    "mute",
+    "next_track",
+    "party_mode",
+    "pause",
+    "ping",
+    "play",
+    "play_favourite",
+    "play_from_queue",
+    "play_playlist",
+    "previous_track",
+    "remove_from_queue",
+    "server_info",
+    "set_volume",
+    "stop",
+    "unjoin_room",
+    "unmute",
+}
+
 
 class TestCreateServerWithHttpConfig:
     def test_create_server_http_transport_succeeds(self) -> None:
@@ -21,7 +54,12 @@ class TestCreateServerWithHttpConfig:
         assert isinstance(app, FastMCP)
 
     def test_create_server_passes_host_to_fastmcp(self) -> None:
-        cfg = SoniqConfig(transport=TransportMode.HTTP, http_host="0.0.0.0", http_port=9001)
+        cfg = SoniqConfig(
+            transport=TransportMode.HTTP,
+            exposure=ExposurePosture.HOME_NETWORK,
+            http_host="0.0.0.0",
+            http_port=9001,
+        )
         app = create_server(config=cfg)
         assert app.settings.host == "0.0.0.0"
         assert app.settings.port == 9001
@@ -57,19 +95,11 @@ class TestHttpToolSurfaceParity:
         assert "ping" in tool_names
 
     def test_http_server_exposes_all_29_tools(self) -> None:
+        """Verify exact tool-surface parity for Story 4.1."""
         cfg = SoniqConfig(transport=TransportMode.HTTP)
         app = create_server(config=cfg)
         tool_names = {t.name for t in app._tool_manager.list_tools()}
-        # Spot-check key tools from all capability areas
-        expected = {
-            "ping", "server_info", "list_rooms",
-            "play", "pause", "stop", "get_playback_state",
-            "get_volume", "set_volume", "mute",
-            "get_queue", "add_to_queue", "clear_queue",
-            "list_favourites", "play_favourite",
-            "get_group_topology", "join_group", "party_mode",
-        }
-        assert expected.issubset(tool_names)
+        assert tool_names == EXPECTED_TOOL_NAMES
 
 
 class TestRunTransportHttpDispatch:
@@ -116,6 +146,22 @@ class TestHomeNetworkExposurePosture:
         cfg = SoniqConfig(exposure=ExposurePosture.LOCAL)
         warnings = validate_exposure_posture(cfg)
         assert warnings == []
+
+    def test_local_http_non_loopback_bind_emits_warning(self) -> None:
+        cfg = SoniqConfig.model_construct(
+            transport=TransportMode.HTTP,
+            exposure=ExposurePosture.LOCAL,
+            log_level="INFO",
+            default_room=None,
+            config_file=None,
+            max_volume_pct=80,
+            tools_disabled=[],
+            http_host="0.0.0.0",
+            http_port=8000,
+        )
+        warnings = validate_exposure_posture(cfg)
+        assert len(warnings) == 1
+        assert "unsafe" in warnings[0]
 
     def test_unknown_exposure_emits_unsupported_warning(self) -> None:
         """Simulates a future posture value not yet fully supported."""

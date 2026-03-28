@@ -115,6 +115,10 @@ None.
 - 38 new tests added across 3 new test files. Full suite: 635 passed, 3 skipped (pre-existing), zero regressions.
 - HTTP smoke test starts the server as a subprocess bound to `127.0.0.1:18431`, connects via `streamable_http_client`, verifies `ping` returns `"pong"` and the tool surface is populated. Both smoke tests pass.
 - `streamable_http_client` yields 3 values `(read_stream, write_stream, get_session_id_callback)` — unpack the third as `_`.
+- Post-review hardening added config-level enforcement for HTTP exposure/bind combinations: `LOCAL` requires loopback bind, `HOME_NETWORK` requires non-loopback bind.
+- Tightened HTTP parity verification from subset matching to exact tool-surface matching for all 30 registered tools.
+- Reworked the HTTP smoke fixture to use dynamic port allocation, active readiness probing, and stderr capture on startup failure.
+- Post-review validation: `uv run pytest tests/unit/config/test_http_config.py tests/integration/transports/test_http_bootstrap.py tests/smoke/streamable_http/test_streamable_http_smoke.py` → 45 passed; `uv run pytest` → 642 passed, 3 skipped.
 
 ### File List
 
@@ -131,7 +135,13 @@ None.
 - `tests/smoke/streamable_http/test_streamable_http_smoke.py` (created — 2 smoke tests)
 - `_bmad-output/implementation-artifacts/4-1-run-soniqmcp-over-streamable-http.md` (this file — status updated)
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` (modified — status updated)
+- `src/soniq_mcp/config/models.py` (modified — added HTTP exposure/bind consistency validator)
+- `src/soniq_mcp/domain/safety.py` (modified — added explicit local/non-loopback unsafe warning path)
+- `tests/unit/config/test_http_config.py` (modified — added validation coverage for local vs home-network bind rules)
+- `tests/integration/transports/test_http_bootstrap.py` (modified — exact tool-surface assertion, unsafe local bind warning coverage)
+- `tests/smoke/streamable_http/test_streamable_http_smoke.py` (modified — dynamic port allocation, readiness probing, stderr capture)
 
 ## Change Log
 
 - 2026-03-28: Story closed — all tasks complete, all ACs satisfied, 635 tests passing. Status set to done.
+- 2026-03-28: Post-review hardening applied. Enforced safe HTTP exposure/bind combinations, upgraded HTTP parity assertions to exact tool matching, and made the streamable HTTP smoke test deterministic. Full suite passes: 642 passed, 3 skipped.

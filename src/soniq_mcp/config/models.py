@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, model_validator, field_validator
 
 
 KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
@@ -140,3 +140,26 @@ class SoniqConfig(BaseModel):
                 f"Allowed values: {allowed_tools}."
             )
         return value
+
+    @model_validator(mode="after")
+    def validate_http_exposure_combination(self) -> "SoniqConfig":
+        """Enforce safe HTTP bind/exposure combinations."""
+        if self.transport != TransportMode.HTTP:
+            return self
+
+        loopback_hosts = {"127.0.0.1", "localhost", "::1"}
+
+        if self.exposure == ExposurePosture.LOCAL and self.http_host not in loopback_hosts:
+            raise ValueError(
+                "LOCAL exposure requires a loopback http_host "
+                "(127.0.0.1, localhost, or ::1). "
+                "Use exposure=home-network for a non-loopback bind."
+            )
+
+        if self.exposure == ExposurePosture.HOME_NETWORK and self.http_host in loopback_hosts:
+            raise ValueError(
+                "HOME_NETWORK exposure requires a non-loopback http_host. "
+                "Use http_host=0.0.0.0 or a specific LAN address."
+            )
+
+        return self

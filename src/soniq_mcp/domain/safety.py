@@ -68,10 +68,17 @@ def validate_exposure_posture(config: SoniqConfig) -> list[str]:
     warnings: list[str] = []
     from soniq_mcp.config.models import ExposurePosture
 
+    loopback_hosts = {"127.0.0.1", "localhost", "::1"}
+
     if config.exposure == ExposurePosture.HOME_NETWORK:
         warnings.append(
             f"home-network exposure: server will bind to {config.http_host}:{config.http_port} — "
             "ensure this host is reachable only from your trusted home network."
+        )
+    elif config.exposure == ExposurePosture.LOCAL and config.http_host not in loopback_hosts:
+        warnings.append(
+            f"local exposure with non-loopback bind {config.http_host}:{config.http_port} is unsafe; "
+            "use a loopback host or switch to home-network exposure."
         )
     elif config.exposure != ExposurePosture.LOCAL:
         warnings.append(
