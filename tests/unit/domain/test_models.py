@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from soniq_mcp.domain.models import Room, SystemTopology
+from soniq_mcp.domain.models import Room, SystemTopology, VolumeState
 
 
 def make_room(
