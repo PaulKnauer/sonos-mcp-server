@@ -71,6 +71,7 @@ class ErrorResponse(BaseModel):
         )
 
     @classmethod
+<<<<<<< HEAD
     def from_favourites_error(cls, exc: Exception) -> "ErrorResponse":
         return cls(
             error=str(exc),
@@ -78,5 +79,14 @@ class ErrorResponse(BaseModel):
             suggestion=(
                 "Check that the Sonos system is reachable and has saved favourites or playlists. "
                 "Use 'list_rooms' to verify the network is discoverable."
+=======
+    def from_queue_error(cls, exc: Exception) -> "ErrorResponse":
+        return cls(
+            error=str(exc),
+            field="queue",
+            suggestion=(
+                "Check that the room is reachable and has queue-capable playback. "
+                "Some operations require a non-empty queue or a valid queue position."
+>>>>>>> container-use/central-porpoise
             ),
         )

@@ -10,7 +10,11 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
+<<<<<<< HEAD
 from soniq_mcp.domain.models import Favourite, PlaybackState, Room, SonosPlaylist, Speaker, SystemTopology, TrackInfo, VolumeState
+=======
+from soniq_mcp.domain.models import PlaybackState, QueueItem, Room, Speaker, SystemTopology, TrackInfo, VolumeState
+>>>>>>> container-use/central-porpoise
 
 
 class RoomResponse(BaseModel):
@@ -147,6 +151,7 @@ class VolumeStateResponse(BaseModel):
         )
 
 
+<<<<<<< HEAD
 class FavouriteResponse(BaseModel):
     """Serialisable representation of a single Sonos favourite."""
 
@@ -189,3 +194,41 @@ class PlaylistsListResponse(BaseModel):
     @classmethod
     def from_domain(cls, items: list[SonosPlaylist]) -> "PlaylistsListResponse":
         return cls(items=[PlaylistResponse.from_domain(p) for p in items], count=len(items))
+=======
+class QueueItemResponse(BaseModel):
+    """Serialisable representation of a single Sonos queue item."""
+
+    position: int
+    uri: str
+    title: str | None = None
+    artist: str | None = None
+    album: str | None = None
+    album_art_uri: str | None = None
+
+    @classmethod
+    def from_domain(cls, item: QueueItem) -> "QueueItemResponse":
+        return cls(
+            position=item.position,
+            uri=item.uri,
+            title=item.title,
+            artist=item.artist,
+            album=item.album,
+            album_art_uri=item.album_art_uri,
+        )
+
+
+class QueueResponse(BaseModel):
+    """Response for the ``get_queue`` tool."""
+
+    room: str
+    items: list[QueueItemResponse]
+    count: int
+
+    @classmethod
+    def from_domain(cls, room_name: str, items: list[QueueItem]) -> "QueueResponse":
+        return cls(
+            room=room_name,
+            items=[QueueItemResponse.from_domain(item) for item in items],
+            count=len(items),
+        )
+>>>>>>> container-use/central-porpoise

@@ -7,8 +7,13 @@ playback and volume capability layers. Higher layers must not import
 
 from __future__ import annotations
 
+<<<<<<< HEAD
 from soniq_mcp.domain.exceptions import FavouritesError, PlaybackError, VolumeError
 from soniq_mcp.domain.models import Favourite, PlaybackState, SonosPlaylist, TrackInfo
+=======
+from soniq_mcp.domain.exceptions import PlaybackError, QueueError, VolumeError
+from soniq_mcp.domain.models import PlaybackState, QueueItem, TrackInfo
+>>>>>>> container-use/central-porpoise
 
 _EMPTY_SENTINELS = {"", "NOT_IMPLEMENTED"}
 
@@ -115,6 +120,7 @@ class SoCoAdapter:
         except Exception as exc:
             raise VolumeError(f"Failed to set mute on {ip_address}: {exc}") from exc
 
+<<<<<<< HEAD
     def get_favourites(self, ip_address: str) -> list[Favourite]:
         try:
             zone = self._make_zone(ip_address)
@@ -159,6 +165,69 @@ class SoCoAdapter:
             zone.play_from_queue(0)
         except Exception as exc:
             raise FavouritesError(f"Failed to play playlist: {exc}") from exc
+=======
+    def get_queue(self, ip_address: str) -> list[QueueItem]:
+        try:
+            zone = self._make_zone(ip_address)
+            raw_queue = zone.get_queue(max_items=200)
+            return [
+                QueueItem(
+                    position=idx + 1,
+                    uri=item.uri if hasattr(item, "uri") else "",
+                    title=_coerce_str(item.title) if hasattr(item, "title") else None,
+                    artist=_coerce_str(item.creator) if hasattr(item, "creator") else None,
+                    album=_coerce_str(item.album) if hasattr(item, "album") else None,
+                    album_art_uri=_coerce_str(item.album_art_uri) if hasattr(item, "album_art_uri") else None,
+                )
+                for idx, item in enumerate(raw_queue)
+            ]
+        except Exception as exc:
+            raise QueueError(f"Failed to get queue for {ip_address}: {exc}") from exc
+
+    def add_to_queue(self, ip_address: str, uri: str) -> int:
+        try:
+            zone = self._make_zone(ip_address)
+            position = zone.add_uri_to_queue(uri)
+            return int(position)
+        except Exception as exc:
+            raise QueueError(f"Failed to add to queue on {ip_address}: {exc}") from exc
+
+    def remove_from_queue(self, ip_address: str, position: int) -> None:
+        try:
+            zone = self._make_zone(ip_address)
+            raw_queue = zone.get_queue(max_items=200)
+            idx = position - 1
+            if idx < 0 or idx >= len(raw_queue):
+                raise QueueError(
+                    f"Queue position {position} is out of range "
+                    f"(queue has {len(raw_queue)} items)."
+                )
+            zone.remove_from_queue(raw_queue[idx])
+        except QueueError:
+            raise
+        except Exception as exc:
+            raise QueueError(f"Failed to remove from queue on {ip_address}: {exc}") from exc
+
+    def clear_queue(self, ip_address: str) -> None:
+        try:
+            zone = self._make_zone(ip_address)
+            zone.clear_queue()
+        except Exception as exc:
+            raise QueueError(f"Failed to clear queue on {ip_address}: {exc}") from exc
+
+    def play_from_queue(self, ip_address: str, position: int) -> None:
+        if position < 1:
+            raise QueueError(
+                f"Queue position {position} is invalid; positions are 1-based."
+            )
+        try:
+            zone = self._make_zone(ip_address)
+            zone.play_from_queue(position - 1)
+        except QueueError:
+            raise
+        except Exception as exc:
+            raise QueueError(f"Failed to play from queue on {ip_address}: {exc}") from exc
+>>>>>>> container-use/central-porpoise
 
     def _call_playback(self, ip_address: str, action) -> None:
         try:
