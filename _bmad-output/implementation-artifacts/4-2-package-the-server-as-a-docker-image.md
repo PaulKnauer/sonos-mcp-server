@@ -1,6 +1,6 @@
 # Story 4.2: Package the Server as a Docker Image
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -19,52 +19,47 @@ so that I can run the server consistently in containerized environments.
 
 ## Tasks / Subtasks
 
-- [ ] Create `.dockerignore` at project root (AC: 1, 4)
-  - [ ] Exclude: `.git`, `__pycache__`, `*.pyc`, `.venv`, `_bmad-output`, `tests/`, `docs/`, `helm/`, `.claude/`, `*.md` (keep `pyproject.toml`, `uv.lock`, `src/`)
+- [x] Create `.dockerignore` at project root (AC: 1, 4)
+  - [x] Exclude: `.git`, `__pycache__`, `*.pyc`, `.venv`, `_bmad-output`, `tests/`, `docs/`, `helm/`, `.claude/`, `*.md` (keep `pyproject.toml`, `uv.lock`, `src/`)
 
-- [ ] Create `Dockerfile` at project root (AC: 1, 2, 3, 4)
-  - [ ] Stage 1 base image: `ARG BASE_IMAGE=python:3.12-slim` then `FROM $BASE_IMAGE` (enables private-registry overrides)
-  - [ ] Copy `uv` binary: `COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv`
-  - [ ] Set `WORKDIR /app`
-  - [ ] Copy `pyproject.toml` and `uv.lock` first (layer caching for dependencies)
-  - [ ] Copy `src/` directory
-  - [ ] Install production deps only: `RUN uv sync --frozen --no-dev`
-  - [ ] Set default env vars reflecting the containerized deployment path:
+- [x] Create `Dockerfile` at project root (AC: 1, 2, 3, 4)
+  - [x] Stage 1 base image: `ARG BASE_IMAGE=python:3.12-slim` then `FROM $BASE_IMAGE` (enables private-registry overrides)
+  - [x] Copy `uv` binary: `COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv`
+  - [x] Set `WORKDIR /app`
+  - [x] Copy `pyproject.toml` and `uv.lock` first (layer caching for dependencies)
+  - [x] Copy `src/` directory
+  - [x] Install production deps only: `RUN uv sync --frozen --no-dev`
+  - [x] Set default env vars reflecting the containerized deployment path:
     - `ENV SONIQ_MCP_TRANSPORT=http`
     - `ENV SONIQ_MCP_HTTP_HOST=0.0.0.0`
     - `ENV SONIQ_MCP_HTTP_PORT=8000`
     - `ENV SONIQ_MCP_EXPOSURE=home-network`
-  - [ ] `EXPOSE 8000`
-  - [ ] `CMD ["/app/.venv/bin/python", "-m", "soniq_mcp"]`
+  - [x] `EXPOSE 8000`
+  - [x] `CMD ["/app/.venv/bin/python", "-m", "soniq_mcp"]`
 
-- [ ] Create `docker-compose.yml` at project root (AC: 2, 3)
-  - [ ] Single service `soniq-mcp` built from `.`
-  - [ ] Port mapping: `"${SONIQ_MCP_HTTP_PORT:-8000}:${SONIQ_MCP_HTTP_PORT:-8000}"`
-  - [ ] Pass through all `SONIQ_MCP_*` env vars with sensible `${VAR:-default}` fallbacks
-  - [ ] `restart: unless-stopped`
+- [x] Create `docker-compose.yml` at project root (AC: 2, 3)
+  - [x] Single service `soniq-mcp` built from `.`
+  - [x] Port mapping: `"${SONIQ_MCP_HTTP_PORT:-8000}:${SONIQ_MCP_HTTP_PORT:-8000}"`
+  - [x] Pass through all `SONIQ_MCP_*` env vars with sensible `${VAR:-default}` fallbacks
+  - [x] `restart: unless-stopped`
 
-- [ ] Update `Makefile` to add Docker targets (AC: 1, 3)
-  - [ ] Add `IMAGE ?= soniq-mcp` and `TAG ?= local` variables near top
-  - [ ] Add `.PHONY` declarations for all new targets
-  - [ ] Add `docker-build` target: `docker build -t $(IMAGE):$(TAG) .`
-  - [ ] Add `docker-run` target: `docker run --rm -p 8000:8000 -e SONIQ_MCP_TRANSPORT=http -e SONIQ_MCP_HTTP_HOST=0.0.0.0 -e SONIQ_MCP_HTTP_PORT=8000 -e SONIQ_MCP_EXPOSURE=home-network $(IMAGE):$(TAG)`
-  - [ ] Add `docker-compose-up` target: `docker compose up --build -d`
-  - [ ] Add `docker-compose-down` target: `docker compose down`
+- [x] Update `Makefile` to add Docker targets (AC: 1, 3)
+  - [x] Add `IMAGE ?= soniq-mcp` and `TAG ?= local` variables near top
+  - [x] Add `.PHONY` declarations for all new targets
+  - [x] Add `docker-build` target: `docker build -t $(IMAGE):$(TAG) .`
+  - [x] Add `docker-run` target: `docker run --rm -p 8000:8000 -e SONIQ_MCP_TRANSPORT=http -e SONIQ_MCP_HTTP_HOST=0.0.0.0 -e SONIQ_MCP_HTTP_PORT=8000 -e SONIQ_MCP_EXPOSURE=home-network $(IMAGE):$(TAG)`
+  - [x] Add `docker-compose-up` target: `docker compose up --build -d`
+  - [x] Add `docker-compose-down` target: `docker compose down`
 
-- [ ] Update `.env.example` to add HTTP env vars introduced in story 4.1 (AC: 2)
-  - [ ] Add `SONIQ_MCP_HTTP_HOST=127.0.0.1` with comment explaining use of `0.0.0.0` for home-network/Docker
-  - [ ] Add `SONIQ_MCP_HTTP_PORT=8000` with comment
-  - [ ] Update `SONIQ_MCP_TRANSPORT` comment to remove "Currently only stdio is supported" note (HTTP is now supported)
+- [x] Update `.env.example` to add HTTP env vars introduced in story 4.1 (AC: 2)
+  - [x] Add `SONIQ_MCP_HTTP_HOST=127.0.0.1` with comment explaining use of `0.0.0.0` for home-network/Docker
+  - [x] Add `SONIQ_MCP_HTTP_PORT=8000` with comment
+  - [x] Update `SONIQ_MCP_TRANSPORT` comment to remove "Currently only stdio is supported" note (HTTP is now supported)
 
-- [ ] Write automated tests (AC: 1, 2, 3)
-  - [ ] `tests/smoke/docker/__init__.py` — empty init file
-  - [ ] `tests/smoke/docker/test_docker_smoke.py` — Docker smoke test:
-    - Skip entire module if `docker` binary not in PATH: `pytest.importorskip` or `pytest.mark.skipif(not shutil.which("docker"), ...)`
-    - Fixture `docker_image` (module scope): runs `docker build -t soniq-mcp-test:smoke .` from project root; yields image tag; removes image on teardown
-    - Fixture `docker_container` (module scope): runs container with `docker run --rm -d -p 18432:8000 -e SONIQ_MCP_TRANSPORT=http -e SONIQ_MCP_HTTP_HOST=0.0.0.0 -e SONIQ_MCP_HTTP_PORT=8000 -e SONIQ_MCP_EXPOSURE=home-network -e SONIQ_MCP_LOG_LEVEL=WARNING <image>`; waits 3s; yields; stops container on teardown
-    - Test `test_docker_mcp_endpoint_responds`: connects via `streamable_http_client` to `http://127.0.0.1:18432/mcp`, calls `ping`, asserts result `== "pong"`
-    - Test `test_docker_tool_surface_populated`: connects to same URL, lists tools, asserts `len(tools) > 0`
-  - [ ] Run `make test` confirming no regressions in existing 635 passed tests; Docker smoke tests can be skipped if Docker unavailable
+- [x] Write automated tests (AC: 1, 2, 3)
+  - [x] `tests/smoke/docker/__init__.py` — empty init file
+  - [x] `tests/smoke/docker/test_docker_smoke.py` — Docker smoke test with skip guard, `docker_image` and `docker_container` module-scope fixtures, `test_docker_mcp_endpoint_responds` and `test_docker_tool_surface_populated` tests
+  - [x] Run `make test` confirming no regressions: 637 passed, 5 skipped (Docker smoke tests skip when docker CLI absent, as expected)
 
 ## Dev Notes
 
@@ -194,8 +189,31 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+_No issues encountered. All files created/modified per spec without deviation._
+
 ### Completion Notes List
+
+- Created `.dockerignore` excluding all dev/test/build artifacts; keeps only `pyproject.toml`, `uv.lock`, `src/`.
+- Created `Dockerfile` with parameterisable `ARG BASE_IMAGE=python:3.12-slim`, two-phase `uv sync` for layer caching, all required `ENV` defaults for containerised HTTP deployment, `EXPOSE 8000`, and `CMD` via venv python.
+- Created `docker-compose.yml` with `soniq-mcp` service, env var pass-through with fallbacks for all `SONIQ_MCP_*` vars, and `restart: unless-stopped`.
+- Updated `Makefile`: added `IMAGE ?= soniq-mcp`, `TAG ?= local` vars; added `docker-build`, `docker-run`, `docker-compose-up`, `docker-compose-down` targets with `.PHONY` declarations.
+- Updated `.env.example`: updated `SONIQ_MCP_TRANSPORT` comment (HTTP now supported), added `SONIQ_MCP_HTTP_HOST=127.0.0.1` and `SONIQ_MCP_HTTP_PORT=8000` with usage notes.
+- Created `tests/smoke/docker/__init__.py` (empty) and `tests/smoke/docker/test_docker_smoke.py` with module-level `skipif` guard, `docker_image`/`docker_container` fixtures, and two tests (`test_docker_mcp_endpoint_responds`, `test_docker_tool_surface_populated`).
+- Full test suite: **637 passed, 5 skipped** — no regressions. Docker smoke tests correctly skip when `docker` CLI is absent.
+- No files under `src/` were modified — pure packaging story.
 
 ### File List
 
+- `.dockerignore` (created)
+- `Dockerfile` (created)
+- `docker-compose.yml` (created)
+- `Makefile` (modified)
+- `.env.example` (modified)
+- `tests/smoke/docker/__init__.py` (created)
+- `tests/smoke/docker/test_docker_smoke.py` (created)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (modified)
+- `_bmad-output/implementation-artifacts/4-2-package-the-server-as-a-docker-image.md` (modified)
+
 ## Change Log
+
+- 2026-03-28: Story 4.2 implemented — Docker packaging (Dockerfile, .dockerignore, docker-compose.yml, Makefile docker targets, .env.example HTTP vars, Docker smoke tests).
