@@ -20,54 +20,54 @@ so that I can use AI to control what plays next.
 
 ## Tasks / Subtasks
 
-- [ ] Add `QueueError` to the domain exception taxonomy (AC: 1, 2, 3, 4, 5)
-  - [ ] Add `QueueError(SoniqDomainError)` to `src/soniq_mcp/domain/exceptions.py`
-  - [ ] Add `ErrorResponse.from_queue_error(exc)` factory to `src/soniq_mcp/schemas/errors.py`
+- [x] Add `QueueError` to the domain exception taxonomy (AC: 1, 2, 3, 4, 5)
+  - [x] Add `QueueError(SoniqDomainError)` to `src/soniq_mcp/domain/exceptions.py`
+  - [x] Add `ErrorResponse.from_queue_error(exc)` factory to `src/soniq_mcp/schemas/errors.py`
 
-- [ ] Add `QueueItem` domain model and queue response schemas (AC: 1, 2)
-  - [ ] Add `QueueItem` frozen dataclass to `src/soniq_mcp/domain/models.py` with fields: `position: int`, `title: str | None`, `artist: str | None`, `album: str | None`, `uri: str`, `album_art_uri: str | None`
-  - [ ] Add `QueueItemResponse` and `QueueResponse` Pydantic models to `src/soniq_mcp/schemas/responses.py`
-  - [ ] `QueueResponse` has fields: `room: str`, `items: list[QueueItemResponse]`, `count: int`
+- [x] Add `QueueItem` domain model and queue response schemas (AC: 1, 2)
+  - [x] Add `QueueItem` frozen dataclass to `src/soniq_mcp/domain/models.py` with fields: `position: int`, `title: str | None`, `artist: str | None`, `album: str | None`, `uri: str`, `album_art_uri: str | None`
+  - [x] Add `QueueItemResponse` and `QueueResponse` Pydantic models to `src/soniq_mcp/schemas/responses.py`
+  - [x] `QueueResponse` has fields: `room: str`, `items: list[QueueItemResponse]`, `count: int`
 
-- [ ] Extend `SoCoAdapter` with queue operations (AC: 1, 2, 3, 4, 5)
-  - [ ] Add `get_queue(ip_address: str) -> list[QueueItem]` — calls `zone.get_queue(max_items=200)`, maps each `DidlObject` to `QueueItem` with 1-based `position`
-  - [ ] Add `add_to_queue(ip_address: str, uri: str) -> int` — calls `zone.add_uri_to_queue(uri)`, returns 1-based queue position
-  - [ ] Add `remove_from_queue(ip_address: str, position: int) -> None` — fetches queue, finds item at `position` (1-based), calls `zone.remove_from_queue(item)`; raises `QueueError` if position is out of range
-  - [ ] Add `clear_queue(ip_address: str) -> None` — calls `zone.clear_queue()`
-  - [ ] Add `play_from_queue(ip_address: str, position: int) -> None` — calls `zone.play_from_queue(position - 1)` (SoCo is 0-based); raises `QueueError` if position is ≤ 0
-  - [ ] Wrap all SoCo exceptions in `QueueError`; keep `soco` import inside `_make_zone` / `_call_playback` pattern
+- [x] Extend `SoCoAdapter` with queue operations (AC: 1, 2, 3, 4, 5)
+  - [x] Add `get_queue(ip_address: str) -> list[QueueItem]` — calls `zone.get_queue(max_items=200)`, maps each `DidlObject` to `QueueItem` with 1-based `position`
+  - [x] Add `add_to_queue(ip_address: str, uri: str) -> int` — calls `zone.add_uri_to_queue(uri)`, returns 1-based queue position
+  - [x] Add `remove_from_queue(ip_address: str, position: int) -> None` — fetches queue, finds item at `position` (1-based), calls `zone.remove_from_queue(item)`; raises `QueueError` if position is out of range
+  - [x] Add `clear_queue(ip_address: str) -> None` — calls `zone.clear_queue()`
+  - [x] Add `play_from_queue(ip_address: str, position: int) -> None` — calls `zone.play_from_queue(position - 1)` (SoCo is 0-based); raises `QueueError` if position is ≤ 0
+  - [x] Wrap all SoCo exceptions in `QueueError`; keep `soco` import inside `_make_zone` / `_call_playback` pattern
 
-- [ ] Create `QueueService` (AC: 1, 2, 3, 4, 5)
-  - [ ] Create `src/soniq_mcp/services/queue_service.py`
-  - [ ] Constructor: `QueueService(room_service: object, adapter: SoCoAdapter)` — takes the shared adapter, no config needed
-  - [ ] Implement `get_queue(room_name: str) -> list[QueueItem]` — resolves room, calls `adapter.get_queue(ip)`
-  - [ ] Implement `add_to_queue(room_name: str, uri: str) -> int` — resolves room, calls `adapter.add_to_queue(ip, uri)`, returns position
-  - [ ] Implement `remove_from_queue(room_name: str, position: int) -> None` — resolves room, calls `adapter.remove_from_queue(ip, position)`
-  - [ ] Implement `clear_queue(room_name: str) -> None` — resolves room, calls `adapter.clear_queue(ip)`
-  - [ ] Implement `play_from_queue(room_name: str, position: int) -> None` — resolves room, calls `adapter.play_from_queue(ip, position)`
+- [x] Create `QueueService` (AC: 1, 2, 3, 4, 5)
+  - [x] Create `src/soniq_mcp/services/queue_service.py`
+  - [x] Constructor: `QueueService(room_service: object, adapter: SoCoAdapter)` — takes the shared adapter, no config needed
+  - [x] Implement `get_queue(room_name: str) -> list[QueueItem]` — resolves room, calls `adapter.get_queue(ip)`
+  - [x] Implement `add_to_queue(room_name: str, uri: str) -> int` — resolves room, calls `adapter.add_to_queue(ip, uri)`, returns position
+  - [x] Implement `remove_from_queue(room_name: str, position: int) -> None` — resolves room, calls `adapter.remove_from_queue(ip, position)`
+  - [x] Implement `clear_queue(room_name: str) -> None` — resolves room, calls `adapter.clear_queue(ip)`
+  - [x] Implement `play_from_queue(room_name: str, position: int) -> None` — resolves room, calls `adapter.play_from_queue(ip, position)`
 
-- [ ] Create `tools/queue.py` with MCP tool handlers (AC: 1, 2, 3, 4, 5)
-  - [ ] Create `src/soniq_mcp/tools/queue.py` following the exact same pattern as `tools/playback.py`
-  - [ ] `register(app, config, queue_service)` function registers each tool if not in `config.tools_disabled`
-  - [ ] `get_queue(room: str) -> dict` — `_READ_ONLY_TOOL_HINTS`; returns `QueueResponse.model_dump()`
-  - [ ] `add_to_queue(room: str, uri: str) -> dict` — `_CONTROL_TOOL_HINTS`; returns `{"status": "ok", "room": room, "queue_position": position}`
-  - [ ] `remove_from_queue(room: str, position: int) -> dict` — `_CONTROL_TOOL_HINTS`; returns `{"status": "ok", "room": room}`
-  - [ ] `clear_queue(room: str) -> dict` — `_CONTROL_TOOL_HINTS`; returns `{"status": "ok", "room": room}`
-  - [ ] `play_from_queue(room: str, position: int) -> dict` — `_CONTROL_TOOL_HINTS`; returns `{"status": "ok", "room": room, "position": position}`
-  - [ ] All handlers catch `RoomNotFoundError`, `QueueError`, and `SonosDiscoveryError` and return the corresponding `ErrorResponse.model_dump()`
+- [x] Create `tools/queue.py` with MCP tool handlers (AC: 1, 2, 3, 4, 5)
+  - [x] Create `src/soniq_mcp/tools/queue.py` following the exact same pattern as `tools/playback.py`
+  - [x] `register(app, config, queue_service)` function registers each tool if not in `config.tools_disabled`
+  - [x] `get_queue(room: str) -> dict` — `_READ_ONLY_TOOL_HINTS`; returns `QueueResponse.model_dump()`
+  - [x] `add_to_queue(room: str, uri: str) -> dict` — `_CONTROL_TOOL_HINTS`; returns `{"status": "ok", "room": room, "queue_position": position}`
+  - [x] `remove_from_queue(room: str, position: int) -> dict` — `_CONTROL_TOOL_HINTS`; returns `{"status": "ok", "room": room}`
+  - [x] `clear_queue(room: str) -> dict` — `_CONTROL_TOOL_HINTS`; returns `{"status": "ok", "room": room}`
+  - [x] `play_from_queue(room: str, position: int) -> dict` — `_CONTROL_TOOL_HINTS`; returns `{"status": "ok", "room": room, "position": position}`
+  - [x] All handlers catch `RoomNotFoundError`, `QueueError`, and `SonosDiscoveryError` and return the corresponding `ErrorResponse.model_dump()`
 
-- [ ] Wire queue tools into `tools/__init__.py` (AC: 1, 2, 3, 4, 5)
-  - [ ] Import `QueueService` from `services/queue_service.py`
-  - [ ] Import `register as register_queue` from `tools/queue.py`
-  - [ ] Construct `queue_service = QueueService(room_service, SoCoAdapter())` — reuse the existing `room_service` instance; construct a second `SoCoAdapter()` instance rather than coupling into the `sonos_service` internal one
-  - [ ] Call `register_queue(app, config, queue_service)` at the end of `register_all`
+- [x] Wire queue tools into `tools/__init__.py` (AC: 1, 2, 3, 4, 5)
+  - [x] Import `QueueService` from `services/queue_service.py`
+  - [x] Import `register as register_queue` from `tools/queue.py`
+  - [x] Construct `queue_service = QueueService(room_service, SoCoAdapter())` — reuse the existing `room_service` instance; construct a second `SoCoAdapter()` instance rather than coupling into the `sonos_service` internal one
+  - [x] Call `register_queue(app, config, queue_service)` at the end of `register_all`
 
-- [ ] Add automated tests (AC: 1, 2, 3, 4, 5)
-  - [ ] `tests/unit/adapters/test_soco_adapter_queue.py` — unit tests for new `SoCoAdapter` queue methods using a fake/mock `soco.SoCo` zone; cover happy paths and `QueueError` wrapping
-  - [ ] `tests/unit/services/test_queue_service.py` — unit tests for `QueueService`; cover all five methods, `RoomNotFoundError` propagation, and `QueueError` propagation
-  - [ ] `tests/unit/tools/test_queue.py` — unit tests for all five tool handlers; verify response shapes, error translation, and tool-disabled guard
-  - [ ] `tests/contract/tool_schemas/test_queue_tool_schemas.py` — contract tests asserting tool names (`get_queue`, `add_to_queue`, `remove_from_queue`, `clear_queue`, `play_from_queue`) and parameter names (`room`, `uri`, `position`) remain stable
-  - [ ] Run `make test` and confirm full suite passes
+- [x] Add automated tests (AC: 1, 2, 3, 4, 5)
+  - [x] `tests/unit/adapters/test_soco_adapter_queue.py` — unit tests for new `SoCoAdapter` queue methods using a fake/mock `soco.SoCo` zone; cover happy paths and `QueueError` wrapping
+  - [x] `tests/unit/services/test_queue_service.py` — unit tests for `QueueService`; cover all five methods, `RoomNotFoundError` propagation, and `QueueError` propagation
+  - [x] `tests/unit/tools/test_queue.py` — unit tests for all five tool handlers; verify response shapes, error translation, and tool-disabled guard
+  - [x] `tests/contract/tool_schemas/test_queue_tool_schemas.py` — contract tests asserting tool names (`get_queue`, `add_to_queue`, `remove_from_queue`, `clear_queue`, `play_from_queue`) and parameter names (`room`, `uri`, `position`) remain stable
+  - [x] Run `make test` and confirm full suite passes — 466 passed, 3 skipped
 
 ## Dev Notes
 
