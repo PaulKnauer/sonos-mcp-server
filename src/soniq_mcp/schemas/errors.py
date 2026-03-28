@@ -69,3 +69,14 @@ class ErrorResponse(BaseModel):
             field="sonos_volume",
             suggestion="Check that the Sonos speaker is reachable and try again.",
         )
+
+    @classmethod
+    def from_queue_error(cls, exc: Exception) -> "ErrorResponse":
+        return cls(
+            error=str(exc),
+            field="queue",
+            suggestion=(
+                "Check that the room is reachable and has queue-capable playback. "
+                "Some operations require a non-empty queue or a valid queue position."
+            ),
+        )
