@@ -28,3 +28,20 @@ check: ensure-uv
 
 tree:
 	find src tests helm docs -maxdepth 3 | sort
+
+docker-build:
+	docker build -t $(IMAGE):$(TAG) .
+
+docker-run:
+	docker run --rm -p 8000:8000 \
+		-e SONIQ_MCP_TRANSPORT=http \
+		-e SONIQ_MCP_HTTP_HOST=0.0.0.0 \
+		-e SONIQ_MCP_HTTP_PORT=8000 \
+		-e SONIQ_MCP_EXPOSURE=home-network \
+		$(IMAGE):$(TAG)
+
+docker-compose-up:
+	docker compose up --build -d
+
+docker-compose-down:
+	docker compose down
