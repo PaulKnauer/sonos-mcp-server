@@ -1,7 +1,9 @@
 UV ?= $(shell command -v uv 2>/dev/null || printf '%s' "$(HOME)/.local/bin/uv")
 PACKAGE ?= soniq_mcp
+IMAGE ?= soniq-mcp
+TAG ?= local
 
-.PHONY: ensure-uv install run run-stdio test check tree
+.PHONY: ensure-uv install run run-stdio test check tree docker-build docker-run docker-compose-up docker-compose-down
 
 ensure-uv:
 	@command -v uv >/dev/null 2>&1 || test -x "$(UV)" || { \
