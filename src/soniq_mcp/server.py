@@ -29,7 +29,7 @@ def create_server(config: SoniqConfig | None = None) -> FastMCP:
     for warning in warnings:
         log.warning("Exposure posture: %s", warning)
 
-    app = FastMCP("soniq-mcp")
+    app = FastMCP("soniq-mcp", host=config.http_host, port=config.http_port)
     register_all(app, config)
 
     log.info(

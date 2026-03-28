@@ -56,15 +56,14 @@ class TransportMode(str, Enum):
     """Supported server transport modes."""
 
     STDIO = "stdio"
+    HTTP = "http"
 
 
 class ExposurePosture(str, Enum):
-    """Allowed network exposure postures.
-
-    Story 1.4 will extend this with additional values.
-    """
+    """Allowed network exposure postures."""
 
     LOCAL = "local"
+    HOME_NETWORK = "home-network"
 
 
 class LogLevel(str, Enum):
@@ -108,6 +107,16 @@ class SoniqConfig(BaseModel):
     tools_disabled: list[str] = Field(
         default_factory=list,
         description="Tool names to suppress at startup.",
+    )
+    http_host: str = Field(
+        default="127.0.0.1",
+        description="Bind address for HTTP transport. Use '0.0.0.0' for home-network access.",
+    )
+    http_port: int = Field(
+        default=8000,
+        ge=1,
+        le=65535,
+        description="Bind port for HTTP transport (1-65535).",
     )
 
     model_config = {"str_strip_whitespace": True, "extra": "forbid"}
