@@ -89,20 +89,19 @@ The process then waits for an MCP client on stdin/stdout. This is normal; it is 
 
 ## 4. Connect Claude Desktop
 
-Open your Claude Desktop config file:
+Edit Claude Desktop's config file directly:
 
 - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
-Add a server entry:
+Add a `soniq-mcp` entry inside the `mcpServers` object. Use the **absolute path to the venv entry point** — this is the most reliable approach because it bypasses PATH lookup entirely:
 
 ```json
 {
   "mcpServers": {
     "soniq-mcp": {
-      "command": "uv",
-      "args": ["run", "python", "-m", "soniq_mcp"],
-      "cwd": "/absolute/path/to/sonos-mcp-server",
+      "command": "/absolute/path/to/sonos-mcp-server/.venv/bin/soniq-mcp",
+      "args": [],
       "env": {
         "SONIQ_MCP_LOG_LEVEL": "INFO",
         "SONIQ_MCP_MAX_VOLUME_PCT": "80"
@@ -112,23 +111,12 @@ Add a server entry:
 }
 ```
 
-Replace `/absolute/path/to/sonos-mcp-server` with the real path on your machine.
+Replace `/absolute/path/to/sonos-mcp-server` with the real path on your machine (e.g. `/Users/you/github/sonos-mcp-server`).
 
-Restart Claude Desktop. The Soniq tools will appear in the tools panel.
+> **Why use the venv script instead of `uv run`?**
+> Claude Desktop launches MCP servers with a restricted PATH that typically does not include `~/.local/bin` (where `uv` is installed). Using the absolute path to the pre-built venv entry point avoids the PATH lookup entirely and has no dependency on `uv` being discoverable at runtime.
 
-### Alternatively — using the installed script
-
-If you installed the package (`pip install -e .` or `uv pip install -e .`):
-
-```json
-{
-  "mcpServers": {
-    "soniq-mcp": {
-      "command": "soniq-mcp"
-    }
-  }
-}
-```
+Fully quit and relaunch Claude Desktop after editing the file (closing the window is not enough). The Soniq tools will appear in the tools panel.
 
 ---
 

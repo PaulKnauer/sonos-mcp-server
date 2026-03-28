@@ -39,11 +39,28 @@ Common problems and fixes for SoniqMCP local stdio setup.
    pwd   # run this inside the project directory to get the absolute path
    ```
 
+   If Claude Desktop keeps overwriting its own file, keep your Soniq entry in
+   `~/.config/soniq-mcp/claude-desktop-soniq.json` and merge it back into
+   `~/Library/Application Support/Claude/claude_desktop_config.json` instead of
+   editing Claude's file as your primary copy.
+
 2. **`uv` not on PATH when Claude Desktop launches**
-   Claude Desktop may not inherit your shell PATH. Use the full path to `uv`:
+   Claude Desktop launches with a restricted PATH that typically does not include `~/.local/bin`
+   (where `uv` is installed). The most reliable fix is to bypass `uv` entirely and use the
+   absolute path to the pre-built venv entry point:
 
    ```json
-   "command": "/Users/you/.local/bin/uv"
+   "command": "/absolute/path/to/sonos-mcp-server/.venv/bin/soniq-mcp"
+   ```
+
+   This script has a hardcoded shebang pointing to the venv Python, so it works regardless of PATH.
+   No `cwd` or `args` are needed.
+
+   If you prefer to keep the `uv run` invocation, use the full path to `uv` and add `--directory`:
+
+   ```json
+   "command": "/Users/you/.local/bin/uv",
+   "args": ["run", "--directory", "/absolute/path/to/sonos-mcp-server", "python", "-m", "soniq_mcp"]
    ```
 
    Find your uv path with: `which uv`
@@ -53,6 +70,34 @@ Common problems and fixes for SoniqMCP local stdio setup.
 
 4. **JSON syntax error in config file**
    Validate the file: `cat ~/Library/Application\ Support/Claude/claude_desktop_config.json | python3 -m json.tool`
+
+5. **Claude Desktop rewrote your config**
+   Claude only reads its own runtime file. Use a separate source-of-truth file such as:
+
+   ```text
+   ~/.config/soniq-mcp/claude-desktop-soniq.json
+   ```
+
+   Then merge that snippet into Claude's runtime file after changes. See
+   [stdio setup](stdio.md) for the exact merge command.
+
+6. **Wrong Claude Desktop config shape**
+   Claude Desktop expects server entries nested under a top-level `mcpServers` key:
+
+   ```json
+   {
+     "mcpServers": {
+       "soniq-mcp": {
+         "command": "/absolute/path/to/sonos-mcp-server/.venv/bin/soniq-mcp",
+         "args": [],
+         "env": {
+           "SONIQ_MCP_LOG_LEVEL": "INFO",
+           "SONIQ_MCP_MAX_VOLUME_PCT": "80"
+         }
+       }
+     }
+   }
+   ```
 
 ---
 

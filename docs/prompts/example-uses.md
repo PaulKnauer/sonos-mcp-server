@@ -91,18 +91,29 @@ soniq-mcp
 
 ```json
 {
-  "mcpServers": {
-    "soniq-mcp": {
-      "command": "uv",
-      "args": ["run", "python", "-m", "soniq_mcp"],
-      "cwd": "/absolute/path/to/sonos-mcp-server",
-      "env": {
-        "SONIQ_MCP_LOG_LEVEL": "INFO",
-        "SONIQ_MCP_MAX_VOLUME_PCT": "80"
-      }
+  "soniq-mcp": {
+    "type": "stdio",
+    "command": "/Users/you/.local/bin/uv",
+    "args": ["run", "python", "-m", "soniq_mcp"],
+    "cwd": "/absolute/path/to/sonos-mcp-server",
+    "env": {
+      "SONIQ_MCP_LOG_LEVEL": "INFO",
+      "SONIQ_MCP_MAX_VOLUME_PCT": "80"
     }
   }
 }
 ```
 
-See [docs/setup/stdio.md](../setup/stdio.md) for a full walkthrough.
+Recommended source-of-truth path on macOS/Linux:
+
+```text
+~/.config/soniq-mcp/claude-desktop-soniq.json
+```
+
+Merge that snippet into Claude Desktop's managed config file instead of editing
+`~/Library/Application Support/Claude/claude_desktop_config.json` as your primary copy.
+
+In the Claude Desktop build validated for this project, the runtime file is a
+flat top-level map of MCP servers. Do not wrap the entry under `mcpServers`.
+
+See [docs/setup/stdio.md](../setup/stdio.md) for the full merge workflow.
