@@ -7,13 +7,8 @@ playback and volume capability layers. Higher layers must not import
 
 from __future__ import annotations
 
-<<<<<<< HEAD
-from soniq_mcp.domain.exceptions import FavouritesError, PlaybackError, VolumeError
-from soniq_mcp.domain.models import Favourite, PlaybackState, SonosPlaylist, TrackInfo
-=======
-from soniq_mcp.domain.exceptions import PlaybackError, QueueError, VolumeError
-from soniq_mcp.domain.models import PlaybackState, QueueItem, TrackInfo
->>>>>>> container-use/central-porpoise
+from soniq_mcp.domain.exceptions import FavouritesError, PlaybackError, QueueError, VolumeError
+from soniq_mcp.domain.models import Favourite, PlaybackState, QueueItem, SonosPlaylist, TrackInfo
 
 _EMPTY_SENTINELS = {"", "NOT_IMPLEMENTED"}
 
@@ -120,7 +115,6 @@ class SoCoAdapter:
         except Exception as exc:
             raise VolumeError(f"Failed to set mute on {ip_address}: {exc}") from exc
 
-<<<<<<< HEAD
     def get_favourites(self, ip_address: str) -> list[Favourite]:
         try:
             zone = self._make_zone(ip_address)
@@ -165,7 +159,7 @@ class SoCoAdapter:
             zone.play_from_queue(0)
         except Exception as exc:
             raise FavouritesError(f"Failed to play playlist: {exc}") from exc
-=======
+
     def get_queue(self, ip_address: str) -> list[QueueItem]:
         try:
             zone = self._make_zone(ip_address)
@@ -227,7 +221,6 @@ class SoCoAdapter:
             raise
         except Exception as exc:
             raise QueueError(f"Failed to play from queue on {ip_address}: {exc}") from exc
->>>>>>> container-use/central-porpoise
 
     def _call_playback(self, ip_address: str, action) -> None:
         try:

@@ -93,10 +93,13 @@ class PlaybackError(SoniqDomainError):
         super().__init__(message)
 
 
-<<<<<<< HEAD
 class FavouritesError(SoniqDomainError):
     """Raised when a Sonos favourites or playlists operation fails."""
-=======
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
 class QueueError(SoniqDomainError):
     """Raised when a Sonos queue operation fails.
 
@@ -106,7 +109,6 @@ class QueueError(SoniqDomainError):
     Args:
         message: Human-readable description of the failure.
     """
->>>>>>> container-use/central-porpoise
 
     def __init__(self, message: str) -> None:
         super().__init__(message)

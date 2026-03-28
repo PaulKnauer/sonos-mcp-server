@@ -10,11 +10,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-<<<<<<< HEAD
-from soniq_mcp.domain.models import Favourite, PlaybackState, Room, SonosPlaylist, Speaker, SystemTopology, TrackInfo, VolumeState
-=======
-from soniq_mcp.domain.models import PlaybackState, QueueItem, Room, Speaker, SystemTopology, TrackInfo, VolumeState
->>>>>>> container-use/central-porpoise
+from soniq_mcp.domain.models import Favourite, PlaybackState, QueueItem, Room, SonosPlaylist, Speaker, SystemTopology, TrackInfo, VolumeState
 
 
 class RoomResponse(BaseModel):
@@ -151,7 +147,6 @@ class VolumeStateResponse(BaseModel):
         )
 
 
-<<<<<<< HEAD
 class FavouriteResponse(BaseModel):
     """Serialisable representation of a single Sonos favourite."""
 
@@ -194,7 +189,8 @@ class PlaylistsListResponse(BaseModel):
     @classmethod
     def from_domain(cls, items: list[SonosPlaylist]) -> "PlaylistsListResponse":
         return cls(items=[PlaylistResponse.from_domain(p) for p in items], count=len(items))
-=======
+
+
 class QueueItemResponse(BaseModel):
     """Serialisable representation of a single Sonos queue item."""
 
@@ -231,4 +227,3 @@ class QueueResponse(BaseModel):
             items=[QueueItemResponse.from_domain(item) for item in items],
             count=len(items),
         )
->>>>>>> container-use/central-porpoise

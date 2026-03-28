@@ -24,11 +24,8 @@ def register_all(app: FastMCP, config: SoniqConfig) -> None:
     from soniq_mcp.services.volume_service import VolumeService
     from soniq_mcp.tools.favourites import register as register_favourites
     from soniq_mcp.tools.playback import register as register_playback
-<<<<<<< HEAD
     from soniq_mcp.tools.playlists import register as register_playlists
-=======
     from soniq_mcp.tools.queue import register as register_queue
->>>>>>> container-use/central-porpoise
     from soniq_mcp.tools.setup_support import register as register_setup
     from soniq_mcp.tools.system import register as register_system
     from soniq_mcp.tools.volume import register as register_volume
@@ -45,11 +42,9 @@ def register_all(app: FastMCP, config: SoniqConfig) -> None:
     volume_service = VolumeService(sonos_service=sonos_service)
     register_volume(app, config, volume_service)
 
-<<<<<<< HEAD
     favourites_service = FavouritesService(room_service, SoCoAdapter())
     register_favourites(app, config, favourites_service)
     register_playlists(app, config, favourites_service)
-=======
+
     queue_service = QueueService(room_service, SoCoAdapter())
     register_queue(app, config, queue_service)
->>>>>>> container-use/central-porpoise
