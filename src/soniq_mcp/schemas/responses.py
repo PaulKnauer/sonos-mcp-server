@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from soniq_mcp.domain.models import PlaybackState, Room, Speaker, SystemTopology, TrackInfo
+from soniq_mcp.domain.models import PlaybackState, Room, Speaker, SystemTopology, TrackInfo, VolumeState
 
 
 class RoomResponse(BaseModel):
@@ -128,4 +128,20 @@ class TrackInfoResponse(BaseModel):
             uri=info.uri,
             album_art_uri=info.album_art_uri,
             queue_position=info.queue_position,
+        )
+
+
+class VolumeStateResponse(BaseModel):
+    """Response for volume and mute state tools."""
+
+    room_name: str
+    volume: int
+    is_muted: bool
+
+    @classmethod
+    def from_domain(cls, state: VolumeState) -> "VolumeStateResponse":
+        return cls(
+            room_name=state.room_name,
+            volume=state.volume,
+            is_muted=state.is_muted,
         )

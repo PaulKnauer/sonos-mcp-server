@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from soniq_mcp.domain.models import PlaybackState, Room, Speaker, SystemTopology, TrackInfo
+from soniq_mcp.domain.models import PlaybackState, Room, Speaker, SystemTopology, TrackInfo, VolumeState
 
 
 def make_room(
@@ -169,3 +169,31 @@ class TestTrackInfo:
         info = TrackInfo(title="Test")
         with pytest.raises(Exception):
             info.title = "Other"  # type: ignore[misc]
+
+
+class TestVolumeState:
+    def test_fields(self) -> None:
+        state = VolumeState(room_name="Living Room", volume=50, is_muted=False)
+        assert state.room_name == "Living Room"
+        assert state.volume == 50
+        assert state.is_muted is False
+
+    def test_muted_state(self) -> None:
+        state = VolumeState(room_name="Kitchen", volume=0, is_muted=True)
+        assert state.is_muted is True
+        assert state.volume == 0
+
+    def test_is_frozen(self) -> None:
+        state = VolumeState(room_name="Living Room", volume=50, is_muted=False)
+        with pytest.raises(Exception):
+            state.volume = 99  # type: ignore[misc]
+
+    def test_equality(self) -> None:
+        s1 = VolumeState(room_name="Living Room", volume=40, is_muted=False)
+        s2 = VolumeState(room_name="Living Room", volume=40, is_muted=False)
+        assert s1 == s2
+
+    def test_inequality(self) -> None:
+        s1 = VolumeState(room_name="Living Room", volume=40, is_muted=False)
+        s2 = VolumeState(room_name="Living Room", volume=60, is_muted=False)
+        assert s1 != s2

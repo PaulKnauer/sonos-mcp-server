@@ -119,3 +119,18 @@ class TrackInfo:
     uri: str | None = field(default=None)
     album_art_uri: str | None = field(default=None)
     queue_position: int | None = field(default=None)
+
+
+@dataclass(frozen=True)
+class VolumeState:
+    """Current volume and mute state for a single Sonos room.
+
+    Attributes:
+        room_name: Human-readable room name.
+        volume: Current volume level (0-100).
+        is_muted: True if the zone is currently muted.
+    """
+
+    room_name: str
+    volume: int
+    is_muted: bool

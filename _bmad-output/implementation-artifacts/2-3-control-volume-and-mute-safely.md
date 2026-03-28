@@ -1,6 +1,6 @@
 # Story 2.3: Control Volume and Mute Safely
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -19,65 +19,65 @@ so that I can adjust playback without disruptive surprises.
 
 ## Tasks / Subtasks
 
-- [ ] Add `VolumeState` domain model and `VolumeError` exception (AC: 1, 2)
-  - [ ] Add `VolumeState` frozen dataclass to `src/soniq_mcp/domain/models.py`: fields `room_name: str`, `volume: int`, `is_muted: bool`
-  - [ ] Add `VolumeError` exception to `src/soniq_mcp/domain/exceptions.py` (subclass of `SoniqDomainError`) — used for SoCo operation failures, distinct from the existing `VolumeCapExceeded`
-  - [ ] Extend unit tests in `tests/unit/domain/test_models.py` with `VolumeState` tests
-  - [ ] **DO NOT redefine `VolumeCapExceeded`** — it already exists in `domain/exceptions.py`
+- [x] Add `VolumeState` domain model and `VolumeError` exception (AC: 1, 2)
+  - [x] Add `VolumeState` frozen dataclass to `src/soniq_mcp/domain/models.py`: fields `room_name: str`, `volume: int`, `is_muted: bool`
+  - [x] Add `VolumeError` exception to `src/soniq_mcp/domain/exceptions.py` (subclass of `SoniqDomainError`) — used for SoCo operation failures, distinct from the existing `VolumeCapExceeded`
+  - [x] Extend unit tests in `tests/unit/domain/test_models.py` with `VolumeState` tests
+  - [x] **DO NOT redefine `VolumeCapExceeded`** — it already exists in `domain/exceptions.py`
 
-- [ ] Add `VolumeStateResponse` schema and `from_volume_error()` factory (AC: 1, 3, 4)
-  - [ ] Add `VolumeStateResponse` to `src/soniq_mcp/schemas/responses.py`: fields `room_name: str`, `volume: int`, `is_muted: bool`, with `from_domain(state: VolumeState)` classmethod
-  - [ ] Add `ErrorResponse.from_volume_error(exc: Exception) -> ErrorResponse` classmethod to `src/soniq_mcp/schemas/errors.py` — for SoCo operation failures
-  - [ ] **DO NOT redefine `ErrorResponse.from_volume_cap()`** — it already exists in `schemas/errors.py`
-  - [ ] Extend unit tests in `tests/unit/schemas/test_responses.py` with `VolumeStateResponse` tests
+- [x] Add `VolumeStateResponse` schema and `from_volume_error()` factory (AC: 1, 3, 4)
+  - [x] Add `VolumeStateResponse` to `src/soniq_mcp/schemas/responses.py`: fields `room_name: str`, `volume: int`, `is_muted: bool`, with `from_domain(state: VolumeState)` classmethod
+  - [x] Add `ErrorResponse.from_volume_error(exc: Exception) -> ErrorResponse` classmethod to `src/soniq_mcp/schemas/errors.py` — for SoCo operation failures
+  - [x] **DO NOT redefine `ErrorResponse.from_volume_cap()`** — it already exists in `schemas/errors.py`
+  - [x] Extend unit tests in `tests/unit/schemas/test_responses.py` with `VolumeStateResponse` tests
 
-- [ ] Implement the volume adapter (AC: 1)
-  - [ ] Create `src/soniq_mcp/adapters/volume_adapter.py` with `VolumeAdapter` class
-  - [ ] `VolumeAdapter.get_volume(ip_address: str) -> int` — creates `soco.SoCo(ip_address)`, returns `zone.volume`
-  - [ ] `VolumeAdapter.set_volume(ip_address: str, volume: int) -> None` — sets `zone.volume = volume`
-  - [ ] `VolumeAdapter.get_mute(ip_address: str) -> bool` — returns `zone.mute`
-  - [ ] `VolumeAdapter.set_mute(ip_address: str, muted: bool) -> None` — sets `zone.mute = muted`
-  - [ ] All SoCo exceptions caught and re-raised as `VolumeError` with a user-readable message
-  - [ ] This is the ONLY file that imports `soco` for volume operations; do NOT add soco imports to service or tool layers
-  - [ ] Write unit tests in `tests/unit/adapters/test_volume_adapter.py` using fake/mock SoCo zone (no real hardware)
+- [x] Implement the volume adapter (AC: 1)
+  - [x] Create `src/soniq_mcp/adapters/volume_adapter.py` with `VolumeAdapter` class
+  - [x] `VolumeAdapter.get_volume(ip_address: str) -> int` — creates `soco.SoCo(ip_address)`, returns `zone.volume`
+  - [x] `VolumeAdapter.set_volume(ip_address: str, volume: int) -> None` — sets `zone.volume = volume`
+  - [x] `VolumeAdapter.get_mute(ip_address: str) -> bool` — returns `zone.mute`
+  - [x] `VolumeAdapter.set_mute(ip_address: str, muted: bool) -> None` — sets `zone.mute = muted`
+  - [x] All SoCo exceptions caught and re-raised as `VolumeError` with a user-readable message
+  - [x] This is the ONLY file that imports `soco` for volume operations; do NOT add soco imports to service or tool layers
+  - [x] Write unit tests in `tests/unit/adapters/test_volume_adapter.py` using fake/mock SoCo zone (no real hardware)
 
-- [ ] Implement the volume service (AC: 1, 2, 3, 4)
-  - [ ] Create `src/soniq_mcp/services/volume_service.py` with `VolumeService` class
-  - [ ] `VolumeService(room_service: RoomService, adapter: VolumeAdapter, config: SoniqConfig)` — all injected via constructor
-  - [ ] `VolumeService.get_volume_state(room_name: str) -> VolumeState` — calls `room_service.get_room(room_name)`, then `adapter.get_volume()` and `adapter.get_mute()`, returns `VolumeState`
-  - [ ] `VolumeService.set_volume(room_name: str, volume: int) -> None` — calls `check_volume(volume, config)` from `domain/safety.py`, then `room_service.get_room()`, then `adapter.set_volume()`
-  - [ ] `VolumeService.adjust_volume(room_name: str, delta: int) -> VolumeState` — gets current volume via adapter, computes `target = max(0, min(100, current + delta))`, calls `check_volume(target, config)`, sets volume, returns updated `VolumeState`
-  - [ ] `VolumeService.mute(room_name: str) -> None` — calls `room_service.get_room()`, then `adapter.set_mute(ip, True)`
-  - [ ] `VolumeService.unmute(room_name: str) -> None` — calls `room_service.get_room()`, then `adapter.set_mute(ip, False)`
-  - [ ] `RoomNotFoundError` and `SonosDiscoveryError` from `get_room()` propagate up naturally — no re-wrapping
-  - [ ] `VolumeCapExceeded` from `check_volume()` propagates up naturally to the tool layer
-  - [ ] Write unit tests in `tests/unit/services/test_volume_service.py` using fake `RoomService` and fake `VolumeAdapter`
+- [x] Implement the volume service (AC: 1, 2, 3, 4)
+  - [x] Create `src/soniq_mcp/services/volume_service.py` with `VolumeService` class
+  - [x] `VolumeService(room_service: RoomService, adapter: VolumeAdapter, config: SoniqConfig)` — all injected via constructor
+  - [x] `VolumeService.get_volume_state(room_name: str) -> VolumeState` — calls `room_service.get_room(room_name)`, then `adapter.get_volume()` and `adapter.get_mute()`, returns `VolumeState`
+  - [x] `VolumeService.set_volume(room_name: str, volume: int) -> None` — calls `check_volume(volume, config)` from `domain/safety.py`, then `room_service.get_room()`, then `adapter.set_volume()`
+  - [x] `VolumeService.adjust_volume(room_name: str, delta: int) -> VolumeState` — gets current volume via adapter, computes `target = max(0, min(100, current + delta))`, calls `check_volume(target, config)`, sets volume, returns updated `VolumeState`
+  - [x] `VolumeService.mute(room_name: str) -> None` — calls `room_service.get_room()`, then `adapter.set_mute(ip, True)`
+  - [x] `VolumeService.unmute(room_name: str) -> None` — calls `room_service.get_room()`, then `adapter.set_mute(ip, False)`
+  - [x] `RoomNotFoundError` and `SonosDiscoveryError` from `get_room()` propagate up naturally — no re-wrapping
+  - [x] `VolumeCapExceeded` from `check_volume()` propagates up naturally to the tool layer
+  - [x] Write unit tests in `tests/unit/services/test_volume_service.py` using fake `RoomService` and fake `VolumeAdapter`
 
-- [ ] Implement volume tools (AC: 1, 2, 3, 4)
-  - [ ] Create `src/soniq_mcp/tools/volume.py` with `register(app, config, volume_service)` function
-  - [ ] Register `get_volume(room: str)`: returns `VolumeStateResponse.from_domain(state).model_dump()` on success
-  - [ ] Register `set_volume(room: str, volume: int)`: calls `volume_service.set_volume(room, volume)`, returns `{"status": "ok", "room": room, "volume": volume}` on success
-  - [ ] Register `adjust_volume(room: str, delta: int)`: returns `VolumeStateResponse.from_domain(state).model_dump()` on success (state from service return value)
-  - [ ] Register `mute(room: str)`: calls `volume_service.mute(room)`, returns `{"status": "ok", "room": room, "is_muted": True}`
-  - [ ] Register `unmute(room: str)`: calls `volume_service.unmute(room)`, returns `{"status": "ok", "room": room, "is_muted": False}`
-  - [ ] Register `get_mute(room: str)`: calls `volume_service.get_volume_state(room)`, returns `{"room": room, "is_muted": state.is_muted}`
-  - [ ] Read tools (`get_volume`, `get_mute`) use `_READ_ONLY_TOOL_HINTS`
-  - [ ] Write tools use `_CONTROL_TOOL_HINTS` (see ToolAnnotations pattern in Dev Notes)
-  - [ ] All tools call `assert_tool_permitted(tool_name, config)` at invocation time
-  - [ ] All tools catch `VolumeCapExceeded as exc` → `ErrorResponse.from_volume_cap(exc.requested, exc.cap).model_dump()`
-  - [ ] All tools catch `VolumeError as exc` → `ErrorResponse.from_volume_error(exc).model_dump()`
-  - [ ] All tools catch `RoomNotFoundError` → `ErrorResponse.from_room_not_found(room).model_dump()`
-  - [ ] All tools catch `SonosDiscoveryError as exc` → `ErrorResponse.from_discovery_error(exc).model_dump()`
-  - [ ] Write unit tests in `tests/unit/tools/test_volume.py` using fake `VolumeService`
+- [x] Implement volume tools (AC: 1, 2, 3, 4)
+  - [x] Create `src/soniq_mcp/tools/volume.py` with `register(app, config, volume_service)` function
+  - [x] Register `get_volume(room: str)`: returns `VolumeStateResponse.from_domain(state).model_dump()` on success
+  - [x] Register `set_volume(room: str, volume: int)`: calls `volume_service.set_volume(room, volume)`, returns `{"status": "ok", "room": room, "volume": volume}` on success
+  - [x] Register `adjust_volume(room: str, delta: int)`: returns `VolumeStateResponse.from_domain(state).model_dump()` on success (state from service return value)
+  - [x] Register `mute(room: str)`: calls `volume_service.mute(room)`, returns `{"status": "ok", "room": room, "is_muted": True}`
+  - [x] Register `unmute(room: str)`: calls `volume_service.unmute(room)`, returns `{"status": "ok", "room": room, "is_muted": False}`
+  - [x] Register `get_mute(room: str)`: calls `volume_service.get_volume_state(room)`, returns `{"room": room, "is_muted": state.is_muted}`
+  - [x] Read tools (`get_volume`, `get_mute`) use `_READ_ONLY_TOOL_HINTS`
+  - [x] Write tools use `_CONTROL_TOOL_HINTS` (see ToolAnnotations pattern in Dev Notes)
+  - [x] All tools call `assert_tool_permitted(tool_name, config)` at invocation time
+  - [x] All tools catch `VolumeCapExceeded as exc` → `ErrorResponse.from_volume_cap(exc.requested, exc.cap).model_dump()`
+  - [x] All tools catch `VolumeError as exc` → `ErrorResponse.from_volume_error(exc).model_dump()`
+  - [x] All tools catch `RoomNotFoundError` → `ErrorResponse.from_room_not_found(room).model_dump()`
+  - [x] All tools catch `SonosDiscoveryError as exc` → `ErrorResponse.from_discovery_error(exc).model_dump()`
+  - [x] Write unit tests in `tests/unit/tools/test_volume.py` using fake `VolumeService`
 
-- [ ] Wire volume tools into the server (AC: 1)
-  - [ ] Update `src/soniq_mcp/tools/__init__.py`: import and call `register` from `tools/volume.py`, constructing `VolumeAdapter` and `VolumeService` inside `register_all()`
-  - [ ] `room_service` already exists in `register_all()` from Story 2.1 — reuse it for `VolumeService`, do NOT create a second instance
-  - [ ] Update `KNOWN_TOOL_NAMES` in `src/soniq_mcp/config/models.py` to add the 6 new tool names: `"get_volume"`, `"set_volume"`, `"adjust_volume"`, `"mute"`, `"unmute"`, `"get_mute"`
-  - [ ] Run `make test` and confirm all existing tests still pass (no regressions)
+- [x] Wire volume tools into the server (AC: 1)
+  - [x] Update `src/soniq_mcp/tools/__init__.py`: import and call `register` from `tools/volume.py`, constructing `VolumeAdapter` and `VolumeService` inside `register_all()`
+  - [x] `room_service` already exists in `register_all()` from Story 2.1 — reuse it for `VolumeService`, do NOT create a second instance
+  - [x] Update `KNOWN_TOOL_NAMES` in `src/soniq_mcp/config/models.py` to add the 6 new tool names: `"get_volume"`, `"set_volume"`, `"adjust_volume"`, `"mute"`, `"unmute"`, `"get_mute"`
+  - [x] Run `make test` and confirm all existing tests still pass (no regressions)
 
-- [ ] Add contract tests (AC: 1, 2, 3)
-  - [ ] Add `tests/contract/tool_schemas/test_volume_tool_schemas.py` — validates all 6 volume tool names, descriptions, and parameter schemas are stable
+- [x] Add contract tests (AC: 1, 2, 3)
+  - [x] Add `tests/contract/tool_schemas/test_volume_tool_schemas.py` — validates all 6 volume tool names, descriptions, and parameter schemas are stable
 
 ## Dev Notes
 
@@ -345,6 +345,43 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+None — implementation proceeded cleanly with no blocking issues.
+
 ### Completion Notes List
 
+- Implemented full volume and mute layer stack: VolumeAdapter → VolumeService → tools/volume.py, following the same architecture as Stories 2.1 and 2.2.
+- VolumeAdapter wraps soco.SoCo by-IP; all SoCo exceptions caught and re-raised as VolumeError — no SoCo types leak into higher layers.
+- VolumeService reuses existing check_volume() and VolumeCapExceeded from domain/safety.py — no safety logic reimplemented.
+- adjust_volume() clamps target to 0-100 before cap check: negative deltas flooring to 0 are silent; positive deltas exceeding max_volume_pct raise VolumeCapExceeded.
+- ErrorResponse.from_volume_error() added to schemas/errors.py alongside existing from_volume_cap().
+- KNOWN_TOOL_NAMES updated with 6 names before any test that uses tools_disabled.
+- Built on committed baseline (Story 2.2 was in-progress/uncommitted); only added the 6 volume tool names as instructed.
+- All 282 tests pass (3 skipped for hardware integration tests). No regressions.
+
 ### File List
+
+New files:
+- `src/soniq_mcp/adapters/volume_adapter.py`
+- `src/soniq_mcp/services/volume_service.py`
+- `src/soniq_mcp/tools/volume.py`
+- `tests/unit/adapters/test_volume_adapter.py`
+- `tests/unit/services/test_volume_service.py`
+- `tests/unit/tools/test_volume.py`
+- `tests/contract/tool_schemas/test_volume_tool_schemas.py`
+
+Modified files:
+- `src/soniq_mcp/domain/models.py` — added VolumeState dataclass
+- `src/soniq_mcp/domain/exceptions.py` — added VolumeError exception
+- `src/soniq_mcp/schemas/responses.py` — added VolumeStateResponse with from_domain()
+- `src/soniq_mcp/schemas/errors.py` — added ErrorResponse.from_volume_error()
+- `src/soniq_mcp/tools/__init__.py` — wired VolumeAdapter, VolumeService, register_volume
+- `src/soniq_mcp/config/models.py` — added 6 volume tool names to KNOWN_TOOL_NAMES
+- `tests/unit/domain/test_models.py` — extended with TestVolumeState class
+- `tests/unit/schemas/test_responses.py` — extended with TestVolumeStateResponse class
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — updated story status
+
+## Change Log
+
+| Date | Change |
+|------|--------|
+| 2026-03-28 | Story 2.3 implemented — volume and mute layer stack (adapter, service, 6 tools, contract tests). 282 tests passing. |

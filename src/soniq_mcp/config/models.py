@@ -29,6 +29,12 @@ KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
         "previous_track",
         "get_playback_state",
         "get_track_info",
+        "get_volume",
+        "set_volume",
+        "adjust_volume",
+        "mute",
+        "unmute",
+        "get_mute",
     }
 )
 
