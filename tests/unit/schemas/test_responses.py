@@ -84,3 +84,26 @@ class TestSystemTopologyResponse:
         assert "total_count" in d
         assert "coordinator_count" in d
         assert "rooms" in d
+
+
+class TestVolumeStateResponse:
+    def test_from_domain(self) -> None:
+        state = VolumeState(room_name="Living Room", volume=55, is_muted=False)
+        resp = VolumeStateResponse.from_domain(state)
+        assert resp.room_name == "Living Room"
+        assert resp.volume == 55
+        assert resp.is_muted is False
+
+    def test_from_domain_muted(self) -> None:
+        state = VolumeState(room_name="Kitchen", volume=0, is_muted=True)
+        resp = VolumeStateResponse.from_domain(state)
+        assert resp.is_muted is True
+        assert resp.volume == 0
+
+    def test_model_dump_serialisable(self) -> None:
+        state = VolumeState(room_name="Office", volume=30, is_muted=False)
+        d = VolumeStateResponse.from_domain(state).model_dump()
+        assert isinstance(d, dict)
+        assert d["room_name"] == "Office"
+        assert d["volume"] == 30
+        assert d["is_muted"] is False
