@@ -50,3 +50,11 @@ class ErrorResponse(BaseModel):
             field="room",
             suggestion="Use 'list_rooms' to see available rooms and check spelling.",
         )
+
+    @classmethod
+    def from_volume_error(cls, exc: Exception) -> "ErrorResponse":
+        return cls(
+            error=str(exc),
+            field="sonos_volume",
+            suggestion="Check that the Sonos speaker is reachable and try again.",
+        )
