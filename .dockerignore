@@ -1,0 +1,14 @@
+.git
+__pycache__
+*.pyc
+*.pyo
+.venv
+_bmad-output
+tests/
+docs/
+helm/
+.claude/
+*.md
+.env
+.env.*
+!.env.example
