@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from soniq_mcp.domain.models import Room, SystemTopology
+from soniq_mcp.domain.models import Room, SystemTopology, VolumeState
 
 
 class RoomResponse(BaseModel):
