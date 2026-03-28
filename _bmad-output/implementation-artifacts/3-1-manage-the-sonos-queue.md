@@ -260,11 +260,41 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- All 5 queue operations implemented in `SoCoAdapter` using the `_make_zone` pattern; `soco` import stays isolated inside that static method.
+- `remove_from_queue` in the adapter fetches the raw queue first, validates the 1-based position, then passes the `DidlObject` to `zone.remove_from_queue()`.
+- `play_from_queue` converts 1-based user position to 0-based SoCo index with `position - 1`; invalid position (≤ 0) raises `QueueError` before any SoCo call.
+- Tool handler `_register_and_get` test helper pattern reused from existing tool test suite.
+- `466 passed, 3 skipped` — 75 new tests, zero regressions against 391 baseline.
+
 ### Completion Notes List
 
+- Added `QueueError` domain exception to `domain/exceptions.py` and `ErrorResponse.from_queue_error()` to `schemas/errors.py`.
+- Added `QueueItem` frozen dataclass to `domain/models.py` with 1-based `position` field.
+- Added `QueueItemResponse` and `QueueResponse` Pydantic schemas to `schemas/responses.py`.
+- Extended `SoCoAdapter` with `get_queue`, `add_to_queue`, `remove_from_queue`, `clear_queue`, `play_from_queue` — all SoCo exceptions wrapped in `QueueError`.
+- Created `QueueService` as a direct peer of `SonosService` (no config dependency).
+- Created `tools/queue.py` with 5 handlers following exact `tools/playback.py` pattern.
+- Wired `QueueService` and `register_queue` into `tools/__init__.py`.
+- 75 new tests across 4 test files: adapter, service, tool handlers, contract schemas.
+
 ### File List
+
+- `src/soniq_mcp/domain/exceptions.py`
+- `src/soniq_mcp/domain/models.py`
+- `src/soniq_mcp/adapters/soco_adapter.py`
+- `src/soniq_mcp/schemas/errors.py`
+- `src/soniq_mcp/schemas/responses.py`
+- `src/soniq_mcp/services/queue_service.py`
+- `src/soniq_mcp/tools/queue.py`
+- `src/soniq_mcp/tools/__init__.py`
+- `tests/unit/adapters/test_soco_adapter_queue.py`
+- `tests/unit/services/test_queue_service.py`
+- `tests/unit/tools/test_queue.py`
+- `tests/contract/tool_schemas/test_queue_tool_schemas.py`
+- `_bmad-output/implementation-artifacts/3-1-manage-the-sonos-queue.md`
 
 ## Change Log
 
 | Date | Change |
 |------|--------|
+| 2026-03-28 | Story 3.1 implemented. Added QueueError, QueueItem domain model, QueueService, queue tool handlers, and 75 new tests. Full suite: 466 passed, 3 skipped. |
