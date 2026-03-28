@@ -62,12 +62,18 @@ def validate_exposure_posture(config: SoniqConfig) -> list[str]:
     """Validate the exposure posture and return any warnings.
 
     Returns a list of human-readable warning strings (empty = OK).
-    Currently ``local`` is the only supported posture; this function
-    is a hook for Story 4 to extend when HTTP transport is added.
+    ``local`` and ``home-network`` are both supported; any other value
+    triggers an unsupported-posture warning.
     """
     warnings: list[str] = []
     from soniq_mcp.config.models import ExposurePosture
-    if config.exposure != ExposurePosture.LOCAL:
+
+    if config.exposure == ExposurePosture.HOME_NETWORK:
+        warnings.append(
+            f"home-network exposure: server will bind to {config.http_host}:{config.http_port} — "
+            "ensure this host is reachable only from your trusted home network."
+        )
+    elif config.exposure != ExposurePosture.LOCAL:
         warnings.append(
             f"exposure '{config.exposure.value}' is not yet fully supported; "
             "defaulting to local-only behaviour."
