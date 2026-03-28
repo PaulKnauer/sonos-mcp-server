@@ -80,3 +80,14 @@ class ErrorResponse(BaseModel):
                 "Use 'list_rooms' to verify the network is discoverable."
             ),
         )
+
+    @classmethod
+    def from_queue_error(cls, exc: Exception) -> "ErrorResponse":
+        return cls(
+            error=str(exc),
+            field="queue",
+            suggestion=(
+                "Check that the room is reachable and has queue-capable playback. "
+                "Some operations require a non-empty queue or a valid queue position."
+            ),
+        )
