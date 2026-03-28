@@ -93,7 +93,26 @@ def make_service(
     return svc, adapter
 
 
+class FakeSonosService:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str]] = []
+
+    def play(self, room_name: str) -> None:
+        self.calls.append(("play", room_name))
+
+
 class TestPlaybackServicePlay:
+    def test_accepts_explicit_sonos_service(self) -> None:
+        sonos_service = FakeSonosService()
+        svc = PlaybackService(sonos_service=sonos_service)
+        svc.play("Living Room")
+        assert ("play", "Living Room") in sonos_service.calls
+
+    def test_rejects_room_service_without_adapter(self) -> None:
+        room_svc = FakeRoomService(rooms=[make_room("Living Room")])
+        with pytest.raises(TypeError, match="sonos_service"):
+            PlaybackService(room_service=room_svc)
+
     def test_play_delegates_to_adapter(self) -> None:
         room = make_room("Living Room", ip_address="192.168.1.10")
         svc, adapter = make_service(rooms=[room])

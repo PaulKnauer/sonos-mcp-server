@@ -102,7 +102,28 @@ def make_service(
     return svc, adapter
 
 
+class FakeSonosService:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, object]] = []
+
+    def get_volume_state(self, room_name: str) -> VolumeState:
+        self.calls.append(("get_volume_state", room_name))
+        return VolumeState(room_name=room_name, volume=33, is_muted=False)
+
+
 class TestGetVolumeState:
+    def test_accepts_legacy_keyword_injection_shape(self) -> None:
+        svc, _ = make_service(volume=60, muted=False)
+        state = svc.get_volume_state("Living Room")
+        assert state.volume == 60
+
+    def test_accepts_explicit_sonos_service(self) -> None:
+        sonos_service = FakeSonosService()
+        svc = VolumeService(sonos_service=sonos_service)
+        state = svc.get_volume_state("Living Room")
+        assert state.volume == 33
+        assert ("get_volume_state", "Living Room") in sonos_service.calls
+
     def test_returns_volume_state(self) -> None:
         svc, _ = make_service(volume=60, muted=False)
         state = svc.get_volume_state("Living Room")

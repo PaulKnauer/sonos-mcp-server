@@ -1,30 +1,34 @@
-"""Playback service for SoniqMCP.
-
-Orchestrates room lookup and playback operations. Receives both
-``RoomService`` and ``PlaybackAdapter`` via constructor injection so
-it can be tested without real Sonos hardware.
-"""
+"""Playback service facade over the shared Sonos service."""
 
 from __future__ import annotations
 
-import logging
-
-from soniq_mcp.domain.models import PlaybackState, Room, TrackInfo
-
-log = logging.getLogger(__name__)
+from soniq_mcp.config.models import SoniqConfig
+from soniq_mcp.services.sonos_service import SonosService
 
 
 class PlaybackService:
-    """Provides playback control and state query operations for a named room.
+    """Compatibility playback facade over ``SonosService``."""
 
-    Args:
-        room_service: A ``RoomService`` (or compatible fake) for room lookup.
-        adapter: A ``PlaybackAdapter`` (or compatible fake) for SoCo calls.
-    """
-
-    def __init__(self, room_service: object, adapter: object) -> None:
-        self._room_service = room_service
-        self._adapter = adapter
+    def __init__(
+        self,
+        room_service: object | None = None,
+        adapter: object | None = None,
+        config: SoniqConfig | None = None,
+        sonos_service: object | None = None,
+    ) -> None:
+        if sonos_service is not None:
+            self._sonos_service = sonos_service
+            return
+        if room_service is not None and adapter is not None:
+            self._sonos_service = SonosService(
+                room_service,
+                adapter,
+                config or SoniqConfig(),
+            )
+            return
+        raise TypeError(
+            "PlaybackService requires sonos_service=... or room_service+adapter"
+        )
 
     def play(self, room_name: str) -> None:
         """Start or resume playback in the named room.
@@ -34,9 +38,7 @@ class PlaybackService:
             SonosDiscoveryError: If network discovery fails.
             PlaybackError: If the SoCo operation fails.
         """
-        room = self._room_service.get_room(room_name)
-        log.debug("play: room=%r ip=%s", room_name, room.ip_address)
-        self._adapter.play(room.ip_address)
+        self._sonos_service.play(room_name)
 
     def pause(self, room_name: str) -> None:
         """Pause playback in the named room.
@@ -46,9 +48,7 @@ class PlaybackService:
             SonosDiscoveryError: If network discovery fails.
             PlaybackError: If the SoCo operation fails.
         """
-        room = self._room_service.get_room(room_name)
-        log.debug("pause: room=%r ip=%s", room_name, room.ip_address)
-        self._adapter.pause(room.ip_address)
+        self._sonos_service.pause(room_name)
 
     def stop(self, room_name: str) -> None:
         """Stop playback in the named room.
@@ -58,9 +58,7 @@ class PlaybackService:
             SonosDiscoveryError: If network discovery fails.
             PlaybackError: If the SoCo operation fails.
         """
-        room = self._room_service.get_room(room_name)
-        log.debug("stop: room=%r ip=%s", room_name, room.ip_address)
-        self._adapter.stop(room.ip_address)
+        self._sonos_service.stop(room_name)
 
     def next_track(self, room_name: str) -> None:
         """Skip to the next track in the named room.
@@ -70,9 +68,7 @@ class PlaybackService:
             SonosDiscoveryError: If network discovery fails.
             PlaybackError: If the SoCo operation fails (e.g. end of queue).
         """
-        room = self._room_service.get_room(room_name)
-        log.debug("next_track: room=%r ip=%s", room_name, room.ip_address)
-        self._adapter.next_track(room.ip_address)
+        self._sonos_service.next_track(room_name)
 
     def previous_track(self, room_name: str) -> None:
         """Return to the previous track in the named room.
@@ -82,9 +78,7 @@ class PlaybackService:
             SonosDiscoveryError: If network discovery fails.
             PlaybackError: If the SoCo operation fails.
         """
-        room = self._room_service.get_room(room_name)
-        log.debug("previous_track: room=%r ip=%s", room_name, room.ip_address)
-        self._adapter.previous_track(room.ip_address)
+        self._sonos_service.previous_track(room_name)
 
     def get_playback_state(self, room_name: str) -> PlaybackState:
         """Return the current transport state for the named room.
@@ -94,8 +88,7 @@ class PlaybackService:
             SonosDiscoveryError: If network discovery fails.
             PlaybackError: If the SoCo operation fails.
         """
-        room = self._room_service.get_room(room_name)
-        return self._adapter.get_playback_state(room.ip_address, room.name)
+        return self._sonos_service.get_playback_state(room_name)
 
     def get_track_info(self, room_name: str) -> TrackInfo:
         """Return current track details for the named room.
@@ -105,29 +98,4 @@ class PlaybackService:
             SonosDiscoveryError: If network discovery fails.
             PlaybackError: If the SoCo operation fails.
         """
-        room = self._resolve_track_info_room(room_name)
-        return self._adapter.get_track_info(room.ip_address)
-
-    def _resolve_track_info_room(self, room_name: str) -> Room:
-        """Use the group coordinator for track metadata when applicable."""
-        room = self._room_service.get_room(room_name)
-        coordinator_uid = room.group_coordinator_uid
-        if not coordinator_uid:
-            return room
-
-        rooms = self._room_service.list_rooms()
-        for candidate in rooms:
-            if candidate.uid == coordinator_uid:
-                log.debug(
-                    "get_track_info: room=%r routed to coordinator=%r",
-                    room_name,
-                    candidate.name,
-                )
-                return candidate
-
-        log.debug(
-            "get_track_info: coordinator uid %r not found for room=%r; using room ip",
-            coordinator_uid,
-            room_name,
-        )
-        return room
+        return self._sonos_service.get_track_info(room_name)

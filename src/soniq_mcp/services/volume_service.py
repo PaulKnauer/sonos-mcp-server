@@ -1,30 +1,30 @@
-"""Volume service for SoniqMCP.
-
-Owns all volume and mute business logic. Delegates hardware operations
-to ``VolumeAdapter`` and room lookup to ``RoomService``. Safety rules
-(volume cap) are enforced by calling ``domain.safety.check_volume``.
-"""
+"""Volume service facade over the shared Sonos service."""
 
 from __future__ import annotations
 
-from soniq_mcp.config.models import SoniqConfig
 from soniq_mcp.domain.models import VolumeState
-from soniq_mcp.domain.safety import check_volume
+from soniq_mcp.services.sonos_service import SonosService
 
 
 class VolumeService:
-    """Provides volume and mute control for a named Sonos room.
+    """Compatibility volume facade over ``SonosService``."""
 
-    Args:
-        room_service: A ``RoomService`` (or compatible fake) for IP lookup.
-        adapter: A ``VolumeAdapter`` (or compatible fake) for SoCo operations.
-        config: Active server configuration (used for volume cap enforcement).
-    """
-
-    def __init__(self, room_service: object, adapter: object, config: SoniqConfig) -> None:
-        self._room_service = room_service
-        self._adapter = adapter
-        self._config = config
+    def __init__(
+        self,
+        room_service: object | None = None,
+        adapter: object | None = None,
+        config: object | None = None,
+        sonos_service: object | None = None,
+    ) -> None:
+        if sonos_service is not None:
+            self._sonos_service = sonos_service
+            return
+        if room_service is not None and adapter is not None and config is not None:
+            self._sonos_service = SonosService(room_service, adapter, config)
+            return
+        raise TypeError(
+            "VolumeService requires sonos_service=... or room_service+adapter+config"
+        )
 
     def get_volume_state(self, room_name: str) -> VolumeState:
         """Return the current volume and mute state for the named room.
@@ -40,10 +40,7 @@ class VolumeService:
             SonosDiscoveryError: If network discovery fails.
             VolumeError: If the SoCo operation fails.
         """
-        room = self._room_service.get_room(room_name)
-        volume = self._adapter.get_volume(room.ip_address)
-        is_muted = self._adapter.get_mute(room.ip_address)
-        return VolumeState(room_name=room.name, volume=volume, is_muted=is_muted)
+        return self._sonos_service.get_volume_state(room_name)
 
     def set_volume(self, room_name: str, volume: int) -> None:
         """Set the volume for the named room.
@@ -59,9 +56,7 @@ class VolumeService:
             SonosDiscoveryError: If network discovery fails.
             VolumeError: If the SoCo operation fails.
         """
-        check_volume(volume, self._config)
-        room = self._room_service.get_room(room_name)
-        self._adapter.set_volume(room.ip_address, volume)
+        self._sonos_service.set_volume(room_name, volume)
 
     def adjust_volume(self, room_name: str, delta: int) -> VolumeState:
         """Adjust the volume by a relative amount and return the new state.
@@ -83,13 +78,7 @@ class VolumeService:
             SonosDiscoveryError: If network discovery fails.
             VolumeError: If a SoCo operation fails.
         """
-        room = self._room_service.get_room(room_name)
-        current = self._adapter.get_volume(room.ip_address)
-        target = max(0, min(100, current + delta))
-        check_volume(target, self._config)
-        self._adapter.set_volume(room.ip_address, target)
-        is_muted = self._adapter.get_mute(room.ip_address)
-        return VolumeState(room_name=room.name, volume=target, is_muted=is_muted)
+        return self._sonos_service.adjust_volume(room_name, delta)
 
     def mute(self, room_name: str) -> None:
         """Mute the named room.
@@ -102,8 +91,7 @@ class VolumeService:
             SonosDiscoveryError: If network discovery fails.
             VolumeError: If the SoCo operation fails.
         """
-        room = self._room_service.get_room(room_name)
-        self._adapter.set_mute(room.ip_address, True)
+        self._sonos_service.mute(room_name)
 
     def unmute(self, room_name: str) -> None:
         """Unmute the named room.
@@ -116,5 +104,4 @@ class VolumeService:
             SonosDiscoveryError: If network discovery fails.
             VolumeError: If the SoCo operation fails.
         """
-        room = self._room_service.get_room(room_name)
-        self._adapter.set_mute(room.ip_address, False)
+        self._sonos_service.unmute(room_name)
