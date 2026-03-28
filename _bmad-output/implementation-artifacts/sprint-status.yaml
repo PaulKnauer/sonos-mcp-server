@@ -53,7 +53,7 @@ development_status:
   epic-2: backlog
   2-1-discover-addressable-rooms-and-system-topology: backlog
   2-2-control-core-playback-in-a-target-room: backlog
-  2-3-control-volume-and-mute-safely: backlog
+  2-3-control-volume-and-mute-safely: in-progress
   2-4-apply-reliable-sonos-service-and-adapter-boundaries: backlog
   epic-2-retrospective: optional
 
