@@ -1,7 +1,9 @@
 UV ?= $(shell command -v uv 2>/dev/null || printf '%s' "$(HOME)/.local/bin/uv")
 PACKAGE ?= soniq_mcp
+IMAGE ?= soniq-mcp
+TAG ?= local
 
-.PHONY: ensure-uv install run run-stdio test check tree
+.PHONY: ensure-uv install run run-stdio test check tree docker-build docker-run docker-compose-up docker-compose-down
 
 ensure-uv:
 	@command -v uv >/dev/null 2>&1 || test -x "$(UV)" || { \
@@ -26,3 +28,20 @@ check: ensure-uv
 
 tree:
 	find src tests helm docs -maxdepth 3 | sort
+
+docker-build:
+	docker build -t $(IMAGE):$(TAG) .
+
+docker-run:
+	docker run --rm -p 8000:8000 \
+		-e SONIQ_MCP_TRANSPORT=http \
+		-e SONIQ_MCP_HTTP_HOST=0.0.0.0 \
+		-e SONIQ_MCP_HTTP_PORT=8000 \
+		-e SONIQ_MCP_EXPOSURE=home-network \
+		$(IMAGE):$(TAG)
+
+docker-compose-up:
+	docker compose up --build -d
+
+docker-compose-down:
+	docker compose down
