@@ -128,9 +128,9 @@ quadrantChart
     quadrant-4 Opportunistic
     Curious household member: [0.2, 0.3]
     Malicious household member: [0.3, 0.7]
-    LAN-adjacent attacker (guest WiFi): [0.5, 0.6]
+    LAN-adjacent attacker via guest WiFi: [0.5, 0.6]
     Compromised AI client: [0.6, 0.5]
-    Supply chain attacker (deps): [0.8, 0.4]
+    Supply chain attacker via deps: [0.8, 0.4]
     Remote internet attacker: [0.9, 0.3]
 ```
 
