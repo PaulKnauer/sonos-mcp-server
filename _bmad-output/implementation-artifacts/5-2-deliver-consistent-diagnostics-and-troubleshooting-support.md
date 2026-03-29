@@ -1,6 +1,6 @@
 # Story 5.2: Deliver Consistent Diagnostics and Troubleshooting Support
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -256,3 +256,4 @@ GPT-5 Codex
 
 - 2026-03-29: Implemented Story 5.2 diagnostics hardening, troubleshooting doc alignment, and regression coverage; moved story to review.
 - 2026-03-29: Addressed review findings by correcting troubleshooting exposure guidance and routing runtime startup failures to a transport-neutral troubleshooting section.
+- 2026-03-29: Marked story as done.
