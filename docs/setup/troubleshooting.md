@@ -177,3 +177,88 @@ Check the GitHub issues page or open a new issue with:
 - Your OS and Python version
 - The full error output (stderr)
 - Your `.env` contents (redact any private values)
+
+---
+
+## Remote deployment troubleshooting
+
+The sections below cover Docker, Helm, and remote MCP client issues. For remote setup guides, see [docker.md](docker.md) and [helm.md](helm.md).
+
+---
+
+### Docker: container can't discover Sonos rooms
+
+**Symptom:** SoniqMCP starts inside the container but reports no Sonos rooms found. Sonos device discovery times out.
+
+**What's happening:** Docker's default bridge network does not forward UDP multicast traffic. SoCo uses SSDP (UDP multicast on `239.255.255.250:1900`) to discover Sonos devices; the container never receives these packets.
+
+**Fix (Linux):** Restart the container with `--network=host` to use the host network stack directly:
+
+```bash
+docker run --rm --network=host \
+  -e SONIQ_MCP_TRANSPORT=http \
+  -e SONIQ_MCP_HTTP_HOST=0.0.0.0 \
+  -e SONIQ_MCP_HTTP_PORT=8000 \
+  -e SONIQ_MCP_EXPOSURE=home-network \
+  soniq-mcp:local
+```
+
+**macOS / Windows Docker Desktop:** `--network=host` routes to the Docker Desktop Linux VM, not the physical host. SSDP still does not reach the home network. There is no simple workaround. For these platforms, the local stdio setup is more reliable.
+
+---
+
+### Docker: port not reachable from remote client
+
+**Symptom:** MCP client reports connection refused or timeout connecting to `http://<host>:8000/mcp`.
+
+**Checks:**
+
+1. Confirm the container is running: `docker ps`
+2. Confirm the port is mapped (not using `--network=host`): the `PORTS` column should show `0.0.0.0:8000->8000/tcp`
+3. Check the host firewall: inbound TCP on port 8000 must be allowed on the Docker host
+4. Confirm `SONIQ_MCP_HTTP_HOST=0.0.0.0` — binding to `127.0.0.1` restricts connections to the container's own loopback
+
+---
+
+### Helm: pod fails to start or CrashLoopBackOff
+
+**Symptom:** `kubectl get pods` shows `CrashLoopBackOff` or the pod restarts immediately.
+
+**Diagnosis:**
+
+```bash
+kubectl logs <pod-name>
+kubectl describe pod <pod-name>
+```
+
+Common causes:
+
+- **Configuration error:** SoniqMCP exits cleanly on invalid config with a message naming the offending field (e.g., `configuration error: transport: Input should be 'http'`). Check the log output.
+- **Image pull failure:** The pod status may show `ImagePullBackOff`. Ensure `image.repository` and `image.tag` point to an image your cluster can pull. For k3s, you can load a local image with: `docker save soniq-mcp:local | sudo k3s ctr images import -`
+- **Port conflict on node:** If using `hostNetwork: true`, confirm port 8000 is free on the node.
+
+---
+
+### Remote: MCP client can't connect to server URL
+
+**Symptom:** Claude Desktop or another MCP client fails to connect to `http://<host>:8000/mcp`. The client may show a connection error or the server does not appear in the tools panel.
+
+**Checks:**
+
+1. Confirm the server is running and listening: from the server host, run `curl http://localhost:8000/mcp` — a response (even an error body) confirms the server is up.
+2. Confirm the URL uses the correct host and port. The default port is `8000`; if `SONIQ_MCP_HTTP_PORT` was changed, update the URL.
+3. For Docker: confirm the port is mapped and the host firewall allows the connection (see [Docker: port not reachable](#docker-port-not-reachable-from-remote-client)).
+4. For Helm without ingress: use `kubectl port-forward svc/soniq 8000:8000` and connect to `http://localhost:8000/mcp` from your local machine to test without going through the network.
+5. Confirm the config file uses `"url"` (not `"command"`) for remote HTTP connections:
+
+   ```json
+   {
+     "mcpServers": {
+       "soniq-mcp": {
+         "url": "http://soniq-host:8000/mcp"
+       }
+     }
+   }
+   ```
+
+   The `"command"` field is for local stdio only.
