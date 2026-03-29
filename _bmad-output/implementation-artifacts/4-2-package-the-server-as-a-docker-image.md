@@ -1,6 +1,6 @@
 # Story 4.2: Package the Server as a Docker Image
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -205,6 +205,7 @@ claude-sonnet-4-6
 - Current local validation: `uv run pytest tests/smoke/docker/test_docker_smoke.py` → 2 passed; `uv run pytest` → 639 passed, 3 skipped.
 - Current local validation: `make test` → 644 passed, 3 skipped.
 - No files under `src/` were modified — pure packaging story.
+- 2026-03-29 completion check: `uv run pytest tests/smoke/docker/test_docker_smoke.py` passed (2 passed) and `make test` passed (`648 passed, 3 skipped`), so the story is safe to mark done.
 
 ### File List
 
@@ -223,3 +224,4 @@ claude-sonnet-4-6
 - 2026-03-28: Story 4.2 implemented — Docker packaging (`Dockerfile`, `.dockerignore`, `docker-compose.yml`, `Makefile` docker targets, `.env.example` HTTP vars, Docker smoke tests).
 - 2026-03-28: Post-implementation Dockerfile fix applied (`--no-install-project` in dependency-only sync layer). Local validation now passes: 639 passed, 3 skipped.
 - 2026-03-28: Restored the Dockerfile dependency-layer fix after merge drift and revalidated with `make test`: 644 passed, 3 skipped.
+- 2026-03-29: Verified Docker smoke coverage and full regression suite again, then marked story status from `review` to `done`.
