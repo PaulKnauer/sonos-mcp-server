@@ -1,6 +1,6 @@
 # Story 5.1: Support Agent-Mediated Integration Patterns
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -199,6 +199,7 @@ GPT-5 Codex
 - Story 5.1 moved from `ready-for-dev` to `review`, and sprint tracking was updated to match.
 - Tightened remote deployment wording so Docker guidance is explicitly Linux-oriented and Helm guidance is explicitly framed as a documented advanced path with a `hostNetwork: true` manual workaround.
 - Extended the documentation regression tests to prevent future overstatement of Docker and Helm productization in the root and integration guides.
+- Story 5.1 was accepted and marked done after review follow-up validation completed.
 
 ### File List
 
@@ -217,3 +218,4 @@ GPT-5 Codex
 
 - 2026-03-29: Story 5.1 implemented. Added transport metadata parity coverage, added integration docs for Home Assistant and `n8n`, updated documentation entry points, expanded automation examples, and validated with targeted tests, lint, mypy, and smoke-test follow-up. Status -> review.
 - 2026-03-29: Addressed review follow-up on deployment claims. Qualified Docker as Linux-oriented, clarified Helm's documented `hostNetwork: true` manual workaround, expanded doc regression coverage, and revalidated the targeted and blocked smoke tests.
+- 2026-03-29: Story 5.1 accepted and moved from review to done.
