@@ -1,6 +1,6 @@
 # Story 4.5: Establish CI, Quality Gates, and Release Automation
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -313,3 +313,4 @@ None.
 
 - 2026-03-29: Story 4.5 implemented — added ruff/mypy/pytest-cov/pip-audit dev deps, tool config in pyproject.toml, Makefile quality-gate targets, `.github/workflows/ci.yml` and `publish.yml`. Fixed lint/type issues in existing code. Coverage 93.31%. Status → review.
 - 2026-03-29: Addressed review findings for story 4.5 — aligned CI/publish workflows with Makefile targets, scoped mypy suppression to legacy DI modules, fixed two remaining unsuppressed typing issues, and reverted incidental `tests/` churn. Re-ran `make ci` successfully.
+- 2026-03-29: Story 4.5 marked done after successful post-review verification and record updates.
