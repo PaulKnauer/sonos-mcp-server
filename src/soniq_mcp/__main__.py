@@ -58,7 +58,7 @@ def main() -> None:
         )
         print(
             "[soniq-mcp] next step: review stderr logs for developer details and "
-            "see docs/setup/troubleshooting.md#remote-deployment-troubleshooting",
+            "see docs/setup/troubleshooting.md#runtime-initialization-errors",
             file=sys.stderr,
         )
         sys.exit(1)

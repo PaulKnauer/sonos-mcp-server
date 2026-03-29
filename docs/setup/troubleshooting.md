@@ -36,9 +36,11 @@ Tool responses keep the same `error`, `field`, `category`, and `suggestion` keys
 | Field | Valid values |
 |---|---|
 | `SONIQ_MCP_TRANSPORT` | `stdio` |
-| `SONIQ_MCP_EXPOSURE` | `local` |
+| `SONIQ_MCP_EXPOSURE` | `local`, `home-network` |
 | `SONIQ_MCP_LOG_LEVEL` | `DEBUG`, `INFO`, `WARNING`, `ERROR` |
 | `SONIQ_MCP_MAX_VOLUME_PCT` | Integer 0–100 |
+
+For local `stdio`, keep `SONIQ_MCP_EXPOSURE=local`. Use `home-network` only for HTTP deployments that bind to a non-loopback host such as `0.0.0.0`.
 
 ---
 
@@ -194,6 +196,25 @@ Check the GitHub issues page or open a new issue with:
 - The full error output (stderr)
 - Your `.env` contents (redact any private values)
 - The user-facing `category`, `field`, and `suggestion` values if the failure came from a tool response
+
+---
+
+## Runtime initialization errors
+
+**Symptom:** Configuration validation succeeds, but startup still exits with:
+
+```
+[soniq-mcp] runtime error: startup completed configuration validation but failed during transport or service initialization.
+[soniq-mcp] next step: review stderr logs for developer details and see docs/setup/troubleshooting.md#runtime-initialization-errors
+```
+
+**What's happening:** This is a post-validation startup failure. The config shape was accepted, but SoniqMCP failed while creating services or starting the selected transport.
+
+**Fix:** Match the next check to the active transport:
+
+1. For local `stdio`, re-check the local setup flow in [stdio.md](stdio.md), confirm the venv entry point exists, and verify the client launch command still points at this checkout.
+2. For HTTP or other remote deployment work, continue with the remote deployment checks below for Docker, Helm, host binding, and remote client reachability.
+3. If the process still exits immediately, rerun with `SONIQ_MCP_LOG_LEVEL=DEBUG` and inspect stderr for the developer-facing traceback or error details.
 
 ---
 

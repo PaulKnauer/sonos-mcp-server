@@ -79,4 +79,4 @@ def test_main_reports_runtime_failures_without_raw_exception_text(
     assert "runtime error" in captured.err
     assert "transport or service initialization" in captured.err
     assert "boom at /Users/paul/.config/secret.env" not in captured.err
-    assert "troubleshooting.md#remote-deployment-troubleshooting" in captured.err
+    assert "troubleshooting.md#runtime-initialization-errors" in captured.err

@@ -70,6 +70,8 @@ class TestIntegrationGuides:
         assert "connectivity" in guide
         assert "validation" in guide
         assert "operation" in guide
+        assert "`home-network`" in guide
         assert "`ping`" in guide
         assert "`server_info`" in guide
         assert "`list_rooms`" in guide
+        assert "## Runtime initialization errors" in guide

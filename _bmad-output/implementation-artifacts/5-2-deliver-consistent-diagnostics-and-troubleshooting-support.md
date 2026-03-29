@@ -224,6 +224,7 @@ GPT-5 Codex
 ### Debug Log References
 
 - `./.venv/bin/pytest tests/contract/error_mapping/test_error_schemas.py tests/unit/test_main.py tests/integration/transports/test_server_bootstrap.py tests/unit/test_integration_docs.py tests/smoke/stdio/test_entrypoint_smoke.py`
+- `./.venv/bin/pytest tests/unit/test_main.py tests/unit/test_integration_docs.py tests/contract/error_mapping/test_error_schemas.py tests/integration/transports/test_server_bootstrap.py tests/smoke/stdio/test_entrypoint_smoke.py`
 - `./.venv/bin/ruff check src tests`
 - `./.venv/bin/ruff format --check src tests`
 - `./.venv/bin/mypy src`
@@ -235,6 +236,8 @@ GPT-5 Codex
 - Split startup diagnostics into setup-validation versus runtime-initialization guidance while keeping user-facing stderr messages safe and actionable.
 - Updated troubleshooting and integration docs so the documented recovery flow matches the implemented diagnostics surface (`ping`, `server_info`, `list_rooms`) and current deployment caveats.
 - Added regression coverage for category mapping, redaction, startup messaging, safe `server_info` output, and docs alignment.
+- Fixed the troubleshooting valid-values table so `SONIQ_MCP_EXPOSURE` reflects both supported postures and clarifies when `home-network` is valid.
+- Pointed post-validation startup failures to a transport-neutral runtime initialization section instead of the remote-only troubleshooting anchor.
 
 ### File List
 
@@ -252,3 +255,4 @@ GPT-5 Codex
 ### Change Log
 
 - 2026-03-29: Implemented Story 5.2 diagnostics hardening, troubleshooting doc alignment, and regression coverage; moved story to review.
+- 2026-03-29: Addressed review findings by correcting troubleshooting exposure guidance and routing runtime startup failures to a transport-neutral troubleshooting section.
