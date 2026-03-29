@@ -1,6 +1,6 @@
 # Story 5.4: Publish Operational Security and Release Guidance
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
