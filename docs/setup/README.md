@@ -20,6 +20,12 @@ SoniqMCP supports three deployment models. Choose the one that fits your environ
 
 ---
 
+## Trust model and exposure posture
+
+SoniqMCP has no built-in end-user authentication. The supported posture is local or trusted home-network use only. If you expose the HTTP endpoint beyond a trusted home network, add boundary-layer protection: reverse proxy auth, ingress authentication, network ACLs, or VPN-only access. See [operations.md](operations.md) and [SECURITY.md](../../SECURITY.md) for details.
+
+---
+
 ## When to use each model
 
 **Local stdio** — Start here. This is the simplest setup: the MCP client (e.g., Claude Desktop) launches SoniqMCP as a subprocess on the same machine. No ports are opened. Sonos discovery works because the process runs directly on the host network. See [stdio.md](stdio.md).
@@ -36,6 +42,7 @@ SoniqMCP supports three deployment models. Choose the one that fits your environ
 - [Docker deployment](docker.md) — Build and run SoniqMCP as a Docker container
 - [Helm deployment](helm.md) — Deploy SoniqMCP to a k3s or Kubernetes cluster
 - [Troubleshooting](troubleshooting.md) — Common problems and fixes for all deployment models
+- [Operations and release guidance](operations.md) — Trust model, exposure boundaries, release artifacts, and upgrade expectations
 
 ---
 

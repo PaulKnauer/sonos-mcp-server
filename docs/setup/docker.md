@@ -142,7 +142,9 @@ Once the container is running, connect an MCP client to the HTTP endpoint.
 
 **Claude Desktop:** add the server through **Settings > Connectors** and use `http://soniq-host:8000/mcp` as the server URL.
 
-Replace `soniq-host` with the IP address or hostname of the machine running the container (for example, `192.168.1.42` or `my-server.local`).
+Replace `soniq-host` with the IP address or hostname of the machine running the container (for example, `my-server.local` or the host's LAN IP).
+
+> **Security note:** The MCP endpoint has no built-in authentication. The Docker deployment is intended for trusted home-network use. If you need to reach SoniqMCP from outside your local network, add boundary protection at the deployment edge (e.g., reverse proxy with authentication, network ACL, or VPN-only access) before exposing port 8000 beyond a trusted network segment. See [SECURITY.md](../../SECURITY.md) for the full security policy.
 
 See [Claude Desktop integration guide](../integrations/claude-desktop.md) for the current local-vs-remote setup flow.
 

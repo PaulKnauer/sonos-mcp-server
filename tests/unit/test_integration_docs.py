@@ -1,4 +1,5 @@
-"""Documentation regression tests for integration guidance (Story 5.1)."""
+"""Documentation regression tests for integration guidance (Story 5.1) and
+operational security and release guidance (Story 5.4)."""
 
 from __future__ import annotations
 
@@ -16,6 +17,10 @@ PROMPTS_GUIDE = REPO_ROOT / "docs" / "prompts" / "example-uses.md"
 COMMAND_REFERENCE = REPO_ROOT / "docs" / "prompts" / "command-reference.md"
 TROUBLESHOOTING_GUIDE = REPO_ROOT / "docs" / "setup" / "troubleshooting.md"
 MAKEFILE = REPO_ROOT / "Makefile"
+SECURITY_POLICY = REPO_ROOT / "SECURITY.md"
+OPERATIONS_GUIDE = REPO_ROOT / "docs" / "setup" / "operations.md"
+DOCKER_GUIDE = REPO_ROOT / "docs" / "setup" / "docker.md"
+HELM_GUIDE = REPO_ROOT / "docs" / "setup" / "helm.md"
 
 
 def _read(path: Path) -> str:
@@ -146,3 +151,96 @@ class TestIntegrationGuides:
         for target in supported_targets:
             assert target in defined_targets
             assert f"`make {target}`" in command_reference
+
+
+class TestSecurityAndOperationsDocs:
+    """Regression tests for the security policy and operator guidance surface (Story 5.4)."""
+
+    def test_security_policy_exists(self) -> None:
+        assert SECURITY_POLICY.exists(), "SECURITY.md must exist in the repository root"
+
+    def test_operations_guide_exists(self) -> None:
+        assert OPERATIONS_GUIDE.exists(), "docs/setup/operations.md must exist"
+
+    def test_root_readme_links_security_policy(self) -> None:
+        readme = _read(ROOT_README)
+        assert "SECURITY.md" in readme
+
+    def test_root_readme_links_operations_guide(self) -> None:
+        readme = _read(ROOT_README)
+        assert "docs/setup/operations.md" in readme
+
+    def test_setup_readme_links_operations_guide(self) -> None:
+        readme = _read(SETUP_README)
+        assert "operations.md" in readme
+
+    def test_setup_readme_states_no_builtin_auth(self) -> None:
+        readme = _read(SETUP_README)
+        assert "no built-in" in readme
+
+    def test_security_policy_states_no_builtin_auth(self) -> None:
+        policy = _read(SECURITY_POLICY)
+        assert "no built-in end-user authentication" in policy
+
+    def test_security_policy_has_reporting_path(self) -> None:
+        policy = _read(SECURITY_POLICY)
+        assert "Report a vulnerability" in policy
+        assert "Security" in policy
+
+    def test_security_policy_has_disclosure_expectations(self) -> None:
+        policy = _read(SECURITY_POLICY)
+        assert "disclosure" in policy.lower()
+        assert "acknowledge" in policy.lower()
+
+    def test_security_policy_states_scope(self) -> None:
+        policy = _read(SECURITY_POLICY)
+        assert "In scope" in policy
+        assert "Out of scope" in policy
+
+    def test_operations_guide_describes_release_automation(self) -> None:
+        guide = _read(OPERATIONS_GUIDE)
+        assert "publish.yml" in guide
+        assert "PyPI" in guide
+        assert "GHCR" in guide
+        assert "v*.*.*" in guide
+
+    def test_operations_guide_documents_docker_tags(self) -> None:
+        guide = _read(OPERATIONS_GUIDE)
+        assert "semver" in guide.lower() or "major.minor" in guide.lower()
+        assert "latest" in guide
+
+    def test_operations_guide_documents_upgrade_flows(self) -> None:
+        guide = _read(OPERATIONS_GUIDE)
+        assert "uv sync" in guide
+        assert "docker pull" in guide
+        assert "helm upgrade" in guide
+
+    def test_operations_guide_states_deployment_caveats(self) -> None:
+        guide = _read(OPERATIONS_GUIDE)
+        assert "hostNetwork" in guide
+        assert "no built-in" in guide
+        guide_lower = guide.lower()
+        assert (
+            "trusted home" in guide_lower
+            or "home-network" in guide
+            or "home network" in guide_lower
+        )
+
+    def test_operations_guide_documents_compatibility_baseline(self) -> None:
+        guide = _read(OPERATIONS_GUIDE)
+        assert "3.12" in guide
+        assert "stdio" in guide
+        assert "Streamable HTTP" in guide
+        assert "Linux" in guide
+
+    def test_docker_guide_has_security_note(self) -> None:
+        guide = _read(DOCKER_GUIDE)
+        assert "no built-in authentication" in guide
+
+    def test_helm_guide_has_security_note(self) -> None:
+        guide = _read(HELM_GUIDE)
+        assert "no built-in authentication" in guide
+
+    def test_operations_guide_links_security_policy(self) -> None:
+        guide = _read(OPERATIONS_GUIDE)
+        assert "SECURITY.md" in guide
