@@ -341,26 +341,26 @@ graph LR
 
 ```mermaid
 graph TB
-    subgraph "stdio (Most Secure)"
+    subgraph "stdio — Most Secure"
         P1["No network port opened"]
         P2["OS enforces process isolation"]
         P3["Only threat: compromised AI client process"]
     end
 
-    subgraph "HTTP loopback (Secure)"]
+    subgraph "HTTP loopback — Secure"
         P4["Bound to 127.0.0.1 only"]
         P5["No LAN exposure"]
         P6["Threats: local processes on same machine"]
     end
 
-    subgraph "HTTP LAN (Acceptable with controls)"
+    subgraph "HTTP LAN — Acceptable with controls"
         P7["Bound to 0.0.0.0 or LAN IP"]
         P8["All LAN devices can reach /mcp"]
         P9["Threats: all LAN-adjacent actors"]
         P10["Requires: network segmentation or reverse proxy auth"]
     end
 
-    subgraph "HTTP Internet (NOT SUPPORTED)"
+    subgraph "HTTP Internet — NOT SUPPORTED"
         P11["Never expose without auth proxy"]
         P12["Threats: all internet actors"]
         P13["Requires: OAuth2 proxy, mTLS, or VPN"]
