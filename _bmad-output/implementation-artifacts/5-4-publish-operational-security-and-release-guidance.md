@@ -214,6 +214,7 @@ GPT-5 Codex
 ### Debug Log References
 
 - Story created from sprint-status auto-discovery and Epic 5 artifact analysis on 2026-03-29.
+- 2026-03-29: Review-fix pass addressed two Story 5.4 findings in operator guidance truthfulness and re-ran verification.
 
 ### Completion Notes List
 
@@ -221,6 +222,7 @@ GPT-5 Codex
 - Story scope is docs-first: security policy, operator guidance, release/upgrade guidance, and docs-regression coverage.
 - The developer should prefer canonical docs plus regression tests over runtime feature additions.
 - Implementation complete (2026-03-29): Created SECURITY.md (root) with supported deployment posture, in/out-of-scope definitions, GitHub private vulnerability reporting path, and coordinated disclosure expectations. Created docs/setup/operations.md as the canonical operator guide covering trust model, exposure boundaries, release artifacts (PyPI + GHCR via publish.yml on v*.*.* tags), upgrade flows (uv/Docker/Helm), compatibility baseline (Python 3.12+, stdio/Streamable HTTP, Linux/hostNetwork), and versioning expectations. Added no-built-in-auth trust-model note to docs/setup/README.md. Added security note to docs/setup/docker.md (matching existing helm.md note). Linked both new docs from root README.md and docs/setup/README.md. Extended test_integration_docs.py with 18 new TestSecurityAndOperationsDocs assertions; all 31 doc-regression tests pass. Full CI passes: lint, type-check, 686 tests (93.6% coverage), audit, build.
+- Review-fix complete (2026-03-29): Corrected `docs/setup/operations.md` so release tags are described as triggering publish automation rather than implying CI success, and replaced the misleading `uv sync --upgrade` / `uv add soniq-mcp` guidance with truthful local upgrade paths (`git pull` + `uv sync` for checked-out repo installs, `pip install --upgrade soniq-mcp` for direct package installs). Extended doc-regression coverage to lock those truthfulness constraints. Verification passed with targeted docs tests plus full `make ci`.
 
 ### File List
 
@@ -237,3 +239,4 @@ GPT-5 Codex
 
 - 2026-03-29: Created Story 5.4 and marked it ready for development.
 - 2026-03-29: Implemented Story 5.4 — created SECURITY.md and docs/setup/operations.md; added trust-model note and operations link to docs/setup/README.md; added security note to docs/setup/docker.md; linked SECURITY.md and operations.md from root README.md; extended tests/unit/test_integration_docs.py with 18 new regression assertions covering security policy, operations guide, release automation, and deployment caveats; all 31 doc-regression tests pass; full CI (lint, type-check, 686 tests, audit, build) passes.
+- 2026-03-29: Addressed Story 5.4 review findings by tightening `docs/setup/operations.md` to match the actual release/tag semantics and supported local upgrade flows; extended doc regressions accordingly; targeted docs tests and full `make ci` passed.

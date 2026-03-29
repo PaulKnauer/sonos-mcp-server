@@ -211,7 +211,9 @@ class TestSecurityAndOperationsDocs:
 
     def test_operations_guide_documents_upgrade_flows(self) -> None:
         guide = _read(OPERATIONS_GUIDE)
+        assert "git pull" in guide
         assert "uv sync" in guide
+        assert "uv sync --upgrade" not in guide
         assert "docker pull" in guide
         assert "helm upgrade" in guide
 
@@ -244,3 +246,13 @@ class TestSecurityAndOperationsDocs:
     def test_operations_guide_links_security_policy(self) -> None:
         guide = _read(OPERATIONS_GUIDE)
         assert "SECURITY.md" in guide
+
+    def test_operations_guide_does_not_overstate_tag_guarantees(self) -> None:
+        guide = _read(OPERATIONS_GUIDE)
+        assert "CI quality gates passed" not in guide
+        assert "triggers the publish workflow" in guide
+
+    def test_operations_guide_uses_truthful_pypi_install_example(self) -> None:
+        guide = _read(OPERATIONS_GUIDE)
+        assert "pip install soniq-mcp" in guide
+        assert "uv add soniq-mcp" not in guide

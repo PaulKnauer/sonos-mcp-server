@@ -42,8 +42,6 @@ The `.github/workflows/publish.yml` workflow publishes a PyPI package using GitH
 Operators who install from PyPI receive the published wheel:
 
 ```bash
-uv add soniq-mcp
-# or
 pip install soniq-mcp
 ```
 
@@ -71,15 +69,16 @@ Replace `<owner>` with the GitHub organisation or username that owns the reposit
 
 ## Upgrade expectations
 
-### Local Python / uv install
+### Local Python environments and checked-out repo installs
 
-To upgrade a local install to the latest release:
+The repository's documented local workflow uses a checked-out repo plus `uv sync`. To upgrade that style of local install:
 
 ```bash
-uv sync --upgrade
+git pull
+uv sync
 ```
 
-Or, if you installed directly with pip:
+If you installed the published package directly into a Python environment instead:
 
 ```bash
 pip install --upgrade soniq-mcp
@@ -146,10 +145,11 @@ kubectl patch deployment soniq -p '{"spec":{"template":{"spec":{"hostNetwork":tr
 
 ### What a version tag represents
 
-A `v*.*.*` tag on the GitHub repository means:
+A `v*.*.*` tag on the GitHub repository triggers the publish workflow:
 
-- CI quality gates passed (linting, type checking, test coverage, package build, Helm lint)
 - A PyPI package and GHCR container image were published automatically by `publish.yml`
+
+The repository also runs CI quality gates on pushes to `main` and on pull requests, but a version tag by itself should not be treated as an extra compatibility or support guarantee beyond the published artifacts.
 
 There is currently no automated changelog or release notes generator in the repository. To review what changed between releases, inspect the git log between the relevant tags:
 
