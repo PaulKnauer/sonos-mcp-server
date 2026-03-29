@@ -3,7 +3,7 @@ PACKAGE ?= soniq_mcp
 IMAGE ?= soniq-mcp
 TAG ?= local
 
-.PHONY: ensure-uv install run run-stdio test check tree docker-build docker-run docker-compose-up docker-compose-down
+.PHONY: ensure-uv install run run-stdio test check tree docker-build docker-run docker-compose-up docker-compose-down helm-lint helm-template helm-install
 
 ensure-uv:
 	@command -v uv >/dev/null 2>&1 || test -x "$(UV)" || { \
@@ -45,3 +45,12 @@ docker-compose-up:
 
 docker-compose-down:
 	docker compose down
+
+helm-lint:
+	helm lint helm/soniq
+
+helm-template:
+	helm template soniq helm/soniq
+
+helm-install:
+	helm upgrade --install soniq helm/soniq
