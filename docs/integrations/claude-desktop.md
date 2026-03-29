@@ -44,39 +44,42 @@ The `command` field points to the pre-built venv entry point. This bypasses PATH
 
 Use this when SoniqMCP is running as a Docker container or Helm release on another machine (or on the same machine but as a long-running service). Claude Desktop connects over HTTP instead of launching a subprocess.
 
-```json
-{
-  "mcpServers": {
-    "soniq-mcp": {
-      "url": "http://soniq-host:8000/mcp"
-    }
-  }
-}
-```
+Remote MCP servers in Claude Desktop are currently added through **Settings > Connectors**, not through `claude_desktop_config.json`.
 
-Replace `soniq-host` with the IP address or hostname of the machine running the container or pod (e.g., `192.168.1.42` or `my-server.local`).
+In the Connectors UI:
 
-The default port is `8000`. If you changed `SONIQ_MCP_HTTP_PORT`, update the port in the URL to match.
+1. Open **Settings > Connectors**
+2. Choose to add a custom connector
+3. Enter the server URL: `http://soniq-host:8000/mcp`
+4. Save the connector and wait for Claude Desktop to finish connecting
+
+Replace `soniq-host` with the IP address or hostname of the machine running the container or pod (for example, `192.168.1.42` or `my-server.local`).
+
+The default port is `8000`. If you changed `SONIQ_MCP_HTTP_PORT`, use the matching port in the connector URL.
+
+> `claude_desktop_config.json` is still used for **local stdio** servers. Claude Desktop does not use that file for remote MCP server URLs.
 
 For Docker setup, see [docker.md](../setup/docker.md). For Helm setup, see [helm.md](../setup/helm.md).
 
 ---
 
-## Differences between `command` and `url`
+## Differences between local and remote setup
 
-| | Local stdio (`command`) | Remote HTTP (`url`) |
+| | Local stdio | Remote HTTP |
 |---|---|---|
-| Config field | `command` (path to executable) | `url` (HTTP endpoint) |
+| Setup method | `claude_desktop_config.json` with `command` | Claude Desktop Connectors UI with server URL |
 | Server launched by | Claude Desktop (subprocess) | Already running independently |
 | Transport | stdin/stdout | Streamable HTTP |
 | Same-machine required | Yes | No — any network-reachable host |
 | Port opened on host | None | 8000 (configurable) |
-| `env` field supported | Yes | No — env vars set at server startup |
+| Runtime env vars | Set in Claude Desktop config | Set where the server is deployed |
 
 ---
 
 ## Restart requirement
 
-Claude Desktop must be **fully quit and relaunched** after editing `claude_desktop_config.json`. Closing the window is not enough — use Quit from the application menu, then relaunch.
+After editing `claude_desktop_config.json` for local stdio, Claude Desktop must be **fully quit and relaunched**. Closing the window is not enough — use Quit from the application menu, then relaunch.
 
-After relaunch, the SoniqMCP tools will appear in the tools panel. Ask Claude: "Can you ping the SoniqMCP server?" to confirm the connection. Claude will call the `ping` tool and return `pong`.
+For remote connectors added through **Settings > Connectors**, follow the UI prompts. If Claude Desktop does not show the new connector immediately, quit and relaunch before troubleshooting further.
+
+After the connection is active, ask Claude: "Can you ping the SoniqMCP server?" to confirm the connection. Claude will call the `ping` tool and return `pong`.

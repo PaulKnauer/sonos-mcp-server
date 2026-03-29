@@ -138,23 +138,13 @@ Remove the `ports` mapping when using `network_mode: host` (ports are not needed
 
 ## 5. Connect a remote MCP client
 
-Once the container is running, connect Claude Desktop or another MCP client using the `url` field pointing to the HTTP endpoint.
+Once the container is running, connect an MCP client to the HTTP endpoint.
 
-**Claude Desktop** (`claude_desktop_config.json`):
+**Claude Desktop:** add the server through **Settings > Connectors** and use `http://soniq-host:8000/mcp` as the server URL.
 
-```json
-{
-  "mcpServers": {
-    "soniq-mcp": {
-      "url": "http://soniq-host:8000/mcp"
-    }
-  }
-}
-```
+Replace `soniq-host` with the IP address or hostname of the machine running the container (for example, `192.168.1.42` or `my-server.local`).
 
-Replace `soniq-host` with the IP address or hostname of the machine running the container (e.g., `192.168.1.42` or `my-server.local`).
-
-See [Claude Desktop integration guide](../integrations/claude-desktop.md) for full details on local vs. remote config and the difference between the `command` and `url` fields.
+See [Claude Desktop integration guide](../integrations/claude-desktop.md) for the current local-vs-remote setup flow.
 
 ---
 

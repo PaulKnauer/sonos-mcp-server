@@ -249,16 +249,4 @@ Common causes:
 2. Confirm the URL uses the correct host and port. The default port is `8000`; if `SONIQ_MCP_HTTP_PORT` was changed, update the URL.
 3. For Docker: confirm the port is mapped and the host firewall allows the connection (see [Docker: port not reachable](#docker-port-not-reachable-from-remote-client)).
 4. For Helm without ingress: use `kubectl port-forward svc/soniq 8000:8000` and connect to `http://localhost:8000/mcp` from your local machine to test without going through the network.
-5. Confirm the config file uses `"url"` (not `"command"`) for remote HTTP connections:
-
-   ```json
-   {
-     "mcpServers": {
-       "soniq-mcp": {
-         "url": "http://soniq-host:8000/mcp"
-       }
-     }
-   }
-   ```
-
-   The `"command"` field is for local stdio only.
+5. For Claude Desktop, confirm the remote server was added through **Settings > Connectors** with the correct URL. `claude_desktop_config.json` is for local stdio servers, not remote MCP URLs.

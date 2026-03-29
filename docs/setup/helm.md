@@ -167,31 +167,11 @@ Once the pod is running and the service is reachable, connect Claude Desktop or 
 kubectl port-forward svc/soniq 8000:8000
 ```
 
-Then in Claude Desktop:
+Then add a Claude Desktop connector in **Settings > Connectors** using `http://localhost:8000/mcp` as the server URL.
 
-```json
-{
-  "mcpServers": {
-    "soniq-mcp": {
-      "url": "http://localhost:8000/mcp"
-    }
-  }
-}
-```
+**With ingress enabled:** add a Claude Desktop connector in **Settings > Connectors** using `http://soniq.example.com/mcp` as the server URL.
 
-**With ingress enabled:**
-
-```json
-{
-  "mcpServers": {
-    "soniq-mcp": {
-      "url": "http://soniq.example.com/mcp"
-    }
-  }
-}
-```
-
-See [Claude Desktop integration guide](../integrations/claude-desktop.md) for full details on the difference between local (`command`) and remote (`url`) config.
+See [Claude Desktop integration guide](../integrations/claude-desktop.md) for full details on local stdio config vs. remote connector setup.
 
 ---
 

@@ -260,10 +260,11 @@ None.
 - Created `docs/setup/docker.md`: full Docker deployment guide covering build, single-container run, Compose, SSDP/network limitations (Linux `--network=host` vs macOS/Windows caveat), remote MCP client config, and troubleshooting.
 - Created `docs/setup/helm.md`: full Helm chart deployment guide covering prerequisites, lint/template/install, full values reference, SSDP/`hostNetwork` limitation and manual workaround, ingress security note, remote client config, and troubleshooting.
 - Replaced `docs/setup/README.md`: replaced Story 1.1 placeholder with deployment model comparison table, when-to-use guidance, and links to all setup/integration guides.
-- Created `docs/integrations/claude-desktop.md`: covers local stdio (`command` field) and remote HTTP (`url` field) Claude Desktop configs, differences table, and restart requirement.
+- Created `docs/integrations/claude-desktop.md`: covers local stdio (`command` field) setup, remote HTTP connector setup via Claude Desktop Settings, differences table, and restart requirement.
 - Updated `docs/integrations/README.md`: replaced Story 1.1 placeholder with link to claude-desktop.md and note on planned Epic 5 integrations.
 - Extended `docs/setup/troubleshooting.md`: appended four new troubleshooting sections (Docker SSDP, Docker port, Helm CrashLoopBackOff, remote MCP client) without modifying existing local/stdio content.
 - No source, Helm chart, test, or Makefile changes — pure documentation story as specified.
+- 2026-03-29 review follow-up: corrected Claude Desktop remote setup guidance to use Settings > Connectors instead of unsupported `claude_desktop_config.json` `url` entries; updated Docker, Helm, and troubleshooting docs to match current Anthropic guidance.
 
 ### File List
 
@@ -279,3 +280,4 @@ None.
 ## Change Log
 
 - 2026-03-29: Story 4.4 implemented — created Docker and Helm deployment guides, replaced setup/integrations README placeholders, created Claude Desktop integration guide, extended troubleshooting with remote/Docker/Helm sections. Status → review.
+- 2026-03-29: Addressed code review finding by updating Claude Desktop remote connection guidance to the supported Connectors flow.
