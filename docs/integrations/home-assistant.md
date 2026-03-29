@@ -93,4 +93,4 @@ No Home Assistant-specific implementation path is required inside SoniqMCP.
 4. If a control action fails, use the setup and diagnostics tools first:
    `ping`, `server_info`, and `list_rooms`.
 
-For general transport and discovery problems, see [troubleshooting](../setup/troubleshooting.md).
+For general transport and discovery problems, see [troubleshooting](../setup/troubleshooting.md). The same guide also explains the shared `configuration`, `connectivity`, `validation`, and `operation` error categories returned by SoniqMCP tools.

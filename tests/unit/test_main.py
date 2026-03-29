@@ -29,8 +29,10 @@ def test_main_exits_on_bad_config(
         main()
     assert exc_info.value.code == 1
     captured = capsys.readouterr()
+    assert "setup error" in captured.err
     assert "configuration error" in captured.err
     assert "transport" in captured.err
+    assert "troubleshooting.md#configuration-errors-at-startup" in captured.err
 
 
 def test_main_bootstraps_server_on_valid_config(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -56,3 +58,25 @@ def test_main_bootstraps_server_on_valid_config(monkeypatch: pytest.MonkeyPatch)
 
     assert called["run_transport_app"] is app
     assert called["create_server_config"] is called["run_transport_config"]
+
+
+def test_main_reports_runtime_failures_without_raw_exception_text(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """Runtime startup failures must get safe user-facing diagnostics."""
+    from soniq_mcp import server as server_module
+
+    def fake_create_server(config: object) -> object:
+        raise RuntimeError("boom at /Users/paul/.config/secret.env")
+
+    monkeypatch.setattr(server_module, "create_server", fake_create_server)
+
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+
+    assert exc_info.value.code == 1
+    captured = capsys.readouterr()
+    assert "runtime error" in captured.err
+    assert "transport or service initialization" in captured.err
+    assert "boom at /Users/paul/.config/secret.env" not in captured.err
+    assert "troubleshooting.md#remote-deployment-troubleshooting" in captured.err

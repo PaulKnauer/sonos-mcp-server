@@ -77,4 +77,4 @@ This keeps the workflow explicit and avoids brittle glue code.
 3. Confirm the workflow is sending MCP tool calls that match the documented tool names and parameters.
 4. If the endpoint is reachable but actions fail, verify the target room exists by calling `list_rooms`.
 
-For general runtime and network setup issues, see [troubleshooting](../setup/troubleshooting.md).
+For general runtime and network setup issues, see [troubleshooting](../setup/troubleshooting.md). It documents the same `configuration`, `connectivity`, `validation`, and `operation` categories your workflow can branch on after a failed tool call.

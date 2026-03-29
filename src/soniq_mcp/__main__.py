@@ -15,9 +15,17 @@ def main() -> None:
     try:
         config = run_preflight()
     except ConfigValidationError as exc:
+        print(
+            "[soniq-mcp] setup error: configuration validation blocked startup.",
+            file=sys.stderr,
+        )
         for msg in exc.messages:
             print(f"[soniq-mcp] configuration error: {msg}", file=sys.stderr)
-        print("[soniq-mcp] fix the above errors and restart.", file=sys.stderr)
+        print(
+            "[soniq-mcp] next step: fix the above errors and restart. "
+            "See docs/setup/troubleshooting.md#configuration-errors-at-startup",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     setup_logging(config.log_level.value)
@@ -35,8 +43,25 @@ def main() -> None:
     from soniq_mcp.server import create_server
     from soniq_mcp.transports.bootstrap import run_transport
 
-    app = create_server(config)
-    run_transport(app, config)
+    try:
+        app = create_server(config)
+        run_transport(app, config)
+    except Exception:
+        if log.isEnabledFor(logging.DEBUG):
+            log.exception("Runtime startup failure during service initialization.")
+        else:
+            log.error("Runtime startup failure during service initialization.")
+        print(
+            "[soniq-mcp] runtime error: startup completed configuration validation "
+            "but failed during transport or service initialization.",
+            file=sys.stderr,
+        )
+        print(
+            "[soniq-mcp] next step: review stderr logs for developer details and "
+            "see docs/setup/troubleshooting.md#remote-deployment-troubleshooting",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
 
 if __name__ == "__main__":

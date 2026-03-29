@@ -6,9 +6,22 @@ catch the base type or specific subtypes as needed.
 
 from __future__ import annotations
 
+from enum import StrEnum
+
+
+class ErrorCategory(StrEnum):
+    """Stable categories for user-facing diagnostics."""
+
+    CONFIGURATION = "configuration"
+    CONNECTIVITY = "connectivity"
+    VALIDATION = "validation"
+    OPERATION = "operation"
+
 
 class SoniqDomainError(Exception):
     """Base class for all SoniqMCP domain errors."""
+
+    error_category: ErrorCategory = ErrorCategory.OPERATION
 
 
 class VolumeCapExceeded(SoniqDomainError):
@@ -18,6 +31,8 @@ class VolumeCapExceeded(SoniqDomainError):
         requested: The volume level that was requested (0-100).
         cap: The configured maximum volume allowed.
     """
+
+    error_category = ErrorCategory.VALIDATION
 
     def __init__(self, requested: int, cap: int) -> None:
         self.requested = requested
@@ -35,6 +50,8 @@ class ToolNotPermitted(SoniqDomainError):
         tool_name: The name of the suppressed tool.
     """
 
+    error_category = ErrorCategory.CONFIGURATION
+
     def __init__(self, tool_name: str) -> None:
         self.tool_name = tool_name
         super().__init__(f"Tool '{tool_name}' is disabled by server configuration.")
@@ -46,6 +63,8 @@ class RoomNotFoundError(SoniqDomainError):
     Args:
         room_name: The room name that could not be found.
     """
+
+    error_category = ErrorCategory.VALIDATION
 
     def __init__(self, room_name: str) -> None:
         self.room_name = room_name
@@ -62,6 +81,8 @@ class VolumeError(SoniqDomainError):
         message: Human-readable description of the failure.
     """
 
+    error_category = ErrorCategory.OPERATION
+
     def __init__(self, message: str) -> None:
         super().__init__(message)
 
@@ -72,6 +93,8 @@ class SonosDiscoveryError(SoniqDomainError):
     Args:
         message: Human-readable description of the failure.
     """
+
+    error_category = ErrorCategory.CONNECTIVITY
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
@@ -87,12 +110,16 @@ class PlaybackError(SoniqDomainError):
         message: Human-readable description of the failure.
     """
 
+    error_category = ErrorCategory.OPERATION
+
     def __init__(self, message: str) -> None:
         super().__init__(message)
 
 
 class FavouritesError(SoniqDomainError):
     """Raised when a Sonos favourites or playlists operation fails."""
+
+    error_category = ErrorCategory.OPERATION
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
@@ -108,6 +135,8 @@ class QueueError(SoniqDomainError):
         message: Human-readable description of the failure.
     """
 
+    error_category = ErrorCategory.OPERATION
+
     def __init__(self, message: str) -> None:
         super().__init__(message)
 
@@ -118,6 +147,8 @@ class GroupError(SoniqDomainError):
     Args:
         message: Human-readable description of the failure.
     """
+
+    error_category = ErrorCategory.OPERATION
 
     def __init__(self, message: str) -> None:
         super().__init__(message)

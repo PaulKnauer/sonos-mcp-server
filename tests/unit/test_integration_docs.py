@@ -11,6 +11,7 @@ N8N_GUIDE = REPO_ROOT / "docs" / "integrations" / "n8n.md"
 SETUP_README = REPO_ROOT / "docs" / "setup" / "README.md"
 ROOT_README = REPO_ROOT / "README.md"
 PROMPTS_GUIDE = REPO_ROOT / "docs" / "prompts" / "example-uses.md"
+TROUBLESHOOTING_GUIDE = REPO_ROOT / "docs" / "setup" / "troubleshooting.md"
 
 
 def _read(path: Path) -> str:
@@ -32,6 +33,7 @@ class TestIntegrationGuides:
         readme = _read(SETUP_README)
         assert "[Home Assistant](../integrations/home-assistant.md)" in readme
         assert "[n8n](../integrations/n8n.md)" in readme
+        assert "[Troubleshooting](troubleshooting.md)" in readme
 
     def test_root_readme_surfaces_agent_integrations(self) -> None:
         readme = _read(ROOT_README)
@@ -56,6 +58,18 @@ class TestIntegrationGuides:
         assert "Docker on Linux" in home_assistant
         assert "`hostNetwork: true`" in home_assistant
         assert "manual workaround" in home_assistant
+        assert "[troubleshooting](../setup/troubleshooting.md)" in home_assistant
         assert "Docker on Linux" in n8n
         assert "`hostNetwork: true`" in n8n
         assert "manual workaround" in n8n
+        assert "[troubleshooting](../setup/troubleshooting.md)" in n8n
+
+    def test_troubleshooting_guide_matches_supported_diagnostic_categories(self) -> None:
+        guide = _read(TROUBLESHOOTING_GUIDE)
+        assert "configuration" in guide
+        assert "connectivity" in guide
+        assert "validation" in guide
+        assert "operation" in guide
+        assert "`ping`" in guide
+        assert "`server_info`" in guide
+        assert "`list_rooms`" in guide

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 from mcp.server.fastmcp import FastMCP
 
@@ -10,6 +12,13 @@ from soniq_mcp.config.validation import ConfigValidationError
 from soniq_mcp.server import create_server
 from soniq_mcp.transports.bootstrap import bootstrap_transport, run_transport
 from soniq_mcp.transports.stdio import stdio_transport_name
+
+
+def _parse_payload(result: object) -> dict[str, object]:
+    first = result[0]  # type: ignore[index]
+    if isinstance(first, list):
+        first = first[0]
+    return json.loads(first.text)  # type: ignore[attr-defined]
 
 
 class TestServerBootstrapIntegration:
@@ -41,6 +50,47 @@ class TestServerBootstrapIntegration:
         tool_names = [t.name for t in app._tool_manager.list_tools()]
         # server_info tool exists and only returns safe fields
         assert "server_info" in tool_names
+
+    @pytest.mark.anyio
+    async def test_server_info_payload_stays_safely_scoped(self) -> None:
+        cfg = SoniqConfig(
+            transport=TransportMode.HTTP,
+            exposure="home-network",
+            http_host="0.0.0.0",
+            config_file="/secret/path",
+        )
+        app = create_server(config=cfg)
+        result = await app.call_tool("server_info", {})
+        payload = _parse_payload(result)
+        assert payload["transport"] == "http"
+        assert payload["exposure"] == "home-network"
+        assert payload["log_level"] == "INFO"
+        assert payload["max_volume_pct"] == "80"
+        assert "/secret/path" not in json.dumps(payload)
+        assert "0.0.0.0" not in json.dumps(payload)
+
+    @pytest.mark.anyio
+    async def test_runtime_tools_expose_shared_error_categories(self) -> None:
+        cfg = SoniqConfig()
+
+        class ExplodingRoomService:
+            def list_rooms(self) -> list[object]:
+                from soniq_mcp.domain.exceptions import SonosDiscoveryError
+
+                raise SonosDiscoveryError("no speakers at 192.168.1.50")
+
+            def get_topology(self) -> object:
+                raise AssertionError("not used")
+
+        from soniq_mcp.tools import system as system_tools
+
+        test_app = FastMCP("test")
+        system_tools.register(test_app, cfg, ExplodingRoomService())
+        result = await test_app.call_tool("list_rooms", {})
+        payload = _parse_payload(result)
+        assert payload["category"] == "connectivity"
+        assert payload["field"] == "sonos_network"
+        assert "192.168.1.50" not in json.dumps(payload)
 
 
 class TestTransportBootstrap:
