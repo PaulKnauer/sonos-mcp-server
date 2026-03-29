@@ -280,9 +280,10 @@ claude-sonnet-4-6
 - All `SONIQ_MCP_*` env vars surfaced in values.yaml: non-sensitive config in ConfigMap, `SONIQ_MCP_DEFAULT_ROOM` in Secret using `stringData`.
 - Deployment uses `replicas: 1`, loads env via `envFrom` (ConfigMap + Secret), no probes (FastMCP exposes no `/healthz`).
 - Added `helm-lint`, `helm-template`, `helm-install` targets to Makefile `.PHONY` and body.
-- Added `tests/smoke/helm/test_helm_smoke.py` with skip guard and two tests: `test_helm_lint_passes`, `test_helm_template_renders`.
-- Full test suite: 644 passed, 5 skipped (3 hardware integration, 2 Docker smoke — all expected). No regressions.
+- Added `tests/smoke/helm/test_helm_smoke.py` with skip guard and four tests covering lint, base render, env-surface coverage, and configurable port alignment.
+- Full test suite after review follow-up fixes: 648 passed, 3 skipped. No regressions.
 - `helm lint` passes (info-only icon recommendation, 0 failures); `helm template` renders all 4 resources (Secret, ConfigMap, Service, Deployment) correctly.
+- Review follow-up fixes: surfaced `SONIQ_MCP_CONFIG_FILE` in the chart, aligned `containerPort`/`targetPort` with configurable `config.httpPort`, and expanded Helm smoke tests to assert env-var coverage and non-default port wiring.
 
 ### File List
 
@@ -297,8 +298,9 @@ claude-sonnet-4-6
 - `helm/soniq/README.md` (deleted — story 1.1 placeholder)
 - `Makefile` (modified — added helm-lint, helm-template, helm-install targets)
 - `tests/smoke/helm/__init__.py` (created)
-- `tests/smoke/helm/test_helm_smoke.py` (created)
+- `tests/smoke/helm/test_helm_smoke.py` (created, then expanded with rendered-manifest assertions)
 
 ## Change Log
 
 - 2026-03-29: Implemented full Helm chart for soniq (Story 4.3). Created all chart templates, values.yaml, Makefile helm targets, and pytest smoke tests. 644 tests pass, no regressions.
+- 2026-03-29: Addressed review follow-ups for Story 4.3 by adding `SONIQ_MCP_CONFIG_FILE` chart support, wiring Kubernetes ports to `config.httpPort`, and strengthening Helm smoke coverage for env-surface and port-alignment regressions.

@@ -25,6 +25,7 @@ config:
   logLevel: INFO
   maxVolumePct: "80"
   toolsDisabled: ""
+  configFile: ""
 
 secret:
   defaultRoom: ""
