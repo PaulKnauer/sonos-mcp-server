@@ -1,6 +1,6 @@
 # Story 4.4: Document Remote, Docker, Helm, and Cross-Device Usage
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -281,3 +281,4 @@ None.
 
 - 2026-03-29: Story 4.4 implemented — created Docker and Helm deployment guides, replaced setup/integrations README placeholders, created Claude Desktop integration guide, extended troubleshooting with remote/Docker/Helm sections. Status → review.
 - 2026-03-29: Addressed code review finding by updating Claude Desktop remote connection guidance to the supported Connectors flow.
+- 2026-03-29: Story status updated from review → done after review follow-up completion.
