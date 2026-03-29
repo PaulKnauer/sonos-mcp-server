@@ -46,6 +46,19 @@ EXPECTED_TOOL_NAMES = {
     "unmute",
 }
 
+REPRESENTATIVE_TOOL_NAMES = (
+    "ping",
+    "server_info",
+    "list_rooms",
+    "play",
+    "set_volume",
+    "party_mode",
+)
+
+
+def _tool_index(app: FastMCP) -> dict[str, object]:
+    return {tool.name: tool for tool in app._tool_manager.list_tools()}
+
 
 class TestCreateServerWithHttpConfig:
     def test_create_server_http_transport_succeeds(self) -> None:
@@ -100,6 +113,20 @@ class TestHttpToolSurfaceParity:
         app = create_server(config=cfg)
         tool_names = {t.name for t in app._tool_manager.list_tools()}
         assert tool_names == EXPECTED_TOOL_NAMES
+
+    def test_representative_tool_metadata_matches_stdio(self) -> None:
+        """Representative tools should keep stable metadata across transports."""
+        http_tools = _tool_index(create_server(config=SoniqConfig(transport=TransportMode.HTTP)))
+        stdio_tools = _tool_index(create_server(config=SoniqConfig(transport=TransportMode.STDIO)))
+
+        for name in REPRESENTATIVE_TOOL_NAMES:
+            http_tool = http_tools[name]
+            stdio_tool = stdio_tools[name]
+            assert http_tool.annotations == stdio_tool.annotations
+            assert http_tool.parameters == stdio_tool.parameters
+            assert getattr(http_tool, "output_schema", None) == getattr(
+                stdio_tool, "output_schema", None
+            )
 
 
 class TestRunTransportHttpDispatch:

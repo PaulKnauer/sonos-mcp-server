@@ -189,6 +189,65 @@ Claude calls `party_mode` to join all rooms into a single whole-home group.
 
 ---
 
+## Agent and automation workflows
+
+These examples assume SoniqMCP is running as a long-lived remote service over **Streamable HTTP** so an external automation or agent can call `http://<host>:8000/mcp`.
+
+The key rule is that the automation uses the same tool surface as a direct AI client. No separate "agent mode" exists inside SoniqMCP.
+
+### Home Assistant style flow
+
+> "Check that SoniqMCP is reachable, list the rooms, and start my Kitchen Morning Mix favourite."
+
+Expected tool flow:
+
+1. `ping`
+2. `list_rooms`
+3. `list_favourites`
+4. `play_favourite`
+
+This keeps room targeting explicit and verifies connectivity before playback.
+
+### `n8n` workflow example
+
+> "If the Living Room is not already grouped, join the Kitchen to it and start party mode for the evening routine."
+
+Expected tool flow:
+
+1. `get_group_topology`
+2. `join_group` or `party_mode`
+
+The automation system decides the branch. SoniqMCP remains the execution layer only.
+
+### Safe volume automation
+
+> "Set the Office to volume 35, but never exceed the configured safety cap."
+
+Claude or the automation calls `set_volume`. Requests above `SONIQ_MCP_MAX_VOLUME_PCT` are rejected, so downstream agents inherit the same safety behavior as direct usage.
+
+### Queue-aware automation
+
+> "Show the current Living Room queue and start from track 2 if the queue is already loaded."
+
+Expected tool flow:
+
+1. `get_queue`
+2. `play_from_queue`
+
+### Recovery-oriented automation
+
+> "Check the server, confirm the Bedroom is available, and only then retry playback."
+
+Expected tool flow:
+
+1. `server_info`
+2. `list_rooms`
+3. `play`
+
+This pattern avoids brittle retries that assume the same network or room state still exists.
+
+---
+
 ## Makefile reference
 
 Run these from the project root:

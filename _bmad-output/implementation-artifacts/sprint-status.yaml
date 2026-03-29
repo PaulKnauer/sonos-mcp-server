@@ -35,7 +35,7 @@
 # - Later epics remain in backlog because no implementation artifacts exist yet.
 
 generated: 2026-03-24
-last_updated: 2026-03-29  # story 4.2 done after validation
+last_updated: 2026-03-29  # story 5.1 ready for review
 project: sonos-mcp-server
 project_key: NOKEY
 tracking_system: file-system
@@ -71,8 +71,8 @@ development_status:
   4-5-establish-ci-quality-gates-and-release-automation: done
   epic-4-retrospective: optional
 
-  epic-5: backlog
-  5-1-support-agent-mediated-integration-patterns: backlog
+  epic-5: in-progress
+  5-1-support-agent-mediated-integration-patterns: review
   5-2-deliver-consistent-diagnostics-and-troubleshooting-support: backlog
   5-3-deliver-productized-examples-prompts-and-command-surface: backlog
   5-4-publish-operational-security-and-release-guidance: backlog

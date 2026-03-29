@@ -42,4 +42,6 @@ SoniqMCP supports three deployment models. Choose the one that fits your environ
 ## Integration guides
 
 - [Claude Desktop](../integrations/claude-desktop.md) — Connect Claude Desktop using stdio (local) or HTTP (remote)
-- [Other integrations](../integrations/README.md) — Additional MCP client integrations (planned for Epic 5)
+- [Home Assistant](../integrations/home-assistant.md) — Connect remote home automations to the same MCP tool surface
+- [n8n](../integrations/n8n.md) — Use SoniqMCP as an MCP action layer inside workflow automation
+- [All integration guides](../integrations/README.md) — Browse the current client and automation patterns

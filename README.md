@@ -94,4 +94,6 @@ When both are present, environment variables win:
 - [Helm deployment guide](docs/setup/helm.md)
 - [Troubleshooting](docs/setup/troubleshooting.md)
 - [Claude Desktop integration](docs/integrations/claude-desktop.md)
+- [Home Assistant integration](docs/integrations/home-assistant.md)
+- [n8n integration](docs/integrations/n8n.md)
 - [Example prompts](docs/prompts/example-uses.md)
