@@ -231,6 +231,11 @@ GPT-5 Codex
 - `env UV_CACHE_DIR=/tmp/uv-cache uv run ruff format --check tests/unit/test_integration_docs.py`
 - `env UV_CACHE_DIR=/tmp/uv-cache uv run mypy src`
 - `make test`
+- `uv run pytest tests/unit/test_integration_docs.py` (review fixes)
+- `env UV_CACHE_DIR=/tmp/uv-cache uv run ruff check tests/unit/test_integration_docs.py` (review fixes)
+- `env UV_CACHE_DIR=/tmp/uv-cache uv run ruff format tests/unit/test_integration_docs.py`
+- `env UV_CACHE_DIR=/tmp/uv-cache uv run ruff format --check tests/unit/test_integration_docs.py` (review fixes)
+- `env UV_CACHE_DIR=/tmp/uv-cache uv run mypy src` (review fixes)
 
 ### Completion Notes List
 
@@ -239,6 +244,8 @@ GPT-5 Codex
 - Kept the existing `Makefile` targets unchanged after auditing them against the docs, then documented the supported targets and direct CLI paths in one canonical location.
 - Extended docs regression coverage to assert prompt/reference routing, deployment caveats, and alignment between documented core `make` targets and the actual `Makefile`.
 - Verified the story with targeted docs regression tests, Ruff checks, `mypy src`, and a full `make test` run.
+- Clarified that the local `stdio` command path is for manual same-machine clients, while Claude Desktop should use the documented subprocess config flow rather than a pre-started `make run-stdio` server.
+- Strengthened the Makefile alignment regression so it validates real target definitions instead of passing on incidental string matches in `.PHONY` or comments.
 
 ### File List
 
@@ -252,3 +259,4 @@ GPT-5 Codex
 ### Change Log
 
 - 2026-03-29: Implemented Story 5.3 by productizing the prompt and command docs surface, adding a canonical command reference, and extending docs regression coverage; moved story to review.
+- 2026-03-29: Addressed review findings by clarifying the Claude Desktop local `stdio` flow in the command reference and hardening the Makefile target regression test.

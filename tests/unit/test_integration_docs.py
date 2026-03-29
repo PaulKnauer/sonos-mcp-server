@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -85,6 +86,10 @@ class TestIntegrationGuides:
         assert "uv run python -m soniq_mcp" in command_reference
         assert "local `stdio`" in command_reference
         assert "remote `Streamable HTTP`" in command_reference
+        assert (
+            "For Claude Desktop local integration, do not pre-start `make run-stdio`."
+            in command_reference
+        )
 
     def test_agent_guides_call_out_remote_deployment_caveats(self) -> None:
         home_assistant = _read(HOME_ASSISTANT_GUIDE)
@@ -113,6 +118,9 @@ class TestIntegrationGuides:
     def test_command_reference_targets_match_makefile(self) -> None:
         makefile = _read(MAKEFILE)
         command_reference = _read(COMMAND_REFERENCE)
+        defined_targets = {
+            match.group(1) for match in re.finditer(r"(?m)^([A-Za-z0-9][A-Za-z0-9_-]*):", makefile)
+        }
         supported_targets = [
             "install",
             "run",
@@ -136,5 +144,5 @@ class TestIntegrationGuides:
         ]
 
         for target in supported_targets:
-            assert f"{target}:" in makefile
+            assert target in defined_targets
             assert f"`make {target}`" in command_reference

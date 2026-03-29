@@ -42,7 +42,9 @@ cp .env.example .env
 make run-stdio
 ```
 
-This path matches [../setup/stdio.md](../setup/stdio.md) and is the default for Claude Desktop local integration.
+Use that manual start path for same-machine testing with MCP clients that expect you to launch the server yourself.
+
+For Claude Desktop local integration, do not pre-start `make run-stdio`. Claude Desktop launches the server as its own subprocess using the config flow in [../integrations/claude-desktop.md](../integrations/claude-desktop.md) and the setup details in [../setup/stdio.md](../setup/stdio.md).
 
 ### Remote `Streamable HTTP`
 
