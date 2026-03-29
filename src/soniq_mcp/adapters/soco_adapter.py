@@ -7,6 +7,7 @@ playback and volume capability layers. Higher layers must not import
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 from soniq_mcp.domain.exceptions import (
@@ -247,7 +248,7 @@ class SoCoAdapter:
         except Exception as exc:
             raise GroupError(f"Failed to activate party mode: {exc}") from exc
 
-    def _call_playback(self, ip_address: str, action: object) -> None:
+    def _call_playback(self, ip_address: str, action: Callable[[Any], object]) -> None:
         try:
             zone = self._make_zone(ip_address)
             action(zone)

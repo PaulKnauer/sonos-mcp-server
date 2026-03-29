@@ -44,8 +44,14 @@ ignore_missing_imports = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 warn_unused_ignores = true
-# attr-defined, arg-type, and operator errors are suppressed: services/tools
-# use object-typed DI constructors. Adding Protocol types is a future refactor.
+
+[[tool.mypy.overrides]]
+module = [
+    "soniq_mcp.services.*",
+    "soniq_mcp.tools.*",
+]
+# Legacy DI entrypoints still pass object-typed collaborators through service/tool layers.
+# Keep the suppression scoped to those modules until the constructor contracts are typed.
 disable_error_code = ["attr-defined", "arg-type", "operator"]
 
 [tool.coverage.run]

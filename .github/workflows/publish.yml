@@ -22,7 +22,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
 
       - name: Build package
-        run: uv build
+        run: make build-check
 
       - name: Publish to PyPI (OIDC trusted publishing)
         uses: pypa/gh-action-pypi-publish@release/v1

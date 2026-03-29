@@ -7,6 +7,7 @@ to surface to the user.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from pydantic import ValidationError
@@ -35,7 +36,7 @@ def run_preflight(overrides: dict | None = None) -> SoniqConfig:
         raise ConfigValidationError(messages) from exc
 
 
-def _fmt(error: dict[str, Any]) -> str:
+def _fmt(error: Mapping[str, Any]) -> str:
     """Format a single pydantic error dict into a user-facing string."""
     loc = ".".join(str(part) for part in error.get("loc", []))
     msg = error.get("msg", "invalid value").removeprefix("Value error, ")

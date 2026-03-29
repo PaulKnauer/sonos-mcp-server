@@ -3,7 +3,7 @@ PACKAGE ?= soniq_mcp
 IMAGE ?= soniq-mcp
 TAG ?= local
 
-.PHONY: ensure-uv install run run-stdio test check tree lint format type-check coverage audit ci docker-build docker-run docker-compose-up docker-compose-down helm-lint helm-template helm-install
+.PHONY: ensure-uv install run run-stdio test check tree lint format type-check coverage audit build-check ci docker-build docker-run docker-compose-up docker-compose-down helm-lint helm-template helm-install
 
 ensure-uv:
 	@command -v uv >/dev/null 2>&1 || test -x "$(UV)" || { \
@@ -47,7 +47,10 @@ audit: ensure-uv
 	# CVE-2026-4539 (pygments) has no fix release; ignored until upstream patch lands
 	$(UV) run pip-audit --ignore-vuln CVE-2026-4539
 
-ci: lint type-check coverage audit
+build-check: ensure-uv
+	$(UV) build
+
+ci: lint type-check coverage audit build-check
 
 docker-build:
 	docker build -t $(IMAGE):$(TAG) .

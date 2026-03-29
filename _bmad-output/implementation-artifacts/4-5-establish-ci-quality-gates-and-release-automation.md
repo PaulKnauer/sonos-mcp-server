@@ -281,7 +281,7 @@ This story directly resolves all three items in `open_delivery_risks` related to
 
 ### Agent Model Used
 
-claude-sonnet-4-6
+GPT-5 Codex
 
 ### Debug Log References
 
@@ -290,28 +290,26 @@ None.
 ### Completion Notes List
 
 - Added ruff, mypy, pytest-cov, pip-audit to `[dependency-groups] dev` in pyproject.toml. Ran `uv sync` to update lockfile.
-- Added `[tool.ruff]`, `[tool.ruff.lint]`, `[tool.ruff.lint.isort]`, `[tool.mypy]`, `[tool.coverage.run]`, `[tool.coverage.report]` sections to pyproject.toml. mypy uses `disallow_untyped_defs = true` rather than full `strict` (documented: existing codebase uses object-typed DI constructors throughout services/tools; Protocol types are a future refactor). `disable_error_code = ["attr-defined", "arg-type", "operator"]` explicitly documents the DI typing gap.
-- Auto-fixed 30 files with `ruff format` and 37 issues with `ruff check --fix`. Manual fixes: (1) `config/models.py` — migrated `(str, Enum)` → `StrEnum` per UP042; (2) `services/playback_service.py` — added missing `PlaybackState`, `TrackInfo` imports (F821); (3) `adapters/soco_adapter.py` — added `Any` return annotation to `_make_zone`, typed `action` param; (4) `config/validation.py` — typed `_fmt(error: dict[str, Any])`; (5) `domain/safety.py` — broke 102-char f-string into two lines (E501).
+- Added `[tool.ruff]`, `[tool.ruff.lint]`, `[tool.ruff.lint.isort]`, `[tool.mypy]`, `[tool.coverage.run]`, and `[tool.coverage.report]` sections to `pyproject.toml`. The mypy suppression for `attr-defined`, `arg-type`, and `operator` is now scoped only to `soniq_mcp.services.*` and `soniq_mcp.tools.*` instead of the whole package.
+- Fixed the remaining non-DI mypy issues in `src/soniq_mcp/adapters/soco_adapter.py` and `src/soniq_mcp/config/validation.py` so the narrower override still passes cleanly.
 - Ran pip-audit: 3 CVEs found in transitive deps. Fixed 2 by upgrading `cryptography` (46.0.5→46.0.6) and `requests` (2.32.5→2.33.0). Remaining `pygments` CVE-2026-4539 has no fix release; explicitly ignored in `make audit` with comment.
-- Added Makefile targets: `lint`, `format`, `type-check`, `coverage`, `audit`, `ci`. Updated `.PHONY` line.
-- Created `.github/workflows/ci.yml`: three jobs — `quality-gates` (lint, type-check, coverage+upload, audit), `build-check` (uv build), `helm-check` (helm lint). All triggered on push-to-main and pull_request.
-- Created `.github/workflows/publish.yml`: two jobs — `publish-pypi` (OIDC trusted publishing via pypa/gh-action-pypi-publish), `publish-docker` (GHCR push with semver + latest tags). Triggered on `v*.*.*` tag push.
-- Final gate results: lint ✅, type-check ✅ (43 files, no issues), coverage ✅ (93.31%, threshold 70%), audit ✅, uv build ✅, 648 tests passed 3 skipped.
+- Added Makefile targets: `lint`, `format`, `type-check`, `coverage`, `audit`, `build-check`, and `ci`. Updated `.PHONY` line.
+- Updated `.github/workflows/ci.yml` so quality gates use `make lint`, `make type-check`, `make coverage`, and `make audit`, with coverage XML exported in a follow-up step. The package build job now uses `make build-check` so CI stays aligned with the Makefile command surface.
+- Updated `.github/workflows/publish.yml` so the PyPI build path also uses `make build-check` instead of a bespoke `uv build` command.
+- Reverted the incidental `tests/` formatting churn so story 4.5 stays within its intended CI/release scope.
+- Final post-review gate results: `make ci` ✅, 648 tests passed, 3 skipped, coverage 93.32%, audit clean with 1 documented ignore, package build successful.
 
 ### File List
 
 - `pyproject.toml` (modified — added dev deps, tool config sections)
 - `uv.lock` (updated — added ruff, mypy, pytest-cov, pip-audit; upgraded cryptography, requests)
-- `Makefile` (modified — added lint, format, type-check, coverage, audit, ci targets)
-- `src/soniq_mcp/config/models.py` (modified — str+Enum → StrEnum)
-- `src/soniq_mcp/config/validation.py` (modified — typed _fmt dict param, added Any import)
-- `src/soniq_mcp/domain/safety.py` (modified — broke E501 line)
-- `src/soniq_mcp/services/playback_service.py` (modified — added PlaybackState/TrackInfo imports)
-- `src/soniq_mcp/adapters/soco_adapter.py` (modified — typed _make_zone return, _call_playback action param, added Any import)
+- `Makefile` (modified — added lint, format, type-check, coverage, audit, build-check, ci targets)
+- `src/soniq_mcp/config/validation.py` (modified — typed `_fmt` against a mapping-shaped Pydantic error payload)
+- `src/soniq_mcp/adapters/soco_adapter.py` (modified — typed playback callback as `Callable[[Any], object]`)
 - `.github/workflows/ci.yml` (created)
 - `.github/workflows/publish.yml` (created)
-- Plus 30 source/test files reformatted by ruff format (no logic changes)
 
 ## Change Log
 
 - 2026-03-29: Story 4.5 implemented — added ruff/mypy/pytest-cov/pip-audit dev deps, tool config in pyproject.toml, Makefile quality-gate targets, `.github/workflows/ci.yml` and `publish.yml`. Fixed lint/type issues in existing code. Coverage 93.31%. Status → review.
+- 2026-03-29: Addressed review findings for story 4.5 — aligned CI/publish workflows with Makefile targets, scoped mypy suppression to legacy DI modules, fixed two remaining unsuppressed typing issues, and reverted incidental `tests/` churn. Re-ran `make ci` successfully.
