@@ -7,7 +7,15 @@ playback and volume capability layers. Higher layers must not import
 
 from __future__ import annotations
 
-from soniq_mcp.domain.exceptions import FavouritesError, GroupError, PlaybackError, QueueError, VolumeError
+from typing import Any
+
+from soniq_mcp.domain.exceptions import (
+    FavouritesError,
+    GroupError,
+    PlaybackError,
+    QueueError,
+    VolumeError,
+)
 from soniq_mcp.domain.models import Favourite, PlaybackState, QueueItem, SonosPlaylist, TrackInfo
 
 _EMPTY_SENTINELS = {"", "NOT_IMPLEMENTED"}
@@ -66,9 +74,7 @@ class SoCoAdapter:
                 room_name=room_name,
             )
         except Exception as exc:
-            raise PlaybackError(
-                f"Failed to get playback state for {room_name!r}: {exc}"
-            ) from exc
+            raise PlaybackError(f"Failed to get playback state for {room_name!r}: {exc}") from exc
 
     def get_track_info(self, ip_address: str) -> TrackInfo:
         try:
@@ -122,9 +128,7 @@ class SoCoAdapter:
             favourites = []
             for item in results:
                 meta = getattr(item, "to_didl_string", lambda: "")()
-                favourites.append(
-                    Favourite(title=item.title, uri=item.uri, meta=meta or None)
-                )
+                favourites.append(Favourite(title=item.title, uri=item.uri, meta=meta or None))
             return favourites
         except Exception as exc:
             raise FavouritesError(f"Failed to get favourites: {exc}") from exc
@@ -171,7 +175,9 @@ class SoCoAdapter:
                     title=_coerce_str(item.title) if hasattr(item, "title") else None,
                     artist=_coerce_str(item.creator) if hasattr(item, "creator") else None,
                     album=_coerce_str(item.album) if hasattr(item, "album") else None,
-                    album_art_uri=_coerce_str(item.album_art_uri) if hasattr(item, "album_art_uri") else None,
+                    album_art_uri=_coerce_str(item.album_art_uri)
+                    if hasattr(item, "album_art_uri")
+                    else None,
                 )
                 for idx, item in enumerate(raw_queue)
             ]
@@ -193,8 +199,7 @@ class SoCoAdapter:
             idx = position - 1
             if idx < 0 or idx >= len(raw_queue):
                 raise QueueError(
-                    f"Queue position {position} is out of range "
-                    f"(queue has {len(raw_queue)} items)."
+                    f"Queue position {position} is out of range (queue has {len(raw_queue)} items)."
                 )
             zone.remove_from_queue(raw_queue[idx])
         except QueueError:
@@ -211,9 +216,7 @@ class SoCoAdapter:
 
     def play_from_queue(self, ip_address: str, position: int) -> None:
         if position < 1:
-            raise QueueError(
-                f"Queue position {position} is invalid; positions are 1-based."
-            )
+            raise QueueError(f"Queue position {position} is invalid; positions are 1-based.")
         try:
             zone = self._make_zone(ip_address)
             zone.play_from_queue(position - 1)
@@ -244,7 +247,7 @@ class SoCoAdapter:
         except Exception as exc:
             raise GroupError(f"Failed to activate party mode: {exc}") from exc
 
-    def _call_playback(self, ip_address: str, action) -> None:
+    def _call_playback(self, ip_address: str, action: object) -> None:
         try:
             zone = self._make_zone(ip_address)
             action(zone)
@@ -252,7 +255,7 @@ class SoCoAdapter:
             raise PlaybackError(str(exc)) from exc
 
     @staticmethod
-    def _make_zone(ip_address: str):
+    def _make_zone(ip_address: str) -> Any:
         import soco  # noqa: PLC0415
 
         return soco.SoCo(ip_address)

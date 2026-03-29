@@ -12,7 +12,6 @@ from soniq_mcp.domain.exceptions import FavouritesError, RoomNotFoundError, Sono
 from soniq_mcp.domain.models import Favourite
 from soniq_mcp.tools.favourites import register
 
-
 FAV = Favourite(title="Radio", uri="x-sonosapi://radio", meta="<DIDL/>")
 
 

@@ -13,7 +13,9 @@ from soniq_mcp.domain.models import QueueItem
 IP = "192.168.1.10"
 
 
-def _make_didl(title="Track", creator="Artist", album="Album", uri="x-sonos:track", album_art_uri="http://art"):
+def _make_didl(
+    title="Track", creator="Artist", album="Album", uri="x-sonos:track", album_art_uri="http://art"
+):
     item = MagicMock()
     item.title = title
     item.creator = creator
@@ -25,8 +27,10 @@ def _make_didl(title="Track", creator="Artist", album="Album", uri="x-sonos:trac
 
 class TestGetQueue:
     def test_returns_queue_items_with_1based_positions(self):
-        raw = [_make_didl("T1", "A1", "Al1", "uri:1", "art:1"),
-               _make_didl("T2", "A2", "Al2", "uri:2", "art:2")]
+        raw = [
+            _make_didl("T1", "A1", "Al1", "uri:1", "art:1"),
+            _make_didl("T2", "A2", "Al2", "uri:2", "art:2"),
+        ]
         zone = MagicMock()
         zone.get_queue.return_value = raw
 
@@ -35,8 +39,12 @@ class TestGetQueue:
             result = adapter.get_queue(IP)
 
         assert len(result) == 2
-        assert result[0] == QueueItem(position=1, uri="uri:1", title="T1", artist="A1", album="Al1", album_art_uri="art:1")
-        assert result[1] == QueueItem(position=2, uri="uri:2", title="T2", artist="A2", album="Al2", album_art_uri="art:2")
+        assert result[0] == QueueItem(
+            position=1, uri="uri:1", title="T1", artist="A1", album="Al1", album_art_uri="art:1"
+        )
+        assert result[1] == QueueItem(
+            position=2, uri="uri:2", title="T2", artist="A2", album="Al2", album_art_uri="art:2"
+        )
 
     def test_empty_queue_returns_empty_list(self):
         zone = MagicMock()

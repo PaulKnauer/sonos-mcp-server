@@ -43,9 +43,7 @@ class TestPreflightBlocksBadStartup:
             run_preflight(overrides={"log_level": "TRACE"})
         assert any("log_level" in m for m in exc_info.value.messages)
 
-    def test_valid_env_config_does_not_block_startup(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_valid_env_config_does_not_block_startup(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Happy-path: good env vars must not raise."""
         monkeypatch.setenv("SONIQ_MCP_TRANSPORT", "stdio")
         monkeypatch.setenv("SONIQ_MCP_LOG_LEVEL", "WARNING")

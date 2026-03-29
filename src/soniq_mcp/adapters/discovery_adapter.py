@@ -118,9 +118,7 @@ class DiscoveryAdapter:
                 group_coordinator_uid=coordinator_uid,
             )
         except Exception as exc:
-            raise SonosDiscoveryError(
-                f"Failed to read zone properties: {exc}"
-            ) from exc
+            raise SonosDiscoveryError(f"Failed to read zone properties: {exc}") from exc
 
     @staticmethod
     def _zone_to_speaker(zone: object) -> Speaker:
@@ -161,9 +159,7 @@ class DiscoveryAdapter:
                 is_visible=bool(is_visible),
             )
         except Exception as exc:
-            raise SonosDiscoveryError(
-                f"Failed to read speaker properties: {exc}"
-            ) from exc
+            raise SonosDiscoveryError(f"Failed to read speaker properties: {exc}") from exc
 
     @staticmethod
     def _required_zone_attr(zone: object, attr_name: str) -> str:

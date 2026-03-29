@@ -28,9 +28,7 @@ class TestServerBootstrapIntegration:
         assert "ping" in tool_names
         assert "server_info" in tool_names
 
-    def test_bad_config_blocks_startup(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_bad_config_blocks_startup(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Invalid config must prevent server creation (AC 2)."""
         monkeypatch.setenv("SONIQ_MCP_TRANSPORT", "not-a-transport")
         with pytest.raises(ConfigValidationError):
@@ -57,6 +55,7 @@ class TestTransportBootstrap:
     def test_run_transport_raises_for_unsupported(self) -> None:
         """Unsupported transports must raise NotImplementedError cleanly."""
         from unittest.mock import MagicMock
+
         cfg = SoniqConfig()
         app = create_server(config=cfg)
         bad_cfg = MagicMock(transport=MagicMock(value="grpc"))

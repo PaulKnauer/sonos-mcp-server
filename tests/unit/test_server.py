@@ -22,6 +22,7 @@ class TestCreateServer:
 
     def test_bad_config_raises_before_server_created(self) -> None:
         from pydantic import ValidationError
+
         with pytest.raises(ValidationError):
             SoniqConfig(transport="bad-transport")
 
@@ -30,6 +31,7 @@ class TestCreateServer:
     ) -> None:
         monkeypatch.setenv("SONIQ_MCP_TRANSPORT", "not-a-transport")
         from soniq_mcp.config.validation import ConfigValidationError
+
         with pytest.raises(ConfigValidationError):
             create_server()
 

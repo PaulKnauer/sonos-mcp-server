@@ -52,15 +52,24 @@ class TestHelmSmoke:
 
     def test_helm_template_surfaces_all_supported_env_vars(self) -> None:
         result = self._run_helm_template(
-            "--set", "config.transport=http",
-            "--set", "config.httpHost=0.0.0.0",
-            "--set", "config.httpPort=8010",
-            "--set", "config.exposure=home-network",
-            "--set", "config.logLevel=DEBUG",
-            "--set", "config.maxVolumePct=65",
-            "--set-string", r"config.toolsDisabled=ping\,server_info",
-            "--set-string", "config.configFile=/config/soniq.env",
-            "--set-string", "secret.defaultRoom=Kitchen",
+            "--set",
+            "config.transport=http",
+            "--set",
+            "config.httpHost=0.0.0.0",
+            "--set",
+            "config.httpPort=8010",
+            "--set",
+            "config.exposure=home-network",
+            "--set",
+            "config.logLevel=DEBUG",
+            "--set",
+            "config.maxVolumePct=65",
+            "--set-string",
+            r"config.toolsDisabled=ping\,server_info",
+            "--set-string",
+            "config.configFile=/config/soniq.env",
+            "--set-string",
+            "secret.defaultRoom=Kitchen",
         )
         assert result.returncode == 0, (
             f"helm template failed (exit {result.returncode}):\n"
@@ -81,8 +90,10 @@ class TestHelmSmoke:
 
     def test_helm_template_aligns_container_and_service_ports(self) -> None:
         result = self._run_helm_template(
-            "--set", "config.httpPort=9000",
-            "--set", "service.port=9000",
+            "--set",
+            "config.httpPort=9000",
+            "--set",
+            "service.port=9000",
         )
         assert result.returncode == 0, (
             f"helm template failed (exit {result.returncode}):\n"

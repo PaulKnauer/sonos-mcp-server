@@ -7,6 +7,8 @@ to surface to the user.
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import ValidationError
 
 from soniq_mcp.config.loader import load_config
@@ -33,7 +35,7 @@ def run_preflight(overrides: dict | None = None) -> SoniqConfig:
         raise ConfigValidationError(messages) from exc
 
 
-def _fmt(error: dict) -> str:
+def _fmt(error: dict[str, Any]) -> str:
     """Format a single pydantic error dict into a user-facing string."""
     loc = ".".join(str(part) for part in error.get("loc", []))
     msg = error.get("msg", "invalid value").removeprefix("Value error, ")

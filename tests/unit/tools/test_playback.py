@@ -95,9 +95,17 @@ async def call_and_parse(app: FastMCP, tool: str, args: dict) -> dict:
 
 # ── Registration ────────────────────────────────────────────────────────────
 
+
 class TestToolRegistration:
-    TOOL_NAMES = ["play", "pause", "stop", "next_track", "previous_track",
-                  "get_playback_state", "get_track_info"]
+    TOOL_NAMES = [
+        "play",
+        "pause",
+        "stop",
+        "next_track",
+        "previous_track",
+        "get_playback_state",
+        "get_track_info",
+    ]
 
     def test_all_tools_registered(self) -> None:
         app, _ = make_app()
@@ -111,6 +119,7 @@ class TestToolRegistration:
 
 
 # ── Play ─────────────────────────────────────────────────────────────────────
+
 
 class TestPlayTool:
     @pytest.mark.anyio
@@ -150,6 +159,7 @@ class TestPlayTool:
 
 # ── Pause ─────────────────────────────────────────────────────────────────────
 
+
 class TestPauseTool:
     @pytest.mark.anyio
     async def test_success_returns_ok(self) -> None:
@@ -166,6 +176,7 @@ class TestPauseTool:
 
 # ── Stop ──────────────────────────────────────────────────────────────────────
 
+
 class TestStopTool:
     @pytest.mark.anyio
     async def test_success_returns_ok(self) -> None:
@@ -175,6 +186,7 @@ class TestStopTool:
 
 
 # ── Next Track ────────────────────────────────────────────────────────────────
+
 
 class TestNextTrackTool:
     @pytest.mark.anyio
@@ -193,6 +205,7 @@ class TestNextTrackTool:
 
 # ── Previous Track ────────────────────────────────────────────────────────────
 
+
 class TestPreviousTrackTool:
     @pytest.mark.anyio
     async def test_success_returns_ok(self) -> None:
@@ -202,6 +215,7 @@ class TestPreviousTrackTool:
 
 
 # ── Get Playback State ────────────────────────────────────────────────────────
+
 
 class TestGetPlaybackStateTool:
     @pytest.mark.anyio
@@ -225,6 +239,7 @@ class TestGetPlaybackStateTool:
 
 
 # ── Get Track Info ────────────────────────────────────────────────────────────
+
 
 class TestGetTrackInfoTool:
     @pytest.mark.anyio

@@ -27,9 +27,7 @@ def run_transport(app: FastMCP, config: SoniqConfig) -> None:
 
         run_streamable_http(app, config)
     else:
-        raise NotImplementedError(
-            f"Transport '{config.transport.value}' is not yet implemented"
-        )
+        raise NotImplementedError(f"Transport '{config.transport.value}' is not yet implemented")
 
 
 def bootstrap_transport() -> str:

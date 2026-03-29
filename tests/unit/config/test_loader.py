@@ -106,11 +106,13 @@ class TestLoadConfigOverrides:
 
     def test_invalid_override_raises_validation_error(self) -> None:
         from pydantic import ValidationError
+
         with pytest.raises(ValidationError):
             load_config(overrides={"transport": "not-a-transport"})
 
     def test_unknown_override_key_raises_validation_error(self) -> None:
         from pydantic import ValidationError
+
         with pytest.raises(ValidationError):
             load_config(overrides={"loglevel": "DEBUG"})
 

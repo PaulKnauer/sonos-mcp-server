@@ -17,7 +17,7 @@ class ErrorResponse(BaseModel):
     suggestion: str | None = None
 
     @classmethod
-    def from_volume_cap(cls, requested: int, cap: int) -> "ErrorResponse":
+    def from_volume_cap(cls, requested: int, cap: int) -> ErrorResponse:
         return cls(
             error=f"Volume {requested} exceeds the safe maximum of {cap}.",
             field="volume",
@@ -25,7 +25,7 @@ class ErrorResponse(BaseModel):
         )
 
     @classmethod
-    def from_tool_not_permitted(cls, tool_name: str) -> "ErrorResponse":
+    def from_tool_not_permitted(cls, tool_name: str) -> ErrorResponse:
         return cls(
             error=f"Tool '{tool_name}' is disabled by server configuration.",
             field="tools_disabled",
@@ -33,7 +33,7 @@ class ErrorResponse(BaseModel):
         )
 
     @classmethod
-    def from_discovery_error(cls, exc: Exception) -> "ErrorResponse":
+    def from_discovery_error(cls, exc: Exception) -> ErrorResponse:
         return cls(
             error=str(exc),
             field="sonos_network",
@@ -44,7 +44,7 @@ class ErrorResponse(BaseModel):
         )
 
     @classmethod
-    def from_room_not_found(cls, room_name: str) -> "ErrorResponse":
+    def from_room_not_found(cls, room_name: str) -> ErrorResponse:
         return cls(
             error=f"Room '{room_name}' was not found in the Sonos household.",
             field="room",
@@ -52,7 +52,7 @@ class ErrorResponse(BaseModel):
         )
 
     @classmethod
-    def from_playback_error(cls, exc: Exception) -> "ErrorResponse":
+    def from_playback_error(cls, exc: Exception) -> ErrorResponse:
         return cls(
             error=str(exc),
             field="playback",
@@ -63,7 +63,7 @@ class ErrorResponse(BaseModel):
         )
 
     @classmethod
-    def from_volume_error(cls, exc: Exception) -> "ErrorResponse":
+    def from_volume_error(cls, exc: Exception) -> ErrorResponse:
         return cls(
             error=str(exc),
             field="sonos_volume",
@@ -71,7 +71,7 @@ class ErrorResponse(BaseModel):
         )
 
     @classmethod
-    def from_favourites_error(cls, exc: Exception) -> "ErrorResponse":
+    def from_favourites_error(cls, exc: Exception) -> ErrorResponse:
         return cls(
             error=str(exc),
             field="favourites",
@@ -82,7 +82,7 @@ class ErrorResponse(BaseModel):
         )
 
     @classmethod
-    def from_queue_error(cls, exc: Exception) -> "ErrorResponse":
+    def from_queue_error(cls, exc: Exception) -> ErrorResponse:
         return cls(
             error=str(exc),
             field="queue",
@@ -93,7 +93,7 @@ class ErrorResponse(BaseModel):
         )
 
     @classmethod
-    def from_group_error(cls, exc: Exception) -> "ErrorResponse":
+    def from_group_error(cls, exc: Exception) -> ErrorResponse:
         return cls(
             error=str(exc),
             field="group",

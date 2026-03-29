@@ -4,15 +4,10 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-import pytest
-
 from soniq_mcp.domain.exceptions import GroupError, RoomNotFoundError, SonosDiscoveryError
 from soniq_mcp.domain.models import Room
 
-
-COORDINATOR = Room(
-    name="Living Room", uid="UID1", ip_address="192.168.1.10", is_coordinator=True
-)
+COORDINATOR = Room(name="Living Room", uid="UID1", ip_address="192.168.1.10", is_coordinator=True)
 MEMBER = Room(
     name="Kitchen",
     uid="UID2",
@@ -106,6 +101,7 @@ class TestGetGroupTopology:
 
     def test_is_read_only_tool(self):
         from mcp.server.fastmcp import FastMCP
+
         from soniq_mcp.tools.groups import register
 
         app = FastMCP("test")

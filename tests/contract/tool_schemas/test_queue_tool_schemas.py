@@ -30,6 +30,7 @@ def _collect_tools():
         def decorator(fn):
             tools[fn.__name__] = fn
             return fn
+
         return decorator
 
     app.tool.side_effect = tool_decorator
@@ -113,9 +114,10 @@ class TestPlayFromQueueParameters:
 
 
 class TestToolsRespectDisabledList:
-    @pytest.mark.parametrize("tool_name", [
-        "get_queue", "add_to_queue", "remove_from_queue", "clear_queue", "play_from_queue"
-    ])
+    @pytest.mark.parametrize(
+        "tool_name",
+        ["get_queue", "add_to_queue", "remove_from_queue", "clear_queue", "play_from_queue"],
+    )
     def test_disabled_tool_not_registered(self, tool_name):
         from soniq_mcp.tools.queue import register
 
@@ -126,6 +128,7 @@ class TestToolsRespectDisabledList:
             def decorator(fn):
                 tools[fn.__name__] = fn
                 return fn
+
             return decorator
 
         app.tool.side_effect = tool_decorator

@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-import pytest
-
 from soniq_mcp.domain.exceptions import QueueError, RoomNotFoundError, SonosDiscoveryError
 from soniq_mcp.domain.models import QueueItem
 
@@ -25,6 +23,7 @@ def _make_app():
         def decorator(fn):
             _tools[fn.__name__] = fn
             return fn
+
         return decorator
 
     app.tool.side_effect = tool_decorator

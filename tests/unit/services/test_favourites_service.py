@@ -14,7 +14,12 @@ ROOM = Room(name=ROOM_NAME, uid="RINCON_123", ip_address=IP, is_coordinator=True
 
 
 class FakeRoomService:
-    def __init__(self, rooms: list[Room] | None = None, raise_not_found: bool = False, raise_discovery: bool = False) -> None:
+    def __init__(
+        self,
+        rooms: list[Room] | None = None,
+        raise_not_found: bool = False,
+        raise_discovery: bool = False,
+    ) -> None:
         self._rooms = rooms if rooms is not None else [ROOM]
         self._raise_not_found = raise_not_found
         self._raise_discovery = raise_discovery
@@ -82,7 +87,9 @@ class TestGetFavourites:
         assert result == [FAV]
 
     def test_uses_first_room_ip(self) -> None:
-        room2 = Room(name="Bedroom", uid="RINCON_456", ip_address="192.168.1.20", is_coordinator=True)
+        room2 = Room(
+            name="Bedroom", uid="RINCON_456", ip_address="192.168.1.20", is_coordinator=True
+        )
         adapter = FakeAdapter(favourites=[FAV])
         svc = FavouritesService(FakeRoomService(rooms=[ROOM, room2]), adapter)
         svc.get_favourites()

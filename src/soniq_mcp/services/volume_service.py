@@ -22,9 +22,7 @@ class VolumeService:
         if room_service is not None and adapter is not None and config is not None:
             self._sonos_service = SonosService(room_service, adapter, config)
             return
-        raise TypeError(
-            "VolumeService requires sonos_service=... or room_service+adapter+config"
-        )
+        raise TypeError("VolumeService requires sonos_service=... or room_service+adapter+config")
 
     def get_volume_state(self, room_name: str) -> VolumeState:
         """Return the current volume and mute state for the named room.

@@ -28,7 +28,9 @@ def _find_open_port() -> int:
         return int(sock.getsockname()[1])
 
 
-def _wait_for_server(proc: subprocess.Popen[bytes], host: str, port: int, timeout: float = 10.0) -> None:
+def _wait_for_server(
+    proc: subprocess.Popen[bytes], host: str, port: int, timeout: float = 10.0
+) -> None:
     deadline = time.monotonic() + timeout
     last_error: OSError | None = None
     while time.monotonic() < deadline:

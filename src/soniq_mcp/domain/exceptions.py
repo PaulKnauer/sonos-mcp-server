@@ -37,9 +37,7 @@ class ToolNotPermitted(SoniqDomainError):
 
     def __init__(self, tool_name: str) -> None:
         self.tool_name = tool_name
-        super().__init__(
-            f"Tool '{tool_name}' is disabled by server configuration."
-        )
+        super().__init__(f"Tool '{tool_name}' is disabled by server configuration.")
 
 
 class RoomNotFoundError(SoniqDomainError):

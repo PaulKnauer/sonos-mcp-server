@@ -132,14 +132,18 @@ class TestHttpEnvVarLoading:
         cfg = load_config()
         assert cfg.exposure == ExposurePosture.HOME_NETWORK
 
-    def test_http_local_env_rejects_non_loopback_bind(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_http_local_env_rejects_non_loopback_bind(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setenv("SONIQ_MCP_TRANSPORT", "http")
         monkeypatch.setenv("SONIQ_MCP_EXPOSURE", "local")
         monkeypatch.setenv("SONIQ_MCP_HTTP_HOST", "0.0.0.0")
         with pytest.raises(Exception):
             load_config()
 
-    def test_http_home_network_env_rejects_loopback_bind(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_http_home_network_env_rejects_loopback_bind(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setenv("SONIQ_MCP_TRANSPORT", "http")
         monkeypatch.setenv("SONIQ_MCP_EXPOSURE", "home-network")
         monkeypatch.setenv("SONIQ_MCP_HTTP_HOST", "127.0.0.1")

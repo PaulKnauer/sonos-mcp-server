@@ -65,7 +65,7 @@ class SystemTopology:
         cls,
         rooms: list[Room],
         speakers: list[Speaker] | None = None,
-    ) -> "SystemTopology":
+    ) -> SystemTopology:
         """Build a topology snapshot from discovered rooms and speakers."""
         derived_speakers = speakers
         if derived_speakers is None:

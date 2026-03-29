@@ -55,11 +55,13 @@ class TestLoaderSafetyFields:
     def test_max_volume_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("SONIQ_MCP_MAX_VOLUME_PCT", "60")
         from soniq_mcp.config.loader import load_config
+
         assert load_config().max_volume_pct == 60
 
     def test_tools_disabled_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("SONIQ_MCP_TOOLS_DISABLED", "ping,server_info")
         from soniq_mcp.config.loader import load_config
+
         cfg = load_config()
         assert set(cfg.tools_disabled) == {"ping", "server_info"}
 

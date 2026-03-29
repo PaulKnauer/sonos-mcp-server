@@ -10,7 +10,17 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from soniq_mcp.domain.models import Favourite, PlaybackState, QueueItem, Room, SonosPlaylist, Speaker, SystemTopology, TrackInfo, VolumeState
+from soniq_mcp.domain.models import (
+    Favourite,
+    PlaybackState,
+    QueueItem,
+    Room,
+    SonosPlaylist,
+    Speaker,
+    SystemTopology,
+    TrackInfo,
+    VolumeState,
+)
 
 
 class RoomResponse(BaseModel):
@@ -22,7 +32,7 @@ class RoomResponse(BaseModel):
     is_coordinator: bool
 
     @classmethod
-    def from_domain(cls, room: Room) -> "RoomResponse":
+    def from_domain(cls, room: Room) -> RoomResponse:
         return cls(
             name=room.name,
             uid=room.uid,
@@ -38,7 +48,7 @@ class RoomListResponse(BaseModel):
     count: int
 
     @classmethod
-    def from_domain(cls, rooms: list[Room]) -> "RoomListResponse":
+    def from_domain(cls, rooms: list[Room]) -> RoomListResponse:
         return cls(
             rooms=[RoomResponse.from_domain(r) for r in rooms],
             count=len(rooms),
@@ -57,7 +67,7 @@ class SpeakerResponse(BaseModel):
     is_visible: bool
 
     @classmethod
-    def from_domain(cls, speaker: Speaker) -> "SpeakerResponse":
+    def from_domain(cls, speaker: Speaker) -> SpeakerResponse:
         return cls(
             name=speaker.name,
             uid=speaker.uid,
@@ -79,7 +89,7 @@ class SystemTopologyResponse(BaseModel):
     speaker_count: int
 
     @classmethod
-    def from_domain(cls, topology: SystemTopology) -> "SystemTopologyResponse":
+    def from_domain(cls, topology: SystemTopology) -> SystemTopologyResponse:
         return cls(
             rooms=[RoomResponse.from_domain(r) for r in topology.rooms],
             speakers=[SpeakerResponse.from_domain(s) for s in topology.speakers],
@@ -96,7 +106,7 @@ class PlaybackStateResponse(BaseModel):
     room_name: str
 
     @classmethod
-    def from_domain(cls, state: PlaybackState) -> "PlaybackStateResponse":
+    def from_domain(cls, state: PlaybackState) -> PlaybackStateResponse:
         return cls(
             transport_state=state.transport_state,
             room_name=state.room_name,
@@ -117,7 +127,7 @@ class TrackInfoResponse(BaseModel):
     queue_position: int | None = None
 
     @classmethod
-    def from_domain(cls, info: TrackInfo, room_name: str) -> "TrackInfoResponse":
+    def from_domain(cls, info: TrackInfo, room_name: str) -> TrackInfoResponse:
         return cls(
             room_name=room_name,
             title=info.title,
@@ -139,7 +149,7 @@ class VolumeStateResponse(BaseModel):
     is_muted: bool
 
     @classmethod
-    def from_domain(cls, state: VolumeState) -> "VolumeStateResponse":
+    def from_domain(cls, state: VolumeState) -> VolumeStateResponse:
         return cls(
             room_name=state.room_name,
             volume=state.volume,
@@ -154,7 +164,7 @@ class FavouriteResponse(BaseModel):
     uri: str
 
     @classmethod
-    def from_domain(cls, fav: Favourite) -> "FavouriteResponse":
+    def from_domain(cls, fav: Favourite) -> FavouriteResponse:
         return cls(title=fav.title, uri=fav.uri)
 
 
@@ -165,7 +175,7 @@ class FavouritesListResponse(BaseModel):
     count: int
 
     @classmethod
-    def from_domain(cls, items: list[Favourite]) -> "FavouritesListResponse":
+    def from_domain(cls, items: list[Favourite]) -> FavouritesListResponse:
         return cls(items=[FavouriteResponse.from_domain(f) for f in items], count=len(items))
 
 
@@ -176,7 +186,7 @@ class PlaylistResponse(BaseModel):
     uri: str
 
     @classmethod
-    def from_domain(cls, pl: SonosPlaylist) -> "PlaylistResponse":
+    def from_domain(cls, pl: SonosPlaylist) -> PlaylistResponse:
         return cls(title=pl.title, uri=pl.uri)
 
 
@@ -187,7 +197,7 @@ class PlaylistsListResponse(BaseModel):
     count: int
 
     @classmethod
-    def from_domain(cls, items: list[SonosPlaylist]) -> "PlaylistsListResponse":
+    def from_domain(cls, items: list[SonosPlaylist]) -> PlaylistsListResponse:
         return cls(items=[PlaylistResponse.from_domain(p) for p in items], count=len(items))
 
 
@@ -202,7 +212,7 @@ class QueueItemResponse(BaseModel):
     album_art_uri: str | None = None
 
     @classmethod
-    def from_domain(cls, item: QueueItem) -> "QueueItemResponse":
+    def from_domain(cls, item: QueueItem) -> QueueItemResponse:
         return cls(
             position=item.position,
             uri=item.uri,
@@ -221,7 +231,7 @@ class QueueResponse(BaseModel):
     count: int
 
     @classmethod
-    def from_domain(cls, room_name: str, items: list[QueueItem]) -> "QueueResponse":
+    def from_domain(cls, room_name: str, items: list[QueueItem]) -> QueueResponse:
         return cls(
             room=room_name,
             items=[QueueItemResponse.from_domain(item) for item in items],
@@ -244,7 +254,7 @@ class GroupTopologyResponse(BaseModel):
     total_rooms: int
 
     @classmethod
-    def from_rooms(cls, rooms: list[Room]) -> "GroupTopologyResponse":
+    def from_rooms(cls, rooms: list[Room]) -> GroupTopologyResponse:
         """Derive group topology from Room domain objects.
 
         Uses Room.is_coordinator and Room.group_coordinator_uid to

@@ -20,7 +20,9 @@ def _clear_soniq_env(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv(key, raising=False)
 
 
-def test_main_exits_on_bad_config(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> None:
+def test_main_exits_on_bad_config(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
     """Bad env config must cause sys.exit(1) with human-readable diagnostics."""
     monkeypatch.setenv("SONIQ_MCP_TRANSPORT", "websocket")
     with pytest.raises(SystemExit) as exc_info:

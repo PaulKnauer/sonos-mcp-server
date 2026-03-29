@@ -77,7 +77,8 @@ def validate_exposure_posture(config: SoniqConfig) -> list[str]:
         )
     elif config.exposure == ExposurePosture.LOCAL and config.http_host not in loopback_hosts:
         warnings.append(
-            f"local exposure with non-loopback bind {config.http_host}:{config.http_port} is unsafe; "
+            f"local exposure with non-loopback bind "
+            f"{config.http_host}:{config.http_port} is unsafe; "
             "use a loopback host or switch to home-network exposure."
         )
     elif config.exposure != ExposurePosture.LOCAL:

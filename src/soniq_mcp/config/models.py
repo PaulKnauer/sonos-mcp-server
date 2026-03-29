@@ -11,10 +11,9 @@ Story 1.4 extends the base model with safety controls:
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
-from pydantic import BaseModel, Field, model_validator, field_validator
-
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
     {
@@ -52,21 +51,21 @@ KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
 )
 
 
-class TransportMode(str, Enum):
+class TransportMode(StrEnum):
     """Supported server transport modes."""
 
     STDIO = "stdio"
     HTTP = "http"
 
 
-class ExposurePosture(str, Enum):
+class ExposurePosture(StrEnum):
     """Allowed network exposure postures."""
 
     LOCAL = "local"
     HOME_NETWORK = "home-network"
 
 
-class LogLevel(str, Enum):
+class LogLevel(StrEnum):
     """Standard Python log levels accepted by the server."""
 
     DEBUG = "DEBUG"
@@ -142,7 +141,7 @@ class SoniqConfig(BaseModel):
         return value
 
     @model_validator(mode="after")
-    def validate_http_exposure_combination(self) -> "SoniqConfig":
+    def validate_http_exposure_combination(self) -> SoniqConfig:
         """Enforce safe HTTP bind/exposure combinations."""
         if self.transport != TransportMode.HTTP:
             return self

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from soniq_mcp.config.models import SoniqConfig
+from soniq_mcp.domain.models import PlaybackState, TrackInfo
 from soniq_mcp.services.sonos_service import SonosService
 
 
@@ -26,9 +27,7 @@ class PlaybackService:
                 config or SoniqConfig(),
             )
             return
-        raise TypeError(
-            "PlaybackService requires sonos_service=... or room_service+adapter"
-        )
+        raise TypeError("PlaybackService requires sonos_service=... or room_service+adapter")
 
     def play(self, room_name: str) -> None:
         """Start or resume playback in the named room.

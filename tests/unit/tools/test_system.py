@@ -88,6 +88,7 @@ class TestListRoomsTool:
         result = await app.call_tool("list_rooms", {})
         assert result[0].text  # type: ignore[attr-defined]
         import json
+
         data = json.loads(result[0].text)  # type: ignore[attr-defined]
         assert data["count"] == 0
         assert data["rooms"] == []
@@ -98,6 +99,7 @@ class TestListRoomsTool:
         app, _ = make_app_with_service(rooms=rooms)
         result = await app.call_tool("list_rooms", {})
         import json
+
         data = json.loads(result[0].text)  # type: ignore[attr-defined]
         assert data["count"] == 1
         assert data["rooms"][0]["name"] == "Living Room"
@@ -108,6 +110,7 @@ class TestListRoomsTool:
         app, _ = make_app_with_service(raise_error=True)
         result = await app.call_tool("list_rooms", {})
         import json
+
         data = json.loads(result[0].text)  # type: ignore[attr-defined]
         assert "error" in data
         assert data["field"] == "sonos_network"
@@ -131,6 +134,7 @@ class TestGetSystemTopologyTool:
         app, _ = make_app_with_service(rooms=rooms)
         result = await app.call_tool("get_system_topology", {})
         import json
+
         data = json.loads(result[0].text)  # type: ignore[attr-defined]
         assert data["total_count"] == 2
         assert data["coordinator_count"] == 1
@@ -143,6 +147,7 @@ class TestGetSystemTopologyTool:
         app, _ = make_app_with_service(raise_error=True)
         result = await app.call_tool("get_system_topology", {})
         import json
+
         data = json.loads(result[0].text)  # type: ignore[attr-defined]
         assert "error" in data
         assert data["field"] == "sonos_network"

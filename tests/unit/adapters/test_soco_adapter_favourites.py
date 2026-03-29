@@ -17,7 +17,9 @@ def _patch_soco(zone: MagicMock):
     return patch("soco.SoCo", return_value=zone)
 
 
-def make_fake_favourite(title: str = "My Fav", uri: str = "x-sonos://fav", didl: str = "<DIDL/>") -> MagicMock:
+def make_fake_favourite(
+    title: str = "My Fav", uri: str = "x-sonos://fav", didl: str = "<DIDL/>"
+) -> MagicMock:
     item = MagicMock()
     item.title = title
     item.uri = uri
@@ -25,7 +27,9 @@ def make_fake_favourite(title: str = "My Fav", uri: str = "x-sonos://fav", didl:
     return item
 
 
-def make_fake_playlist(title: str = "My Playlist", uri: str = "x-rincon-playlist://pl", item_id: str = "SQ:1") -> MagicMock:
+def make_fake_playlist(
+    title: str = "My Playlist", uri: str = "x-rincon-playlist://pl", item_id: str = "SQ:1"
+) -> MagicMock:
     item = MagicMock()
     item.title = title
     item.uri = uri
@@ -36,7 +40,9 @@ def make_fake_playlist(title: str = "My Playlist", uri: str = "x-rincon-playlist
 class TestGetFavourites:
     def test_returns_list_of_favourites(self) -> None:
         zone = MagicMock()
-        fav = make_fake_favourite(title="Radio", uri="x-sonosapi://radio", didl="<DIDL>radio</DIDL>")
+        fav = make_fake_favourite(
+            title="Radio", uri="x-sonosapi://radio", didl="<DIDL>radio</DIDL>"
+        )
         zone.music_library.get_sonos_favorites.return_value = [fav]
         adapter = SoCoAdapter()
         with _patch_soco(zone):

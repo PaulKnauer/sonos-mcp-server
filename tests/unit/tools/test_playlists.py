@@ -12,7 +12,6 @@ from soniq_mcp.domain.exceptions import FavouritesError, RoomNotFoundError, Sono
 from soniq_mcp.domain.models import SonosPlaylist
 from soniq_mcp.tools.playlists import register
 
-
 PLAYLIST = SonosPlaylist(title="Party Mix", uri="x-rincon-playlist://pl1", item_id="SQ:1")
 
 

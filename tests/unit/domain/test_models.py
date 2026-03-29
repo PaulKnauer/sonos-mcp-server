@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from soniq_mcp.domain.models import PlaybackState, Room, Speaker, SystemTopology, TrackInfo, VolumeState
+from soniq_mcp.domain.models import (
+    PlaybackState,
+    Room,
+    Speaker,
+    SystemTopology,
+    TrackInfo,
+    VolumeState,
+)
 
 
 def make_room(

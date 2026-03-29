@@ -179,4 +179,5 @@ class TestPlaybackAdapterGetTrackInfo:
 def _patch_soco(zone: MagicMock, ip: str):
     """Context manager that patches soco.SoCo(ip) to return the fake zone."""
     from unittest.mock import patch
+
     return patch("soco.SoCo", return_value=zone)

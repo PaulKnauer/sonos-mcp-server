@@ -71,6 +71,7 @@ class TestSafetyConfigPreflight:
 
     def test_invalid_volume_cap_blocks_startup(self) -> None:
         from pydantic import ValidationError
+
         with pytest.raises(ValidationError):
             SoniqConfig(max_volume_pct=150)
 

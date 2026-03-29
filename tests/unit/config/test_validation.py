@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from soniq_mcp.config.models import SoniqConfig, TransportMode
+from soniq_mcp.config.models import SoniqConfig
 from soniq_mcp.config.validation import ConfigValidationError, run_preflight
 
 

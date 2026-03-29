@@ -120,6 +120,7 @@ class TestRunTransportHttpDispatch:
 
     def test_run_transport_still_raises_for_unknown(self) -> None:
         from unittest.mock import MagicMock
+
         cfg = SoniqConfig()
         app = create_server(config=cfg)
         bad_cfg = MagicMock()
@@ -135,7 +136,9 @@ class TestStreamableHttpTransportName:
 
 class TestHomeNetworkExposurePosture:
     def test_home_network_emits_warning(self) -> None:
-        cfg = SoniqConfig(exposure=ExposurePosture.HOME_NETWORK, http_host="0.0.0.0", http_port=8000)
+        cfg = SoniqConfig(
+            exposure=ExposurePosture.HOME_NETWORK, http_host="0.0.0.0", http_port=8000
+        )
         warnings = validate_exposure_posture(cfg)
         assert len(warnings) == 1
         assert "home-network" in warnings[0]
