@@ -35,7 +35,7 @@ cp .env.example .env
 make run            # starts the server over stdio
 ```
 
-See [docs/setup/stdio.md](docs/setup/stdio.md) for the full local setup guide including Claude Desktop wiring.
+See [docs/setup/stdio.md](docs/setup/stdio.md) for the full local setup guide including Claude Desktop wiring. After the server is running, use [docs/prompts/example-uses.md](docs/prompts/example-uses.md) for direct and agent-mediated prompt examples, and use [docs/prompts/command-reference.md](docs/prompts/command-reference.md) as the canonical command surface.
 
 ## Deployment models
 
@@ -62,29 +62,13 @@ When both are present, environment variables win:
 | `SONIQ_MCP_HTTP_HOST` | `0.0.0.0` | Bind address (HTTP transport only) |
 | `SONIQ_MCP_HTTP_PORT` | `8000` | Port (HTTP transport only) |
 
-## Make targets
+## Command surface
 
-| Target | What it does |
-|---|---|
-| `make install` | Install dependencies (`uv sync`) |
-| `make run` | Start the server over stdio |
-| `make run-stdio` | Explicitly start in stdio mode |
-| `make test` | Run the test suite |
-| `make check` | Compile-check all Python source |
-| `make lint` | Run ruff lint and format checks |
-| `make format` | Auto-fix lint and format issues |
-| `make type-check` | Run mypy static type checks |
-| `make coverage` | Run tests with coverage report |
-| `make audit` | Run dependency vulnerability scan |
-| `make ci` | Run all quality gates (lint, type-check, coverage, audit, build-check) |
-| `make docker-build` | Build the Docker image |
-| `make docker-run` | Run the server as a Docker container |
-| `make docker-compose-up` | Start via Docker Compose (detached) |
-| `make docker-compose-down` | Stop Docker Compose |
-| `make helm-lint` | Validate the Helm chart |
-| `make helm-template` | Preview rendered Helm manifests |
-| `make helm-install` | Deploy/upgrade via Helm |
-| `make tree` | Print the project directory tree |
+The supported command surface lives in [docs/prompts/command-reference.md](docs/prompts/command-reference.md). That page is the canonical reference for:
+
+- `make` targets for development, quality gates, Docker, Compose, and Helm
+- direct CLI invocation examples
+- the relationship between local `stdio` workflows and remote `Streamable HTTP` deployment paths
 
 ## Docs
 
@@ -93,7 +77,9 @@ When both are present, environment variables win:
 - [Docker deployment guide](docs/setup/docker.md)
 - [Helm deployment guide](docs/setup/helm.md)
 - [Troubleshooting](docs/setup/troubleshooting.md)
+- [Prompts and command reference index](docs/prompts/README.md)
+- [Example prompts and usage flows](docs/prompts/example-uses.md)
+- [Command reference](docs/prompts/command-reference.md)
 - [Claude Desktop integration](docs/integrations/claude-desktop.md)
 - [Home Assistant integration](docs/integrations/home-assistant.md)
 - [n8n integration](docs/integrations/n8n.md)
-- [Example prompts](docs/prompts/example-uses.md)

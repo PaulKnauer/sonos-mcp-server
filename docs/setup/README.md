@@ -39,6 +39,16 @@ SoniqMCP supports three deployment models. Choose the one that fits your environ
 
 ---
 
+## Product usage guides
+
+After setup, use these docs to operate the product rather than re-reading deployment instructions:
+
+- [Prompts and command reference](../prompts/README.md) — Entry point for example prompts and supported command paths
+- [Example prompts and usage flows](../prompts/example-uses.md) — Direct-client prompts and agent-mediated examples
+- [Command reference](../prompts/command-reference.md) — Canonical `Makefile` and CLI command surface
+
+---
+
 ## Integration guides
 
 - [Claude Desktop](../integrations/claude-desktop.md) — Connect Claude Desktop using stdio (local) or HTTP (remote)

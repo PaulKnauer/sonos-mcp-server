@@ -1,6 +1,6 @@
 # Example Prompts and Usage
 
-Natural language prompts and command references for SoniqMCP.
+Natural-language examples for direct clients and agent-mediated workflows. For the canonical command surface, use [command-reference.md](command-reference.md).
 
 ---
 
@@ -23,6 +23,8 @@ Expected response: Claude calls `ping` and confirms `pong`.
 > "What transport and exposure mode is the server using?"
 
 Expected response: Claude calls `server_info` and returns the active transport, exposure posture, log level, and volume cap.
+
+If the server does not respond as expected, continue with [../setup/troubleshooting.md](../setup/troubleshooting.md) before issuing playback commands.
 
 ---
 
@@ -191,7 +193,7 @@ Claude calls `party_mode` to join all rooms into a single whole-home group.
 
 ## Agent and automation workflows
 
-These examples assume SoniqMCP is running as a long-lived remote service over **Streamable HTTP** so an external automation or agent can call `http://<host>:8000/mcp`.
+These examples assume SoniqMCP is running as a long-lived remote service over **Streamable HTTP** so an external automation or agent can call `http://<host>:8000/mcp`. For the setup steps behind that endpoint, use [../setup/docker.md](../setup/docker.md), [../setup/helm.md](../setup/helm.md), and the integration guides in [../integrations/README.md](../integrations/README.md).
 
 The key rule is that the automation uses the same tool surface as a direct AI client. No separate "agent mode" exists inside SoniqMCP.
 
@@ -246,71 +248,4 @@ Expected tool flow:
 
 This pattern avoids brittle retries that assume the same network or room state still exists.
 
----
-
-## Makefile reference
-
-Run these from the project root:
-
-```bash
-make install       # Install / update dependencies
-make run           # Start the server (stdio)
-make run-stdio     # Explicitly start in stdio mode
-make test          # Run the test suite
-make coverage      # Run tests with coverage report
-make lint          # Check code style
-make format        # Auto-fix code style
-make type-check    # Run static type checks
-make ci            # Run all quality gates
-make tree          # Print project directory structure
-```
-
----
-
-## Direct CLI invocation
-
-```bash
-# Standard start
-uv run python -m soniq_mcp
-
-# Override log level for a session
-SONIQ_MCP_LOG_LEVEL=DEBUG uv run python -m soniq_mcp
-
-# Override volume cap for a session
-SONIQ_MCP_MAX_VOLUME_PCT=50 uv run python -m soniq_mcp
-
-# Disable a tool for a session
-SONIQ_MCP_TOOLS_DISABLED=ping uv run python -m soniq_mcp
-
-# Using the installed entry point (after uv sync)
-.venv/bin/soniq-mcp
-```
-
----
-
-## Claude Desktop config snippet (local stdio)
-
-Add this entry to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
-
-```json
-{
-  "mcpServers": {
-    "soniq-mcp": {
-      "command": "/absolute/path/to/sonos-mcp-server/.venv/bin/soniq-mcp",
-      "args": [],
-      "env": {
-        "SONIQ_MCP_LOG_LEVEL": "INFO",
-        "SONIQ_MCP_MAX_VOLUME_PCT": "80"
-      }
-    }
-  }
-}
-```
-
-Replace `/absolute/path/to/sonos-mcp-server` with the real path on your machine (e.g. `/Users/you/github/sonos-mcp-server`).
-
-Use the absolute path to the venv entry point — Claude Desktop launches MCP servers with a restricted PATH that typically does not include `~/.local/bin` (where `uv` lives).
-
-For remote HTTP connections (Docker or Helm deployment), see [docs/integrations/claude-desktop.md](../integrations/claude-desktop.md).
-
-See [docs/setup/stdio.md](../setup/stdio.md) for the full local setup walkthrough.
+For the supported command surface, use [command-reference.md](command-reference.md). For Claude Desktop configuration details, use [../integrations/claude-desktop.md](../integrations/claude-desktop.md). For local onboarding, use [../setup/stdio.md](../setup/stdio.md).
