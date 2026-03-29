@@ -85,3 +85,4 @@ The supported command surface lives in [docs/prompts/command-reference.md](docs/
 - [Home Assistant integration](docs/integrations/home-assistant.md)
 - [n8n integration](docs/integrations/n8n.md)
 - [Security policy](SECURITY.md)
+- [Threat model](docs/security/threat-model.md)

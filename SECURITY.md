@@ -16,6 +16,10 @@ SoniqMCP has **no built-in end-user authentication**. It is designed for:
 
 See [docs/setup/operations.md](docs/setup/operations.md) for the full operator guidance on supported exposure boundaries, release artifacts, and upgrade expectations.
 
+## Threat Model
+
+For a detailed analysis of assets, threat actors, attack surfaces, STRIDE threat scenarios, and recommended mitigations, see [docs/security/threat-model.md](docs/security/threat-model.md).
+
 ## Scope
 
 **In scope for security reports:**

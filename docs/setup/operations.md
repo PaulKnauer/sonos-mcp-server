@@ -2,7 +2,7 @@
 
 This page covers the trust model, supported exposure boundaries, release artifacts, upgrade expectations, and compatibility baseline for SoniqMCP.
 
-For the security reporting policy and coordinated disclosure process, see [SECURITY.md](../../SECURITY.md).
+For the security reporting policy and coordinated disclosure process, see [SECURITY.md](../../SECURITY.md). For the full threat model — assets, threat actors, STRIDE analysis, and mitigations — see [docs/security/threat-model.md](../security/threat-model.md).
 
 ---
 
