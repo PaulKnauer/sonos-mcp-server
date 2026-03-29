@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "soniq.fullname" . }}
+  labels:
+    {{- include "soniq.labels" . | nindent 4 }}
+data:
+  SONIQ_MCP_TRANSPORT: {{ .Values.config.transport | quote }}
+  SONIQ_MCP_HTTP_HOST: {{ .Values.config.httpHost | quote }}
+  SONIQ_MCP_HTTP_PORT: {{ .Values.config.httpPort | quote }}
+  SONIQ_MCP_EXPOSURE: {{ .Values.config.exposure | quote }}
+  SONIQ_MCP_LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  SONIQ_MCP_MAX_VOLUME_PCT: {{ .Values.config.maxVolumePct | quote }}
+  SONIQ_MCP_TOOLS_DISABLED: {{ .Values.config.toolsDisabled | quote }}
