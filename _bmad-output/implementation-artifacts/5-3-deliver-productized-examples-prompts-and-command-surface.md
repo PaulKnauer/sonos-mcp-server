@@ -1,6 +1,6 @@
 # Story 5.3: Deliver Productized Examples, Prompts, and Command Surface
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -260,3 +260,4 @@ GPT-5 Codex
 
 - 2026-03-29: Implemented Story 5.3 by productizing the prompt and command docs surface, adding a canonical command reference, and extending docs regression coverage; moved story to review.
 - 2026-03-29: Addressed review findings by clarifying the Claude Desktop local `stdio` flow in the command reference and hardening the Makefile target regression test.
+- 2026-03-29: Marked Story 5.3 done after completing implementation and review follow-up work.
