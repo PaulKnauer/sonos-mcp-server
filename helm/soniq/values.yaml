@@ -1,0 +1,30 @@
+image:
+  repository: soniq-mcp
+  tag: local
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: soniq.local
+      paths:
+        - path: /
+          pathType: Prefix
+
+config:
+  transport: http
+  httpHost: "0.0.0.0"
+  httpPort: "8000"
+  exposure: home-network
+  logLevel: INFO
+  maxVolumePct: "80"
+  toolsDisabled: ""
+
+secret:
+  defaultRoom: ""
