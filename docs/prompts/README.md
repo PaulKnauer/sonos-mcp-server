@@ -1,3 +1,5 @@
 # Example Prompts
 
-Story 1.1 placeholder. Prompt examples will be expanded in Story 1.5.
+Natural language prompts and usage examples for SoniqMCP.
+
+- [Example prompts and use cases](example-uses.md) — Prompts for playback, volume, queues, favourites, grouping, and setup verification

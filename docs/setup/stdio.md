@@ -140,9 +140,9 @@ Claude calls `server_info` and returns the active transport, exposure posture, l
 
 This guide covers same-machine stdio only. Remote deployment (Docker, Helm, Streamable HTTP) is covered in Epic 4 docs. Key differences:
 
-| | Local stdio | Remote HTTP (Epic 4) |
+| | Local stdio | Remote HTTP |
 |---|---|---|
 | Transport | stdin/stdout | Streamable HTTP |
-| Network | No port opened | Port 8080 (configurable) |
+| Network | No port opened | Port 8000 (configurable) |
 | Client location | Same machine | Any network client |
-| Config | `.env` file or env vars | Same, plus TLS settings |
+| Config | `.env` file or env vars | Same env vars, `SONIQ_MCP_TRANSPORT=http` |
