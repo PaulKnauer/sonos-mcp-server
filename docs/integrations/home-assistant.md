@@ -34,12 +34,14 @@ If everything runs on one workstation and the client can launch subprocesses dir
 
 ## Deployment options
 
-Choose one of the supported remote deployment paths:
+Choose one of the documented remote deployment paths:
 
-1. Docker on a Linux home-lab machine
-2. Helm on k3s or Kubernetes
+1. Docker on Linux, where host networking can reach Sonos discovery traffic reliably
+2. Helm on k3s or Kubernetes only if you are willing to apply the documented `hostNetwork: true` manual workaround
 
 For deployment details, see [Docker setup](../setup/docker.md) and [Helm setup](../setup/helm.md).
+
+Docker on Linux is the cleaner remote option today. The current Helm chart still requires a `hostNetwork: true` manual workaround for reliable Sonos discovery, so treat Helm as an advanced self-hosted path rather than a turnkey default.
 
 The MCP endpoint for both remote patterns is:
 

@@ -38,9 +38,24 @@ class TestIntegrationGuides:
         assert "[Home Assistant integration](docs/integrations/home-assistant.md)" in readme
         assert "[n8n integration](docs/integrations/n8n.md)" in readme
 
+    def test_root_readme_qualifies_remote_deployment_claims(self) -> None:
+        readme = _read(ROOT_README)
+        assert "Docker on Linux" in readme
+        assert "documented Helm / k3s guidance" in readme
+
     def test_prompts_include_agent_automation_examples(self) -> None:
         prompts = _read(PROMPTS_GUIDE)
         assert "## Agent and automation workflows" in prompts
         assert "Home Assistant" in prompts
         assert "`n8n`" in prompts
         assert "Streamable HTTP" in prompts
+
+    def test_agent_guides_call_out_remote_deployment_caveats(self) -> None:
+        home_assistant = _read(HOME_ASSISTANT_GUIDE)
+        n8n = _read(N8N_GUIDE)
+        assert "Docker on Linux" in home_assistant
+        assert "`hostNetwork: true`" in home_assistant
+        assert "manual workaround" in home_assistant
+        assert "Docker on Linux" in n8n
+        assert "`hostNetwork: true`" in n8n
+        assert "manual workaround" in n8n

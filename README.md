@@ -1,6 +1,6 @@
 # SoniqMCP — Sonos MCP Server
 
-Control your Sonos system from any MCP-compatible AI client. Run locally over stdio, or deploy as a Docker container or Helm release for whole-home access.
+Control your Sonos system from any MCP-compatible AI client. Run locally over stdio, deploy with Docker on Linux for whole-home access, or follow the documented Helm / k3s guidance when its networking caveats fit your environment.
 
 ## What it does
 

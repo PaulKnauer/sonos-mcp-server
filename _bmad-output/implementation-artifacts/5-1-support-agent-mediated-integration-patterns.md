@@ -183,6 +183,10 @@ GPT-5 Codex
 - Validation phase: `./.venv/bin/python -m pytest` passed 650 tests with 3 skipped and 4 sandbox-related smoke-test errors; reran the blocked smoke tests outside the sandbox and they passed.
 - Validation phase: `./.venv/bin/ruff check src tests && ./.venv/bin/ruff format --check src tests` passed.
 - Validation phase: `./.venv/bin/mypy src` passed.
+- Review follow-up red phase: strengthened `tests/unit/test_integration_docs.py` to require explicit remote deployment caveats for Docker on Linux and Helm's `hostNetwork: true` manual workaround, then confirmed the new assertions failed against the prior wording.
+- Review follow-up green phase: updated `README.md`, `docs/integrations/home-assistant.md`, and `docs/integrations/n8n.md` so remote deployment guidance no longer overstates Helm support and now points readers toward documented caveats.
+- Review follow-up validation phase: `env UV_CACHE_DIR=/tmp/uv-cache uv run pytest tests/unit/test_integration_docs.py tests/integration/transports/test_http_bootstrap.py`, `env UV_CACHE_DIR=/tmp/uv-cache uv run ruff check src tests`, `env UV_CACHE_DIR=/tmp/uv-cache uv run ruff format --check src tests`, and `env UV_CACHE_DIR=/tmp/uv-cache uv run mypy src` all passed.
+- Review follow-up validation phase: `env UV_CACHE_DIR=/tmp/uv-cache uv run pytest` passed except for the known sandbox restrictions in Docker and streamable HTTP smoke tests; reran `env UV_CACHE_DIR=/tmp/uv-cache uv run pytest tests/smoke/docker/test_docker_smoke.py tests/smoke/streamable_http/test_streamable_http_smoke.py` outside the sandbox and all 4 smoke tests passed.
 
 ### Completion Notes List
 
@@ -193,6 +197,8 @@ GPT-5 Codex
 - Updated `docs/setup/README.md` and `README.md` so the new integration guides are reachable from the primary documentation flow.
 - Expanded `docs/prompts/example-uses.md` with agent and automation workflow examples that preserve explicit targeting and volume-cap safety constraints.
 - Story 5.1 moved from `ready-for-dev` to `review`, and sprint tracking was updated to match.
+- Tightened remote deployment wording so Docker guidance is explicitly Linux-oriented and Helm guidance is explicitly framed as a documented advanced path with a `hostNetwork: true` manual workaround.
+- Extended the documentation regression tests to prevent future overstatement of Docker and Helm productization in the root and integration guides.
 
 ### File List
 
@@ -210,3 +216,4 @@ GPT-5 Codex
 ## Change Log
 
 - 2026-03-29: Story 5.1 implemented. Added transport metadata parity coverage, added integration docs for Home Assistant and `n8n`, updated documentation entry points, expanded automation examples, and validated with targeted tests, lint, mypy, and smoke-test follow-up. Status -> review.
+- 2026-03-29: Addressed review follow-up on deployment claims. Qualified Docker as Linux-oriented, clarified Helm's documented `hostNetwork: true` manual workaround, expanded doc regression coverage, and revalidated the targeted and blocked smoke tests.

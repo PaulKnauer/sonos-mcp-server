@@ -18,6 +18,8 @@ For `n8n`, use **Streamable HTTP** so workflows can call a long-running MCP serv
 
 This is the cleanest fit for workflow engines, scheduled jobs, and multi-step agent automations.
 
+Today, that usually means Docker on Linux. Helm is still a documented advanced path rather than a turnkey default because the current chart requires a `hostNetwork: true` manual workaround for reliable Sonos discovery.
+
 ---
 
 ## What SoniqMCP is responsible for
@@ -60,7 +62,8 @@ This keeps the workflow explicit and avoids brittle glue code.
 ## Safety and deployment guidance
 
 - Keep SoniqMCP on a trusted home network.
-- Use Docker or Helm for a long-running remote deployment.
+- Prefer Docker on Linux for a long-running remote deployment.
+- Use Helm only if the documented `hostNetwork: true` manual workaround fits your environment.
 - Avoid documenting or relying on public internet exposure as a normal pattern.
 - Keep room targeting explicit in workflow steps so automations remain predictable.
 - Respect the configured `SONIQ_MCP_MAX_VOLUME_PCT` limit for every workflow that changes volume.
