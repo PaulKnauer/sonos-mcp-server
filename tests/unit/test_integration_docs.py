@@ -203,11 +203,19 @@ class TestSecurityAndOperationsDocs:
         assert "PyPI" in guide
         assert "GHCR" in guide
         assert "v*.*.*" in guide
+        assert "GitHub Release" in guide
+        assert "gh release create" in guide
 
     def test_operations_guide_documents_docker_tags(self) -> None:
         guide = _read(OPERATIONS_GUIDE)
         assert "semver" in guide.lower() or "major.minor" in guide.lower()
         assert "latest" in guide
+
+    def test_operations_guide_documents_maintainer_release_steps(self) -> None:
+        guide = _read(OPERATIONS_GUIDE)
+        assert "make release-bump-patch" in guide
+        assert "make release-tag" in guide
+        assert "git push origin v0.1.1" in guide
 
     def test_operations_guide_documents_upgrade_flows(self) -> None:
         guide = _read(OPERATIONS_GUIDE)

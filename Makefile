@@ -3,7 +3,7 @@ PACKAGE ?= soniq_mcp
 IMAGE ?= soniq-mcp
 TAG ?= local
 
-.PHONY: ensure-uv install run run-stdio test check tree lint format type-check coverage audit build-check ci docker-build docker-run docker-compose-up docker-compose-down helm-lint helm-template helm-install
+.PHONY: ensure-uv install run run-stdio test check tree lint format type-check coverage audit build-check ci docker-build docker-run docker-compose-up docker-compose-down helm-lint helm-template helm-install release-version release-bump-major release-bump-minor release-bump-patch release-tag release-gh
 
 ensure-uv:
 	@command -v uv >/dev/null 2>&1 || test -x "$(UV)" || { \
@@ -77,3 +77,21 @@ helm-template:
 
 helm-install:
 	helm upgrade --install soniq helm/soniq
+
+release-version:
+	$(UV) run python scripts/release.py current
+
+release-bump-major:
+	$(UV) run python scripts/release.py bump major
+
+release-bump-minor:
+	$(UV) run python scripts/release.py bump minor
+
+release-bump-patch:
+	$(UV) run python scripts/release.py bump patch
+
+release-tag:
+	$(UV) run python scripts/release.py tag
+
+release-gh:
+	$(UV) run python scripts/release.py release

@@ -21,6 +21,12 @@ Run these from the project root:
 | `make coverage` | Run tests with coverage output | Coverage-oriented validation |
 | `make audit` | Run dependency vulnerability scan | Dependency hygiene |
 | `make ci` | Run lint, type-check, coverage, audit, and build-check | Full local quality gate before review |
+| `make release-version` | Print the current package version from `pyproject.toml` | Release prep and version checks |
+| `make release-bump-patch` | Increment the patch version in `pyproject.toml` | Backward-compatible bug-fix release prep |
+| `make release-bump-minor` | Increment the minor version in `pyproject.toml` | Backward-compatible feature release prep |
+| `make release-bump-major` | Increment the major version in `pyproject.toml` | Breaking-change release prep |
+| `make release-tag` | Create annotated git tag `vX.Y.Z` from the current version | Release cut after the version bump is committed |
+| `make release-gh` | Create a GitHub Release with generated notes via `gh` | Manual GitHub Release bootstrap or recovery |
 | `make docker-build` | Build the Docker image | Prepare a remote HTTP deployment artifact |
 | `make docker-run` | Run the HTTP server in Docker on port `8000` | Linux home-lab validation |
 | `make docker-compose-up` | Build and start the Compose stack in detached mode | Compose-based remote setup |

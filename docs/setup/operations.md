@@ -35,6 +35,34 @@ The product does not include built-in user accounts, OAuth flows, or remote auth
 
 SoniqMCP is released via GitHub Actions when a version tag matching `v*.*.*` is pushed.
 
+### Maintainer semver workflow
+
+SoniqMCP now uses the `project.version` field in `pyproject.toml` as the single release version source. Maintainers should treat that value as strict semver (`MAJOR.MINOR.PATCH`) and use the helper targets below to keep version, tag, and GitHub Release creation aligned.
+
+| Step | Command | Result |
+|---|---|---|
+| Inspect current version | `make release-version` | Prints the current `pyproject.toml` version |
+| Bump a release | `make release-bump-patch` | Updates `project.version` to the next patch version |
+|  | `make release-bump-minor` | Updates `project.version` to the next minor version |
+|  | `make release-bump-major` | Updates `project.version` to the next major version |
+| Create annotated git tag | `make release-tag` | Creates `vX.Y.Z` from the current version |
+| Create GitHub Release manually | `make release-gh` | Runs `gh release create vX.Y.Z --generate-notes` |
+
+Recommended maintainer flow:
+
+```bash
+make release-bump-patch
+git add pyproject.toml
+git commit -m "Release v0.1.1"
+git push origin main
+make release-tag
+git push origin v0.1.1
+```
+
+Pushing the tag triggers the publish workflow. That workflow publishes PyPI and GHCR artifacts, then creates the GitHub Release entry with generated notes if one does not already exist.
+
+Use `make release-gh` only if you need to create the Release object yourself after the tag already exists, or if the workflow-created Release needs to be bootstrapped manually.
+
 ### PyPI package
 
 The `.github/workflows/publish.yml` workflow publishes a PyPI package using GitHub Actions OIDC trusted publishing (`id-token: write`). No manual token rotation is required once the repository is configured as a trusted publisher on PyPI.
@@ -156,6 +184,8 @@ There is currently no automated changelog or release notes generator in the repo
 ```bash
 git log v1.2.2..v1.2.3 --oneline
 ```
+
+GitHub Release notes are generated from merged pull requests and commits by `gh release create --generate-notes`. Treat those notes as the primary human-readable release summary unless and until a dedicated changelog file is introduced.
 
 ### Assumptions that are unsafe until a stronger policy exists
 
