@@ -33,9 +33,7 @@ def test_parse_version_rejects_non_strict_semver(version: str) -> None:
         ("0.9.9", "major", "1.0.0"),
     ],
 )
-def test_bump_version_returns_expected_semver(
-    current: str, part: str, expected: str
-) -> None:
+def test_bump_version_returns_expected_semver(current: str, part: str, expected: str) -> None:
     assert release_script.bump_version(current, part) == expected
 
 
@@ -52,6 +50,4 @@ def test_read_and_write_version_round_trip(tmp_path: Path) -> None:
 
 def test_replace_version_updates_single_declaration() -> None:
     contents = '[project]\nversion = "0.1.0"\n'
-    assert release_script.replace_version(contents, "0.1.1") == (
-        '[project]\nversion = "0.1.1"\n'
-    )
+    assert release_script.replace_version(contents, "0.1.1") == '[project]\nversion = "0.1.1"\n'
