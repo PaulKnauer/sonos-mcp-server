@@ -82,7 +82,8 @@ jobs:
 
       - name: Create GitHub release with generated notes
         run: |
-          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || \
+          gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
           gh release create "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
             --title "$GITHUB_REF_NAME" \
             --generate-notes
