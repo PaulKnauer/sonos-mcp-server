@@ -2,6 +2,7 @@
 stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-02b-vision', 'step-02c-executive-summary', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation', 'step-07-project-type', 'step-08-scoping', 'step-09-functional', 'step-10-nonfunctional', 'step-11-polish', 'step-12-complete']
 inputDocuments: []
 workflowType: 'prd'
+workflow: 'edit'
 briefCount: 0
 researchCount: 0
 brainstormingCount: 0
@@ -11,6 +12,10 @@ classification:
   domain: 'general'
   complexity: 'medium'
   projectContext: 'greenfield'
+lastEdited: '2026-04-02'
+editHistory:
+  - date: '2026-04-02'
+    changes: 'Added Tier 1 and Tier 2 SoCo capability expansion scope, roadmap updates, and functional requirements from the capability gap analysis.'
 ---
 
 # Product Requirements Document - Soniq
@@ -66,7 +71,7 @@ Testing is comprehensive where it matters: business logic, configuration validat
 
 A successful initial release allows a user to install and configure the product, connect it to an MCP-capable AI client, and execute common Sonos actions locally via `stdio` with minimal friction. A successful deployed configuration allows the same product to run from a containerized environment using HTTP-based transport and documented deployment patterns.
 
-The product should ship with a core tool surface that is competitive with existing Sonos MCP alternatives, plus a superior setup and deployment experience. It should publish successfully to PyPI, publish container images for practical use, and provide Helm packaging suitable for self-hosted home-lab environments. The configuration experience should include sensible defaults and validation that prevent common setup failures before runtime.
+The product should ship with a core tool surface that is competitive with existing Sonos MCP alternatives, plus a superior setup and deployment experience. That competitive surface should expand beyond basic playback and grouping into higher-value Sonos controls such as play modes, seek, sleep timer, audio EQ, input switching, alarms, richer playlist operations, group-level audio control, and local library access as the roadmap progresses. It should publish successfully to PyPI, publish container images for practical use, and provide Helm packaging suitable for self-hosted home-lab environments. The configuration experience should include sensible defaults and validation that prevent common setup failures before runtime.
 
 ## Product Scope
 
@@ -78,7 +83,7 @@ The MVP should be release-worthy for real home use and strong enough that a user
 
 ### Growth Features (Post-MVP)
 
-Post-MVP work should deepen the competitive advantage through installer or setup-script support, better diagnostics, richer system introspection, alarm and sleep timer management, snapshot or restore flows, and stronger support for less technical users. Growth work should also improve the operational experience with better discovery helpers, better error messaging, and further reduction in setup friction.
+Post-MVP work should deepen the competitive advantage through play modes, seek, sleep timer management, audio EQ controls, input switching, alarm management, playlist CRUD support, group volume and mute controls, local music library access, installer or setup-script support, better diagnostics, richer system introspection, snapshot or restore flows, and stronger support for less technical users. Growth work should also improve the operational experience with better discovery helpers, better error messaging, and further reduction in setup friction.
 
 These features are not required to prove the product is useful, but they materially strengthen the claim that the product is the easiest serious Sonos MCP server to adopt and operate.
 
@@ -154,7 +159,7 @@ This journey reveals requirements for a clear and comprehensive MCP tool surface
 
 These journeys show that the product must support multiple deployment and usage modes from the start: local `stdio`, home-network HTTP/S deployment, mobile or cross-device access, and agent-driven integrations. The product must make the simplest path extremely easy while still supporting more advanced self-hosted patterns.
 
-They also show that onboarding and recovery are product-defining capabilities. Users need guided setup, sensible defaults, plain-language validation, and clear troubleshooting for different AI-client connection models. Finally, the journeys confirm that the tool interface must be expressive enough to support not just direct playback commands, but broader conversational and orchestration-driven Sonos experiences.
+They also show that onboarding and recovery are product-defining capabilities. Users need guided setup, sensible defaults, plain-language validation, and clear troubleshooting for different AI-client connection models. Finally, the journeys confirm that the tool interface must be expressive enough to support not just direct playback commands, but broader conversational and orchestration-driven Sonos experiences, including play mode changes, seek, sleep behavior, audio tuning, input switching, alarm flows, richer playlist handling, and library-driven playback selection.
 
 ## Domain-Specific Requirements
 
@@ -317,23 +322,35 @@ This MVP should be sufficient to make the product feel complete for its intended
 
 ### Post-MVP Features
 
-**Phase 2 (Post-MVP):**
-- alarms and sleep timer support
-- snapshot and restore flows
-- TTS capabilities
+**Phase 2 (Tier 1 Expansion):**
+- play mode controls including shuffle, repeat, and crossfade
+- seek within the current track
+- sleep timer support
+- audio EQ controls including bass, treble, and loudness
+- input switching for supported line-in and TV scenarios
 - setup installer or helper script
 - advanced diagnostics
 - richer guidance for remote, mobile, and cross-device usage
 
-Phase 2 should deepen the product’s operational advantage and expand the “pleasant to use” qualities that distinguish it from other offerings. These are meaningful competitive enhancements, but they are not required to validate the core value proposition.
+This phase is the immediate capability expansion recommended by the SoCo gap analysis. It adds high-value Sonos controls that require minimal architectural change and materially improve the usefulness of AI-assisted listening workflows.
 
-**Phase 3 (Expansion):**
+**Phase 3 (Tier 2 Expansion):**
+- alarm management
+- playlist CRUD support
+- group volume and mute controls
+- local music library browsing and playback support
+- snapshot and restore flows
+- TTS capabilities
+
+Phase 3 should deepen the product’s control-surface advantage with medium-effort SoCo-backed capabilities that improve daily utility and automation potential without pushing into specialist or architectural-expansion territory.
+
+**Phase 4 (Expansion):**
 - event subscriptions
 - broader discovery options beyond static configuration
 - richer support for downstream agentic consumers
 - expanded transport evolution and ecosystem integrations
 
-Phase 3 is where `Soniq` can become not just a strong Sonos MCP server, but a foundational control layer for more advanced AI-powered home audio experiences.
+Phase 4 is where `Soniq` can become not just a strong Sonos MCP server, but a foundational control layer for more advanced AI-powered home audio experiences.
 
 ### Risk Mitigation Strategy
 
@@ -382,44 +399,62 @@ Phase 3 is where `Soniq` can become not just a strong Sonos MCP server, but a fo
 - FR27: Users can remove a room from its current group.
 - FR28: Users can trigger whole-home or multi-room grouping when appropriate.
 - FR29: Users can view system-level room and speaker information relevant to control operations.
+- FR30: Users can view and change shuffle mode for a selected room or its active coordinator.
+- FR31: Users can view and change repeat mode for a selected room or its active coordinator.
+- FR32: Users can view and change crossfade mode for a selected room or its active coordinator.
+- FR33: Users can seek to a specified position within the currently playing track for a selected room.
+- FR34: Users can set and inspect a sleep timer for a selected room.
+- FR35: Users can view and adjust bass settings for a selected room.
+- FR36: Users can view and adjust treble settings for a selected room.
+- FR37: Users can view and change loudness settings for a selected room.
+- FR38: Users can switch a selected room to supported line-in or TV input sources when the target device supports those inputs.
 
 ### MCP Client and Agent Integration
 
-- FR30: Users can run the server as a local MCP endpoint for same-machine AI client usage.
-- FR31: Users can run the server as a network-accessible MCP endpoint for trusted home-network usage.
-- FR32: MCP-compatible AI clients can invoke the server’s control capabilities through supported transports.
-- FR33: Agent-based systems can use the server as a Sonos control layer within broader workflows.
-- FR34: Users can use the same core Sonos capabilities through both direct AI-client usage and agent-mediated usage.
-- FR35: Users can understand which runtime mode to use for their scenario through product-provided guidance and examples.
+- FR39: Users can run the server as a local MCP endpoint for same-machine AI client usage.
+- FR40: Users can run the server as a network-accessible MCP endpoint for trusted home-network usage.
+- FR41: MCP-compatible AI clients can invoke the server’s control capabilities through supported transports.
+- FR42: Agent-based systems can use the server as a Sonos control layer within broader workflows.
+- FR43: Users can use the same core Sonos capabilities through both direct AI-client usage and agent-mediated usage.
+- FR44: Users can understand which runtime mode to use for their scenario through product-provided guidance and examples.
 
 ### Setup, Configuration, and Onboarding
 
-- FR36: Users can install the product through an official Python package distribution.
-- FR37: Users can run the product through an official container image.
-- FR38: Users can deploy the product through an official Helm chart.
-- FR39: Users can configure the product for a single-household home Sonos environment.
-- FR40: Users can use sensible default settings for common setup paths.
-- FR41: Users can validate configuration before attempting normal runtime operation.
-- FR42: Users can identify configuration errors through actionable setup feedback.
-- FR43: Users can access guided setup and onboarding documentation for supported usage patterns.
-- FR44: Users can access MCP client configuration examples for supported client types.
-- FR45: Users can choose between local and home-network deployment patterns based on documented guidance.
+- FR45: Users can install the product through an official Python package distribution.
+- FR46: Users can run the product through an official container image.
+- FR47: Users can deploy the product through an official Helm chart.
+- FR48: Users can configure the product for a single-household home Sonos environment.
+- FR49: Users can use sensible default settings for common setup paths.
+- FR50: Users can validate configuration before attempting normal runtime operation.
+- FR51: Users can identify configuration errors through actionable setup feedback.
+- FR52: Users can access guided setup and onboarding documentation for supported usage patterns.
+- FR53: Users can access MCP client configuration examples for supported client types.
+- FR54: Users can choose between local and home-network deployment patterns based on documented guidance.
 
 ### Permission, Safety, and Control Boundaries
 
-- FR46: Users can restrict which tools or capabilities are exposed to connected MCP clients where MCP permission models support it.
-- FR47: Users can control the default exposure posture of the server for local and home-network operation.
-- FR48: Users can operate the product within a home-use trust model without exposing it beyond the home network by default.
-- FR49: Users can avoid disruptive control outcomes through safe control behavior around sensitive actions such as volume changes and room targeting.
+- FR55: Users can restrict which tools or capabilities are exposed to connected MCP clients where MCP permission models support it.
+- FR56: Users can control the default exposure posture of the server for local and home-network operation.
+- FR57: Users can operate the product within a home-use trust model without exposing it beyond the home network by default.
+- FR58: Users can avoid disruptive control outcomes through safe control behavior around sensitive actions such as volume changes and room targeting.
+- FR59: Users can avoid invalid or misleading advanced-control actions when a requested capability depends on device type, active coordinator state, or supported input source.
 
 ### Documentation, Examples, and Troubleshooting
 
-- FR50: Users can access example usage patterns for local `stdio` operation.
-- FR51: Users can access example usage patterns for Docker-based operation.
-- FR52: Users can access example usage patterns for Helm-based deployment.
-- FR53: Users can access example usage patterns for cross-device and home-network scenarios.
-- FR54: Users can access example usage patterns for agentic and automation integrations such as Home Assistant and `n8n`.
-- FR55: Users can access troubleshooting guidance for installation, configuration, transport setup, and Sonos control issues.
+- FR60: Users can access example usage patterns for local `stdio` operation.
+- FR61: Users can access example usage patterns for Docker-based operation.
+- FR62: Users can access example usage patterns for Helm-based deployment.
+- FR63: Users can access example usage patterns for cross-device and home-network scenarios.
+- FR64: Users can access example usage patterns for agentic and automation integrations such as Home Assistant and `n8n`.
+- FR65: Users can access troubleshooting guidance for installation, configuration, transport setup, and Sonos control issues.
+
+### Advanced Sonos Automation and Library Control
+
+- FR66: Users can view, create, update, and delete Sonos alarms for supported households and rooms.
+- FR67: Users can view, create, update, and delete Sonos playlists exposed through the household.
+- FR68: Users can control group-level volume and mute state for an active Sonos group.
+- FR69: Users can browse and select content from the local Sonos music library with result handling suitable for large collections.
+- FR70: Users can use the same advanced control surface through direct AI-client interactions and agent-mediated workflows without learning a different capability model.
 
 ## Non-Functional Requirements
 
