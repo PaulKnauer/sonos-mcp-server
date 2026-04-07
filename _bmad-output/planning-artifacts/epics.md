@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4]
+stepsCompleted: [1, 2, 3]
 inputDocuments:
   - '/Users/paul/github/sonos-mcp-server/_bmad-output/planning-artifacts/prd.md'
   - '/Users/paul/github/sonos-mcp-server/_bmad-output/planning-artifacts/architecture.md'
@@ -42,492 +42,542 @@ FR24: Users can start playback of a selected Sonos playlist in a target room.
 FR25: Users can view the current Sonos grouping topology.
 FR26: Users can add a room to an existing group.
 FR27: Users can remove a room from its current group.
-FR28: Users can trigger whole-home or multi-room grouping when appropriate.
-FR29: Users can view system-level room and speaker information relevant to control operations.
-FR30: Users can run the server as a local MCP endpoint for same-machine AI client usage.
-FR31: Users can run the server as a network-accessible MCP endpoint for trusted home-network usage.
-FR32: MCP-compatible AI clients can invoke the server’s control capabilities through supported transports.
-FR33: Agent-based systems can use the server as a Sonos control layer within broader workflows.
-FR34: Users can use the same core Sonos capabilities through both direct AI-client usage and agent-mediated usage.
-FR35: Users can understand which runtime mode to use for their scenario through product-provided guidance and examples.
-FR36: Users can install the product through an official Python package distribution.
-FR37: Users can run the product through an official container image.
-FR38: Users can deploy the product through an official Helm chart.
-FR39: Users can configure the product for a single-household home Sonos environment.
-FR40: Users can use sensible default settings for common setup paths.
-FR41: Users can validate configuration before attempting normal runtime operation.
-FR42: Users can identify configuration errors through actionable setup feedback.
-FR43: Users can access guided setup and onboarding documentation for supported usage patterns.
-FR44: Users can access MCP client configuration examples for supported client types.
-FR45: Users can choose between local and home-network deployment patterns based on documented guidance.
-FR46: Users can restrict which tools or capabilities are exposed to connected MCP clients where MCP permission models support it.
-FR47: Users can control the default exposure posture of the server for local and home-network operation.
-FR48: Users can operate the product within a home-use trust model without exposing it beyond the home network by default.
-FR49: Users can avoid disruptive control outcomes through safe control behavior around sensitive actions such as volume changes and room targeting.
-FR50: Users can access example usage patterns for local `stdio` operation.
-FR51: Users can access example usage patterns for Docker-based operation.
-FR52: Users can access example usage patterns for Helm-based deployment.
-FR53: Users can access example usage patterns for cross-device and home-network scenarios.
-FR54: Users can access example usage patterns for agentic and automation integrations such as Home Assistant and `n8n`.
-FR55: Users can access troubleshooting guidance for installation, configuration, transport setup, and Sonos control issues.
+FR28: Users can trigger whole-home or multi-room grouping through explicit commands that target all discovered rooms or a specified room set.
+FR29: Users can view a defined system-information set that supports control operations, including room names, coordinator state, group membership, and addressable speaker identity data.
+FR30: Users can view and change shuffle mode for a selected room or its active coordinator.
+FR31: Users can view and change repeat mode for a selected room or its active coordinator.
+FR32: Users can view and change crossfade mode for a selected room or its active coordinator.
+FR33: Users can seek to a specified position within the currently playing track for a selected room.
+FR34: Users can set and inspect a sleep timer for a selected room.
+FR35: Users can view and adjust bass settings for a selected room.
+FR36: Users can view and adjust treble settings for a selected room.
+FR37: Users can view and change loudness settings for a selected room.
+FR38: Users can switch a selected room to supported line-in or TV input sources when the target device supports those inputs.
+FR39: Users can run the server as a local MCP endpoint for same-machine AI client usage.
+FR40: Users can run the server as a network-accessible MCP endpoint for trusted home-network usage.
+FR41: MCP-compatible AI clients can invoke the server’s control capabilities through supported transports.
+FR42: Agent-based systems can use the server as a Sonos control layer within broader workflows.
+FR43: Users can use the same core Sonos capabilities through both direct AI-client usage and agent-mediated usage.
+FR44: Users can understand which runtime mode to use for their scenario through product-provided guidance and examples.
+FR45: Users can install the product through an official Python package distribution.
+FR46: Users can run the product through an official container image.
+FR47: Users can deploy the product through an official Helm chart.
+FR48: Users can configure the product for a single-household home Sonos environment.
+FR49: Users can use documented default configuration profiles for the common local `stdio` and home-network deployment paths.
+FR50: Users can validate configuration before attempting normal runtime operation.
+FR51: Users can identify configuration errors through actionable setup feedback.
+FR52: Users can access guided setup and onboarding documentation for supported usage patterns.
+FR53: Users can access MCP client configuration examples for supported client types.
+FR54: Users can choose between local and home-network deployment patterns based on documented guidance.
+FR55: Users can restrict which tools or capabilities are exposed to connected MCP clients where MCP permission models support it.
+FR56: Users can control the default exposure posture of the server for local and home-network operation.
+FR57: Users can operate the product within a home-use trust model without exposing it beyond the home network by default.
+FR58: Users can avoid disruptive control outcomes through safe control behavior around sensitive actions such as volume changes and room targeting.
+FR59: Users can avoid invalid or misleading advanced-control actions when a requested capability depends on device type, active coordinator state, or supported input source.
+FR60: Users can access example usage patterns for local `stdio` operation.
+FR61: Users can access example usage patterns for Docker-based operation.
+FR62: Users can access example usage patterns for Helm-based deployment.
+FR63: Users can access example usage patterns for cross-device and home-network scenarios.
+FR64: Users can access example usage patterns for agentic and automation integrations such as Home Assistant and `n8n`.
+FR65: Users can access troubleshooting guidance for installation, configuration, transport setup, and Sonos control issues.
+FR66: Users can view, create, update, and delete Sonos alarms for supported households and rooms.
+FR67: Users can view, create, update, and delete Sonos playlists exposed through the household.
+FR68: Users can control group-level volume and mute state for an active Sonos group.
+FR69: Users can browse and select content from the local Sonos music library with pagination or bounded-result behavior that remains usable for collections of at least 1,000 items.
+FR70: Users can use the same named advanced-control capabilities through direct AI-client interactions and agent-mediated workflows, with no capability-category mismatch between the two access patterns.
 
 ### NonFunctional Requirements
 
-NFR1: Core control actions such as play, pause, stop, room targeting, and volume changes should return an initial tool response quickly enough to feel responsive in conversational use.
-NFR2: Configuration validation and startup checks should complete quickly enough to support an iterative setup experience rather than a long trial-and-error cycle.
-NFR3: The product should remain responsive when handling typical single-household usage patterns, including multiple control actions during an active session.
-NFR4: Local `stdio` operation should feel at least as responsive as remote home-network operation for equivalent actions.
-NFR5: The product should behave predictably and consistently across repeated control actions against the same Sonos environment.
-NFR6: The product should fail gracefully when speakers are unreachable, configuration is invalid, or MCP transport setup is incorrect.
-NFR7: The product should provide actionable diagnostic feedback when control actions fail or cannot be completed as requested.
-NFR8: The product should preserve user trust by minimizing surprising outcomes, especially for room targeting and volume-related operations.
-NFR9: Official install and deployment paths should be repeatable without requiring undocumented manual intervention.
-NFR10: The default security posture should assume local or trusted home-network usage rather than public internet exposure.
-NFR11: The product should not require broader network exposure than necessary for supported usage patterns.
-NFR12: The product should support MCP-compatible permission and tool-restriction models where the client ecosystem supports them.
-NFR13: Configuration and deployment guidance should clearly distinguish safe default exposure from advanced or user-managed exposure choices.
-NFR14: The product should avoid storing or exposing unnecessary sensitive information in logs, examples, or default configuration flows.
-NFR15: The product should provide stable, well-documented MCP capability semantics across supported transports.
-NFR16: The product should support the same core control model across direct AI-client usage and agent-mediated usage.
-NFR17: Official examples should cover local `stdio`, Docker-based runtime, Helm deployment, and representative MCP client configurations.
-NFR18: The product should provide enough configuration and troubleshooting clarity that supported clients and automation systems can be integrated without reverse engineering product behavior.
-NFR19: The codebase should be organized so that Sonos control logic, MCP transport logic, configuration handling, and deployment assets can evolve independently.
-NFR20: The product should include automated testing coverage for business logic, configuration validation, and other meaningful risk areas rather than coverage for its own sake.
-NFR21: The architecture should support adding new MCP clients, deployment patterns, and downstream agent consumers without major restructuring.
-NFR22: Documentation, examples, and operational assets should be maintained as product-critical artifacts rather than optional supporting material.
-NFR23: The product should support the expected load profile of a single-household, self-hosted Sonos environment without degradation in normal use.
-NFR24: The product should be able to support multiple client interactions within the same home environment without requiring redesign of the core product model.
-NFR25: The product does not need to optimize for multi-tenant or internet-scale deployment in v1, and quality decisions should favor home-use robustness over generalized scale.
+NFR1: Core control actions such as play, pause, stop, room targeting, and volume changes shall return an initial MCP tool response in under 2 seconds for 95% of requests in a healthy single-household environment.
+NFR2: Configuration validation and startup checks shall complete in under 10 seconds for 95% of runs on supported local and containerized setups.
+NFR3: The product shall sustain at least 20 sequential control actions within a 60-second window in a single active session without process restart, request timeout, or control-state corruption.
+NFR4: Local `stdio` operation shall have median end-to-end request latency no worse than 20% faster than equivalent home-network operation under the same household conditions.
+NFR5: Repeating the same supported control action against the same target room under unchanged household conditions shall produce the same resulting Sonos state in at least 99% of test runs.
+NFR6: When speakers are unreachable, configuration is invalid, or MCP transport setup is incorrect, the product shall return a typed failure response with corrective guidance and without unhandled process termination in 100% of tested failure cases.
+NFR7: For every user-correctable runtime failure, the product shall return an error message that identifies the failed action, the affected target, and at least one corrective next step.
+NFR8: Volume-changing actions shall respect configured safety limits in 100% of test cases, and room-targeted actions shall not affect an unintended room in any supported single-command success scenario.
+NFR9: Official Python-package, Docker, and Helm installation paths shall succeed from documented instructions without undocumented manual intervention in clean test environments.
+NFR10: Default configuration shall bind the product only to local process or trusted home-network use cases and shall not require public-internet exposure for any supported v1 workflow.
+NFR11: No documented deployment pattern shall require broader network access than the minimum needed for the selected runtime mode and Sonos household reachability.
+NFR12: Where the client ecosystem supports MCP permission or tool-restriction controls, the product shall expose enough metadata and configuration control to disable restricted tool categories before runtime.
+NFR13: Configuration and deployment guidance shall document at least one safe-default exposure pattern and at least one explicitly advanced exposure pattern, with the risks of the latter stated in operator-facing language.
+NFR14: Logs, examples, and default configuration flows shall exclude secrets, auth tokens, and household-specific identifiers except where the user explicitly enables diagnostic verbosity.
+NFR15: The product shall preserve functional parity for all documented core tools across supported transports, except where transport limitations are explicitly documented.
+NFR16: The product shall preserve the same room-targeting model, safety behavior, and advanced-capability naming across direct AI-client usage and agent-mediated usage.
+NFR17: Official examples shall cover local `stdio`, Docker-based runtime, Helm deployment, and at least three representative MCP client or automation configurations.
+NFR18: A new user following the official integration documentation shall be able to complete a supported client integration without consulting source code or undocumented configuration files.
+NFR19: The codebase shall preserve separable module boundaries for Sonos control logic, MCP transport logic, configuration handling, and deployment assets so that changes in one area do not require cross-cutting edits in all others for routine feature additions.
+NFR20: Automated tests shall cover configuration validation, core Sonos control behavior, and regression-prone service logic, and the CI path shall run those checks on every protected-branch change.
+NFR21: Adding a new MCP client example, deployment pattern, or downstream agent integration shall not require redesign of the core Sonos control domain model.
+NFR22: Documentation, examples, and operational assets shall be versioned and updated in the same release cycle as behavior changes that would otherwise make them inaccurate.
+NFR23: The product shall support a single-household, self-hosted environment with at least 10 addressable Sonos rooms without functional degradation in supported control flows.
+NFR24: The product shall tolerate concurrent interaction from at least 3 client sessions within the same household without requiring redesign of the core product model or causing inconsistent room state.
+NFR25: The product shall not require optimization for multi-tenant or internet-scale deployment in v1, and architecture decisions shall favor single-household robustness over generalized scale efficiency.
 
 ### Additional Requirements
 
-- Initialize the project with `uv init --app soniq`, then add the official MCP Python SDK via `uv add "mcp[cli]" soco`.
-- Keep the service stateless in MVP; do not introduce an application database.
-- Use `stdio` for local transport and `Streamable HTTP` for remote transport.
-- Separate transport, tools, services, adapters, config, domain, and deployment boundaries exactly as defined in the architecture.
-- Treat setup, diagnostics, documentation, and examples as first-class implementation work, not optional follow-up tasks.
-- Add a root `Makefile` as the canonical command reference for lint, test, smoke, Docker, Helm, and validation workflows.
-- Implement typed configuration models, startup preflight validation, and deterministic error translation.
-- Most automated tests must run without real Sonos hardware; isolate hardware-dependent checks from core automated validation.
-- Ensure Docker packaging, Helm chart structure, and private-registry-friendly deployment support are part of the implementation plan.
-- Preserve `snake_case` naming conventions across Python code, config fields, and MCP tool parameters.
+- Continue using the existing `uv` application scaffold, Python MCP SDK direction, and `SoCo` foundation; phase 2 is capability expansion, not a platform reset.
+- Preserve the `tools -> services -> adapters` boundary model and keep `SoCoAdapter` as the only direct Sonos integration boundary.
+- Keep phase 2 stateless by default; do not introduce an application database unless a later requirement clearly exceeds Sonos-backed state.
+- Maintain `stdio` for local transport and `Streamable HTTP` for remote transport with transport-neutral tool semantics.
+- Add or refine capability-specific modules for `playback`, `audio`, `inputs`, `alarms`, `playlists`, `library`, and `groups` rather than collapsing all new features into generic modules.
+- Keep Sonos coordinator checks, device-support guards, and advanced capability validation in service-layer logic, not in tool handlers or transport code.
+- Normalize Sonos and SoCo objects before returning MCP responses; raw SoCo objects must not escape through the tool boundary.
+- Extend request, response, and error schema consistency across all new capability families.
+- Extend unit, integration, contract, and smoke tests for the phase-2 capability surface while keeping default automated validation hardware-independent.
+- Preserve Python-package, Docker, Helm, diagnostics, setup, and example-driven onboarding as first-class implementation areas alongside the new tool families.
 
 ### UX Design Requirements
 
-No dedicated UX Design document exists. UX requirements are implied through the PRD and architecture and are represented via setup, validation, troubleshooting, documentation, and example-driven onboarding work.
+No dedicated UX Design document exists. UX requirements are represented through setup guidance, diagnostics, troubleshooting, documentation, and example-driven onboarding behavior in the PRD and architecture.
 
 ### FR Coverage Map
 
-FR1: Epic 2 - Room discovery and targeting
-FR2: Epic 2 - Room-targeted control
-FR3: Epic 2 - Playback start
-FR4: Epic 2 - Pause
-FR5: Epic 2 - Stop
-FR6: Epic 2 - Next track
-FR7: Epic 2 - Previous track
-FR8: Epic 2 - Playback state
-FR9: Epic 2 - Current track info
-FR10: Epic 2 - Get volume
-FR11: Epic 2 - Set volume
-FR12: Epic 2 - Adjust volume
-FR13: Epic 2 - Mute
-FR14: Epic 2 - Unmute
-FR15: Epic 2 - Get mute state
-FR16: Epic 3 - View queue
-FR17: Epic 3 - Add to queue
-FR18: Epic 3 - Remove from queue
-FR19: Epic 3 - Clear queue
-FR20: Epic 3 - Play from queue
-FR21: Epic 3 - View favourites
-FR22: Epic 3 - Play favourite
-FR23: Epic 3 - View playlists
-FR24: Epic 3 - Play playlist
-FR25: Epic 3 - View grouping topology
-FR26: Epic 3 - Join group
-FR27: Epic 3 - Unjoin room
-FR28: Epic 3 - Whole-home grouping
-FR29: Epic 2 - System-level room and speaker info
-FR30: Epic 1 - Local MCP endpoint
-FR31: Epic 4 - Network-accessible MCP endpoint
-FR32: Epic 4 - Supported transport invocation
-FR33: Epic 5 - Agent workflow integration
-FR34: Epic 5 - Consistent direct and agent-mediated usage
-FR35: Epic 1 - Runtime mode guidance
-FR36: Epic 1 - Python package install path
-FR37: Epic 4 - Container runtime
-FR38: Epic 4 - Helm deployment
-FR39: Epic 1 - Single-household configuration
-FR40: Epic 1 - Sensible defaults
-FR41: Epic 1 - Configuration validation
-FR42: Epic 1 - Actionable setup feedback
-FR43: Epic 1 - Guided onboarding docs
-FR44: Epic 4 - MCP client configuration examples
-FR45: Epic 4 - Deployment path guidance
-FR46: Epic 1 - Tool restriction support
-FR47: Epic 1 - Exposure posture control
-FR48: Epic 1 - Home-use trust model defaults
-FR49: Epic 1 - Safe control behavior
-FR50: Epic 1 - Local `stdio` examples
-FR51: Epic 4 - Docker examples
-FR52: Epic 4 - Helm examples
-FR53: Epic 4 - Cross-device and home-network examples
-FR54: Epic 5 - Agent and automation examples
-FR55: Epic 5 - Troubleshooting guidance
+FR23: Epic 3 - Existing playlist playback is extended into playlist lifecycle management
+FR24: Epic 3 - Existing playlist playback remains part of the playlist management value area
+FR25: Epic 2 - Group and topology context supports safer expanded group-audio operations
+FR26: Epic 2 - Existing group membership controls remain part of the group-audio user outcome
+FR27: Epic 2 - Existing group membership controls remain part of the group-audio user outcome
+FR28: Epic 2 - Explicit multi-room grouping belongs with expanded group-audio behavior
+FR29: Epic 2 - System topology and identity data support input and group-audio decisions
+FR30: Epic 1 - Shuffle mode control is part of advanced playback behavior
+FR31: Epic 1 - Repeat mode control is part of advanced playback behavior
+FR32: Epic 1 - Crossfade control is part of advanced playback behavior
+FR33: Epic 1 - Seek control is part of advanced playback behavior
+FR34: Epic 1 - Sleep timer management is part of advanced playback behavior
+FR35: Epic 1 - Bass control is part of advanced room-level audio tuning
+FR36: Epic 1 - Treble control is part of advanced room-level audio tuning
+FR37: Epic 1 - Loudness control is part of advanced room-level audio tuning
+FR38: Epic 2 - Input switching is grouped with capability-aware room and group audio expansion
+FR39: Epic 5 - Phase-2 rollout must preserve local MCP endpoint support
+FR40: Epic 5 - Phase-2 rollout must preserve network-accessible MCP endpoint support
+FR41: Epic 4 - Library access must remain invocable through supported transports
+FR42: Epic 4 - Library access must remain usable in agent workflows
+FR43: Epic 4 - Expanded library capabilities must preserve direct and agent-mediated parity
+FR44: Epic 5 - Documentation must explain how to use the expanded runtime modes
+FR49: Epic 5 - Default configuration profiles must support the expanded capability surface
+FR50: Epic 5 - Validation must continue to support the expanded capability surface
+FR51: Epic 5 - Actionable errors must continue to support the expanded capability surface
+FR52: Epic 5 - Guided onboarding docs must cover the new capability families
+FR53: Epic 5 - MCP client examples must cover the expanded surface where relevant
+FR54: Epic 5 - Deployment guidance must still work for the expanded feature set
+FR55: Epic 5 - Tool exposure controls must extend to the new phase-2 tool families
+FR56: Epic 5 - Default exposure posture must remain controllable for the expanded surface
+FR57: Epic 5 - Home-use trust boundaries must remain intact as the surface expands
+FR58: Epic 2 - Safe behavior around room and audio changes is central to group and input expansion
+FR59: Epic 1 - Advanced playback must enforce capability-aware safety guards
+FR59: Epic 2 - Input and group-audio operations must enforce capability-aware safety guards
+FR59: Epic 3 - Alarm and playlist lifecycle operations must reject invalid target states cleanly
+FR59: Epic 4 - Library selection flows must reject invalid or unsupported requests cleanly
+FR60: Epic 5 - Local stdio examples must cover or reference the expanded feature surface
+FR61: Epic 5 - Docker examples must cover or reference the expanded feature surface
+FR62: Epic 5 - Helm examples must cover or reference the expanded feature surface
+FR63: Epic 5 - Cross-device examples must cover or reference the expanded feature surface
+FR64: Epic 5 - Agent-integration examples must cover or reference the expanded feature surface
+FR65: Epic 5 - Troubleshooting guidance must cover the new capability families
+FR66: Epic 3 - Alarm lifecycle management is a standalone user-value area
+FR67: Epic 3 - Playlist CRUD is a standalone user-value area
+FR68: Epic 2 - Group-level volume and mute control belong with expanded group behavior
+FR69: Epic 4 - Local library browsing and selection are the core user outcome of this epic
+FR70: Epic 1 - Advanced playback must preserve parity across direct and agent-mediated workflows
+FR70: Epic 2 - Input and group-audio expansion must preserve parity across direct and agent-mediated workflows
+FR70: Epic 3 - Alarm and playlist lifecycle operations must preserve parity across direct and agent-mediated workflows
+FR70: Epic 4 - Library access must preserve parity across direct and agent-mediated workflows
 
 ## Epic List
 
-### Epic 1: Project Foundation and Safe Local Operation
-Establish the `SoniqMCP` application foundation, validated configuration model, local `stdio` runtime, and the minimum safe operational path needed for users to run the server on the same machine as an MCP-capable AI client.
-**FRs covered:** FR30, FR35, FR36, FR39, FR40, FR41, FR42, FR43, FR46, FR47, FR48, FR49, FR50, FR55
+### Epic 1: Advanced Playback and Audio Control
+Users can control richer playback behaviors in an active room, including play modes, seek, sleep timer, and room-level audio tuning, without losing the existing safety and coordinator semantics.
+**FRs covered:** FR30, FR31, FR32, FR33, FR34, FR35, FR36, FR37, FR59, FR70
 
-### Epic 2: Core Sonos Playback and Room Control
-Enable users to discover rooms, target a room, and perform the primary playback and volume operations that make the product immediately useful for conversational Sonos control.
-**FRs covered:** FR1, FR2, FR3, FR4, FR5, FR6, FR7, FR8, FR9, FR10, FR11, FR12, FR13, FR14, FR15, FR29
+### Epic 2: Input and Group Audio Expansion
+Users can switch supported room inputs and control group-level audio behavior in ways that remain safe, capability-aware, and consistent across direct and agent-mediated use.
+**FRs covered:** FR38, FR68, FR25, FR26, FR27, FR28, FR29, FR58, FR59, FR70
 
-### Epic 3: Queue, Favourites, Playlists, and Group Control
-Expand the control surface so users can manage queue-based playback, access favourites and playlists, and control room grouping for real multi-room household use.
-**FRs covered:** FR16, FR17, FR18, FR19, FR20, FR21, FR22, FR23, FR24, FR25, FR26, FR27, FR28
+### Epic 3: Alarm and Playlist Lifecycle Management
+Users can manage repeatable listening workflows by creating, updating, and deleting Sonos alarms and playlists, while preserving predictable response structures and safe error handling.
+**FRs covered:** FR23, FR24, FR66, FR67, FR59, FR70
 
-### Epic 4: Remote Runtime and Deployment Paths
-Make the product operationally credible beyond local development by adding `Streamable HTTP`, container packaging, Helm-based deployment, and the documentation required for home-network and cross-device operation.
-**FRs covered:** FR31, FR32, FR37, FR38, FR44, FR45, FR51, FR52, FR53
+### Epic 4: Local Music Library Access and Selection
+Users can browse and select items from the local Sonos music library with bounded-result behavior that works for large collections and remains usable through both AI clients and agent workflows.
+**FRs covered:** FR69, FR70, FR41, FR42, FR43, FR59
 
-### Epic 5: Integration, Diagnostics, and Productized Adoption
-Complete the MVP by supporting agent-mediated integrations, consistent troubleshooting, and the polished docs/examples needed for users to adopt `Soniq` confidently across AI clients and automation workflows.
-**FRs covered:** FR33, FR34, FR54, FR55
+### Epic 5: Phase-2 Contract Hardening and Documentation
+Users and integrators can adopt the expanded phase-2 tool surface with stable schemas, examples, diagnostics, safety controls, and deployment/runtime parity across supported transports.
+**FRs covered:** FR39, FR40, FR44, FR49, FR50, FR51, FR52, FR53, FR54, FR55, FR56, FR57, FR60, FR61, FR62, FR63, FR64, FR65
 
-## Epic 1: Project Foundation and Safe Local Operation
+## Epic 1: Advanced Playback and Audio Control
 
-Establish the `SoniqMCP` application foundation, validated configuration model, local `stdio` runtime, and the minimum safe operational path needed for users to run the server on the same machine as an MCP-capable AI client.
+Users can control richer playback behaviors in an active room, including play modes, seek, sleep timer, and room-level audio tuning, without losing the existing safety and coordinator semantics.
 
-### Story 1.1: Initialize the SoniqMCP Application Scaffold
+### Story 1.1: Expose play mode controls for active rooms
 
-As a developer,
-I want the project initialized with the agreed Python and MCP foundation,
-So that all future work starts from a consistent, production-ready baseline.
-
-**Acceptance Criteria:**
-
-**Given** a new repository state for the implementation
-**When** the project scaffold is created
-**Then** the application is initialized using `uv` with the agreed Python application structure
-**And** the official MCP Python SDK and `SoCo` are added as dependencies
-**And** the root structure includes `pyproject.toml`, `Makefile`, `src/soniq_mcp/`, `tests/`, `helm/`, and `docs/`
-**And** the scaffold matches the agreed architecture boundaries
-
-### Story 1.2: Implement Typed Configuration and Validation
-
-As a user,
-I want the server configuration validated before runtime,
-So that setup mistakes are caught early and explained clearly.
+As a Sonos user,
+I want to view and change shuffle, repeat, and crossfade for a target room,
+So that I can control playback behavior without leaving my AI workflow.
 
 **Acceptance Criteria:**
 
-**Given** the server is started with configuration inputs
-**When** configuration is loaded
-**Then** typed configuration models validate required fields, formats, and defaults
-**And** invalid configuration fails before normal runtime begins
-**And** validation errors identify the specific field or setting that must be corrected
-**And** configuration supports a single-household Sonos environment
+**Given** a reachable target room with an active coordinator
+**When** the client requests the current play mode state
+**Then** the service returns the normalized shuffle, repeat, and crossfade values for that room
+**And** the response uses stable `snake_case` fields.
 
-### Story 1.3: Run SoniqMCP Locally over stdio
+**Given** a reachable target room with an active coordinator
+**When** the client requests a shuffle, repeat, or crossfade change
+**Then** the service applies the requested mode through the phase-2 playback boundary
+**And** the response returns the target room and resulting mode state.
 
-As a user,
-I want to run the server locally with `stdio`,
-So that I can use it directly from an MCP-capable AI client on the same machine.
+**Given** a room that cannot perform the requested mode change because of coordinator or availability constraints
+**When** the client invokes the tool
+**Then** the service returns a typed validation or capability error
+**And** it does not return a raw SoCo error object.
 
-**Acceptance Criteria:**
+### Story 1.2: Support seek and sleep timer operations
 
-**Given** a valid local configuration
-**When** the user starts the server in `stdio` mode
-**Then** the MCP server boots successfully and exposes the agreed tool surface
-**And** the runtime uses the same internal tool and service boundaries defined by the architecture
-**And** the server can be connected to a same-machine MCP-compatible AI client
-**And** the startup path emits useful diagnostic output without exposing sensitive configuration
-
-### Story 1.4: Enforce Safe Defaults and Tool Exposure Controls
-
-As a user,
-I want safe default behavior and controllable tool exposure,
-So that AI clients cannot cause unnecessary disruption in my home environment.
+As a Sonos user,
+I want to seek within the current track and manage a sleep timer for a room,
+So that I can control active listening sessions more precisely.
 
 **Acceptance Criteria:**
 
-**Given** the server is configured for home use
-**When** a user reviews or applies runtime settings
-**Then** the default exposure posture assumes local or trusted-home-network usage
-**And** permission-aware tool restriction settings are supported where MCP clients can use them
-**And** risky actions such as volume changes are subject to explicit validation and safety rules
-**And** the system does not expose functionality beyond the configured trust model by default
+**Given** a room with an active track
+**When** the client requests a seek to a valid track position
+**Then** the service applies the seek operation for the target room
+**And** returns the normalized resulting playback state.
 
-### Story 1.5: Deliver Local Setup and Troubleshooting Guidance
+**Given** a room that supports sleep-timer operations
+**When** the client requests the current sleep timer status
+**Then** the service returns the normalized timer state for that room.
 
-As a user,
-I want clear local setup instructions and troubleshooting guidance,
-So that I can get the product working without understanding MCP internals.
+**Given** a room that supports sleep-timer operations
+**When** the client sets or clears a sleep timer
+**Then** the service applies the requested change
+**And** returns the resulting timer state in a structured response.
 
-**Acceptance Criteria:**
+### Story 1.3: Add room-level audio EQ controls
 
-**Given** a new user wants to run the server locally
-**When** they follow the documented local setup path
-**Then** they have step-by-step guidance for installation, configuration, and AI client connection
-**And** the documentation includes example `stdio` usage
-**And** troubleshooting guidance addresses common configuration and MCP wiring failures
-**And** the local guidance matches the implemented command surface and runtime behavior
-
-## Epic 2: Core Sonos Playback and Room Control
-
-Enable users to discover rooms, target a room, and perform the primary playback and volume operations that make the product immediately useful for conversational Sonos control.
-
-### Story 2.1: Discover Addressable Rooms and System Topology
-
-As a user,
-I want to list available Sonos rooms and basic system information,
-So that I can target the correct room for playback operations.
+As a Sonos user,
+I want to view and change bass, treble, and loudness for a room,
+So that I can tune the listening experience from the same AI control surface.
 
 **Acceptance Criteria:**
 
-**Given** the server has a valid Sonos configuration
-**When** the user invokes room and system discovery tools
-**Then** the server returns the available rooms it can control
-**And** the response includes the identifiers needed for later room-targeted actions
-**And** system-level room and speaker information is returned in a structured format
-**And** unreachable or misconfigured rooms are reported clearly
+**Given** a reachable target room
+**When** the client requests current bass, treble, and loudness settings
+**Then** the service returns the normalized audio-setting values for that room.
 
-### Story 2.2: Control Core Playback in a Target Room
+**Given** a reachable target room
+**When** the client updates bass, treble, or loudness
+**Then** the service validates the request against supported ranges and types
+**And** applies the change through the dedicated audio-settings service boundary.
 
-As a user,
-I want to play, pause, stop, skip, and inspect playback state in a room,
-So that I can use AI for basic day-to-day Sonos control.
+**Given** an invalid audio-setting request
+**When** the client invokes the tool
+**Then** the service returns a typed validation error
+**And** the room state remains unchanged.
 
-**Acceptance Criteria:**
-
-**Given** a valid target room
-**When** the user invokes playback controls
-**Then** the server supports play, pause, stop, next, and previous actions
-**And** the server can return current playback state
-**And** current track information is available in a structured response
-**And** invalid room targeting returns a consistent, user-correctable error
-
-### Story 2.3: Control Volume and Mute Safely
-
-As a user,
-I want to inspect and change volume in a room,
-So that I can adjust playback without disruptive surprises.
-
-**Acceptance Criteria:**
-
-**Given** a valid target room
-**When** the user invokes volume or mute controls
-**Then** the server supports get volume, set volume, adjust volume, mute, unmute, and get mute state
-**And** volume operations are validated against allowed ranges
-**And** safety logic prevents malformed or unsafe volume requests from being applied
-**And** errors are returned using the shared error model
-
-### Story 2.4: Apply Reliable Sonos Service and Adapter Boundaries
-
-As a developer,
-I want the core playback and volume features implemented through stable service and adapter layers,
-So that tool logic remains thin and transport-agnostic.
-
-**Acceptance Criteria:**
-
-**Given** the playback and volume capabilities are implemented
-**When** the code is reviewed against the architecture
-**Then** MCP tool handlers do not call `SoCo` directly
-**And** Sonos operations are mediated through the agreed service and adapter boundaries
-**And** domain exceptions are translated consistently into MCP-safe responses
-**And** the code organization follows the agreed structure and naming conventions
-
-## Epic 3: Queue, Favourites, Playlists, and Group Control
-
-Expand the control surface so users can manage queue-based playback, access favourites and playlists, and control room grouping for real multi-room household use.
-
-### Story 3.1: Manage the Sonos Queue
-
-As a user,
-I want to inspect and manage the queue for a room,
-So that I can use AI to control what plays next.
-
-**Acceptance Criteria:**
-
-**Given** a valid room with queue-capable playback
-**When** the user invokes queue tools
-**Then** the server supports viewing the queue
-**And** the server supports adding playable items to the queue
-**And** the server supports removing items and clearing the queue
-**And** the server supports starting playback from a selected queue position
-
-### Story 3.2: Access and Play Favourites and Playlists
-
-As a user,
-I want to browse Sonos favourites and playlists and start them in a room,
-So that I can use my saved Sonos content naturally through AI.
-
-**Acceptance Criteria:**
-
-**Given** the connected Sonos system has saved favourites or playlists
-**When** the user invokes favourites or playlist tools
-**Then** the server supports viewing available favourites
-**And** the server supports playing a selected favourite in a target room
-**And** the server supports viewing available Sonos playlists
-**And** the server supports playing a selected Sonos playlist in a target room
-
-### Story 3.3: Control Room Grouping and Multi-Room Playback
-
-As a user,
-I want to inspect and change room grouping,
-So that I can control playback across multiple Sonos rooms.
-
-**Acceptance Criteria:**
-
-**Given** a Sonos household with multiple rooms
-**When** the user invokes grouping tools
-**Then** the server supports viewing current grouping topology
-**And** the server supports joining a room to a coordinator group
-**And** the server supports removing a room from a group
-**And** the server supports whole-home or multi-room grouping where appropriate
-
-## Epic 4: Remote Runtime and Deployment Paths
-
-Make the product operationally credible beyond local development by adding `Streamable HTTP`, container packaging, Helm-based deployment, and the documentation required for home-network and cross-device operation.
-
-### Story 4.1: Run SoniqMCP over Streamable HTTP
-
-As a user,
-I want to run the server remotely over `Streamable HTTP`,
-So that I can use it from trusted devices and deployed MCP clients on my home network.
-
-**Acceptance Criteria:**
-
-**Given** a valid deployment configuration
-**When** the user starts the server in remote mode
-**Then** the server exposes the MCP tool surface over `Streamable HTTP`
-**And** the remote mode uses the same underlying tool and service boundaries as `stdio`
-**And** the transport-specific bootstrap remains isolated from domain logic
-**And** the remote startup path supports the documented home-network trust model
-
-### Story 4.2: Package the Server as a Docker Image
-
-As a home-lab user,
-I want a supported Docker image,
-So that I can run the server consistently in containerized environments.
-
-**Acceptance Criteria:**
-
-**Given** the application is runnable locally
-**When** the Docker build is executed
-**Then** a container image is produced for the service
-**And** runtime configuration can be injected without modifying application code
-**And** container startup behavior matches the documented deployment paths
-**And** the image is suitable for private-registry and public-registry publishing workflows
-
-### Story 4.3: Provide a Helm Chart for Self-Hosted Deployment
-
-As a home-lab operator,
-I want a Helm chart for the service,
-So that I can deploy it repeatably in k3s or similar environments.
-
-**Acceptance Criteria:**
-
-**Given** the Docker image is available
-**When** the Helm chart is used for deployment
-**Then** the chart provides configurable values for transport, networking, and speaker configuration
-**And** chart templates include the resources needed for deployment and service exposure
-**And** the chart structure matches the agreed architecture
-**And** the deployment path remains compatible with the single-household home-use model
-
-### Story 4.4: Document Remote, Docker, Helm, and Cross-Device Usage
-
-As a user,
-I want deployment guides for remote and self-hosted use,
-So that I can choose the right runtime model for my environment.
-
-**Acceptance Criteria:**
-
-**Given** the remote and deployment features exist
-**When** a user reads the documentation
-**Then** they can follow separate guides for Docker, Helm, and cross-device/home-network usage
-**And** MCP client configuration examples are provided for the supported remote patterns
-**And** the docs explain the difference between local `stdio` and remote `Streamable HTTP`
-**And** the docs include representative networking and troubleshooting guidance
-
-### Story 4.5: Establish CI, Quality Gates, and Release Automation
+### Story 1.4: Harden advanced playback contracts and regression coverage
 
 As a maintainer,
-I want automated verification and release workflows,
-So that production regressions, packaging drift, and deployment breakage are caught before release.
+I want the new advanced playback and audio tools to use consistent schemas and tests,
+So that the expanded capability surface remains stable across transports and future changes.
 
 **Acceptance Criteria:**
 
-**Given** a pull request or branch update
-**When** the CI workflow runs
-**Then** the project executes the agreed automated quality gates including tests, linting, type checks, and build verification
-**And** meaningful test coverage is reported and enforceable without incentivizing vanity metrics
-**And** dependency or supply-chain checks are part of the automated verification path
-**And** release automation exists for supported publish targets such as Python packaging and container artifacts
-**And** the documented command surface and automation workflows stay aligned
+**Given** the advanced playback and audio tools are implemented
+**When** contract tests run
+**Then** tool names, parameter shapes, and response fields remain stable across supported transports.
 
-## Epic 5: Integration, Diagnostics, and Productized Adoption
+**Given** unit and integration tests run in default CI
+**When** the advanced playback and audio stories are exercised
+**Then** the tests pass without requiring real Sonos hardware.
 
-Complete the MVP by supporting agent-mediated integrations, consistent troubleshooting, and the polished docs/examples needed for users to adopt `Soniq` confidently across AI clients and automation workflows.
+**Given** the new tools are documented
+**When** examples are reviewed
+**Then** the documentation shows how the same capability family works in both direct AI-client and agent-mediated usage.
 
-### Story 5.1: Support Agent-Mediated Integration Patterns
+## Epic 2: Input and Group Audio Expansion
 
-As an advanced user,
-I want the server to work cleanly in agent and automation workflows,
-So that I can use it through Home Assistant, `n8n`, and similar systems.
+Users can switch supported room inputs and control group-level audio behavior in ways that remain safe, capability-aware, and consistent across direct and agent-mediated use.
+
+### Story 2.1: Support capability-aware input switching
+
+As a Sonos user,
+I want to switch a supported room to line-in or TV input,
+So that I can control external sources from the same AI workflow.
 
 **Acceptance Criteria:**
 
-**Given** the server is running in a supported transport mode
-**When** an external agent system invokes the MCP tools
-**Then** the same core control model is available as in direct AI-client use
-**And** tool semantics remain stable and predictable for automation consumers
-**And** integration usage does not require a different internal implementation path
-**And** the product supports representative examples for agent-mediated usage
+**Given** a room that supports line-in or TV input
+**When** the client requests an input switch
+**Then** the service validates device capability support before invoking the adapter
+**And** returns the resulting normalized input state.
 
-### Story 5.2: Deliver Consistent Diagnostics and Troubleshooting Support
+**Given** a room that does not support the requested input
+**When** the client invokes the input-switching tool
+**Then** the service returns a typed unsupported-capability error
+**And** no playback state is changed.
+
+### Story 2.2: Add group-level volume and mute controls
+
+As a Sonos user,
+I want to control volume and mute for an active group,
+So that I can manage multi-room listening without changing rooms one by one.
+
+**Acceptance Criteria:**
+
+**Given** an active Sonos group with a coordinator
+**When** the client requests group-level volume or mute state
+**Then** the service returns the normalized group audio state.
+
+**Given** an active Sonos group with a coordinator
+**When** the client updates group volume or mute
+**Then** the service applies the change through the group-service boundary
+**And** respects configured safety limits for volume-related actions.
+
+**Given** a request that targets a non-grouped or invalid room state
+**When** the group-audio tool is invoked
+**Then** the service returns a typed validation error
+**And** does not affect unrelated rooms.
+
+### Story 2.3: Strengthen topology and grouping support for expanded audio flows
+
+As a Sonos user,
+I want topology and grouping tools to support whole-home and specified-room-set flows reliably,
+So that group-audio and input-aware behavior can build on accurate room context.
+
+**Acceptance Criteria:**
+
+**Given** a reachable household with multiple rooms
+**When** the client requests current topology
+**Then** the service returns room names, coordinator state, group membership, and addressable room identity data.
+
+**Given** a whole-home or specified-room-set grouping request
+**When** the client invokes the grouping tool
+**Then** the service applies the grouping request explicitly against the discovered room set
+**And** returns the resulting topology in a normalized structure.
+
+**Given** an invalid grouping target or ambiguous room set
+**When** the client invokes the grouping tool
+**Then** the service returns an actionable validation error
+**And** the current grouping remains unchanged.
+
+### Story 2.4: Document and test expanded group and input behavior
+
+As a maintainer,
+I want group-audio and input-switching features to have stable contracts and examples,
+So that integrators can adopt them safely across transports.
+
+**Acceptance Criteria:**
+
+**Given** the group and input tools are implemented
+**When** contract and integration tests run
+**Then** the tests verify normalized responses, guard behavior, and safe error handling for these tools.
+
+**Given** documentation and examples are updated
+**When** a user reviews setup and integration guidance
+**Then** they can identify when to use room-level, group-level, and input-specific controls.
+
+## Epic 3: Alarm and Playlist Lifecycle Management
+
+Users can manage repeatable listening workflows by creating, updating, and deleting Sonos alarms and playlists, while preserving predictable response structures and safe error handling.
+
+### Story 3.1: Add alarm discovery and lifecycle operations
+
+As a Sonos user,
+I want to view, create, update, and delete Sonos alarms,
+So that I can automate repeatable listening behavior through the MCP server.
+
+**Acceptance Criteria:**
+
+**Given** a reachable household with alarm support
+**When** the client requests the alarm list
+**Then** the service returns normalized alarm records for supported rooms.
+
+**Given** a valid alarm payload
+**When** the client creates or updates an alarm
+**Then** the service validates the request through the alarm-service boundary
+**And** returns the resulting normalized alarm record.
+
+**Given** an existing alarm identifier
+**When** the client deletes the alarm
+**Then** the service removes it successfully
+**And** returns a structured confirmation response.
+
+### Story 3.2: Introduce Sonos playlist CRUD operations
+
+As a Sonos user,
+I want to create, rename, update, and delete Sonos playlists,
+So that I can manage reusable listening collections from the same control surface.
+
+**Acceptance Criteria:**
+
+**Given** a reachable household with playlist support
+**When** the client requests playlist inventory
+**Then** the service returns normalized playlist metadata for the household.
+
+**Given** a valid playlist lifecycle request
+**When** the client creates, renames, updates, or deletes a playlist
+**Then** the service performs the requested operation through the playlist-service boundary
+**And** returns the resulting normalized playlist state.
+
+**Given** an invalid playlist identifier or unsupported mutation
+**When** the client invokes the playlist lifecycle tool
+**Then** the service returns a typed validation or unsupported-operation error.
+
+### Story 3.3: Preserve existing playlist playback alongside playlist lifecycle support
+
+As a Sonos user,
+I want playlist playback to remain stable while new playlist lifecycle features are added,
+So that the expanded playlist surface does not break established usage.
+
+**Acceptance Criteria:**
+
+**Given** the playlist lifecycle tools are implemented
+**When** the client invokes existing playlist playback behavior
+**Then** playback still works through the same target-room workflow as before.
+
+**Given** a playlist created or updated through the new lifecycle tools
+**When** the client selects it for playback
+**Then** the playlist is discoverable and playable through the playlist playback flow.
+
+### Story 3.4: Add tests and docs for alarm and playlist lifecycle flows
+
+As a maintainer,
+I want alarm and playlist lifecycle features covered by stable tests and examples,
+So that phase-2 automation workflows remain safe to evolve.
+
+**Acceptance Criteria:**
+
+**Given** the alarm and playlist lifecycle features are implemented
+**When** unit, integration, and contract tests run
+**Then** they validate normalized responses, error categories, and lifecycle behavior without requiring hardware in the default path.
+
+**Given** the new lifecycle tools are documented
+**When** integrators review examples
+**Then** they can distinguish playlist playback from playlist management and understand the supported alarm workflows.
+
+## Epic 4: Local Music Library Access and Selection
+
+Users can browse and select items from the local Sonos music library with bounded-result behavior that works for large collections and remains usable through both AI clients and agent workflows.
+
+### Story 4.1: Add bounded local music library browsing
+
+As a Sonos user,
+I want to browse the local Sonos music library through the MCP server,
+So that I can discover playable content without leaving my AI workflow.
+
+**Acceptance Criteria:**
+
+**Given** a reachable household with a local music library
+**When** the client requests a library browse operation
+**Then** the service returns normalized library results with bounded-result or pagination behavior.
+
+**Given** a library with at least 1,000 items
+**When** the client browses a large result set
+**Then** the service remains usable through pagination, bounded results, or continuation semantics
+**And** does not return an unbounded raw payload.
+
+### Story 4.2: Support selection and playback from library results
+
+As a Sonos user,
+I want to select a browsed library item and play it in a room,
+So that library discovery leads directly to listening actions.
+
+**Acceptance Criteria:**
+
+**Given** a valid normalized library item
+**When** the client selects it for playback in a target room
+**Then** the service resolves the selection into a playable action
+**And** returns the resulting normalized playback confirmation.
+
+**Given** an invalid or unsupported library selection
+**When** the client invokes the selection flow
+**Then** the service returns a typed validation or unsupported-operation error
+**And** no unintended playback begins.
+
+### Story 4.3: Preserve parity for library access across direct and agent-mediated usage
+
+As an integrator,
+I want local music library capabilities to behave the same in direct AI and agent workflows,
+So that I do not need different mental models for the same library actions.
+
+**Acceptance Criteria:**
+
+**Given** the library tools are exposed over supported transports
+**When** a direct AI client or an agent workflow invokes the same library capability
+**Then** the request and response semantics are equivalent aside from transport-specific envelope details.
+
+**Given** documentation and examples are reviewed
+**When** a user compares direct and agent-mediated library usage
+**Then** the same named capability family and expected result structure are shown consistently.
+
+## Epic 5: Phase-2 Contract Hardening and Documentation
+
+Users and integrators can adopt the expanded phase-2 tool surface with stable schemas, examples, diagnostics, safety controls, and deployment/runtime parity across supported transports.
+
+### Story 5.1: Extend schemas and error contracts for phase-2 capability families
+
+As an integrator,
+I want the phase-2 tool surface to use stable request, response, and error contracts,
+So that I can adopt the new capabilities without reverse engineering behavior.
+
+**Acceptance Criteria:**
+
+**Given** the new phase-2 tool families are implemented
+**When** request and response schemas are reviewed
+**Then** they use consistent `snake_case` naming and normalized structures across the expanded surface.
+
+**Given** a validation, capability, connectivity, or internal failure occurs
+**When** a phase-2 tool returns an error
+**Then** the error is mapped into the shared typed error model
+**And** raw SoCo objects or unstructured trace strings are not returned.
+
+### Story 5.2: Preserve transport parity and tool exposure controls
+
+As an operator,
+I want the expanded phase-2 tool surface to behave consistently across local and remote modes,
+So that I can expose capabilities safely without transport-specific surprises.
+
+**Acceptance Criteria:**
+
+**Given** the expanded tool surface is available
+**When** the same supported capability is invoked over local `stdio` and remote HTTP transport
+**Then** the functional result and response semantics remain equivalent aside from transport envelope details.
+
+**Given** tool exposure controls are configured
+**When** an operator disables restricted tool categories
+**Then** the phase-2 tool families respect the configured exposure posture before runtime.
+
+### Story 5.3: Update setup, examples, and troubleshooting for phase 2
 
 As a user,
-I want actionable diagnostics when setup or runtime behavior fails,
-So that I can recover without trial-and-error guesswork.
+I want the setup and integration documentation to reflect the expanded capability surface,
+So that I can use the new features without guessing how they fit the existing product.
 
 **Acceptance Criteria:**
 
-**Given** a configuration, connectivity, or runtime problem occurs
-**When** the server reports the issue
-**Then** the error is categorized consistently using the shared error model
-**And** the user-facing guidance distinguishes correctable setup problems from operational failures
-**And** diagnostics avoid exposing unnecessary sensitive information
-**And** troubleshooting guidance matches the actual failure modes supported by the implementation
+**Given** the phase-2 capability families are implemented
+**When** documentation is updated
+**Then** the local `stdio`, Docker, Helm, cross-device, and agent-integration guides include or reference the new capabilities where relevant.
 
-### Story 5.3: Deliver Productized Examples, Prompts, and Command Surface
+**Given** troubleshooting content is reviewed
+**When** a user encounters a phase-2 configuration or runtime issue
+**Then** the docs provide a corrective path without requiring source-code inspection.
 
-As a user,
-I want examples and common commands collected in one place,
-So that I can adopt the product quickly and use it confidently.
+### Story 5.4: Expand automated regression coverage for phase-2 rollout
 
-**Acceptance Criteria:**
-
-**Given** the MVP features are implemented
-**When** the user reviews the product documentation and command surface
-**Then** the project provides example prompts and example use cases for direct and agent-mediated usage
-**And** the `Makefile` exposes the agreed developer and operator commands
-**And** documentation treats examples, diagnostics, and onboarding as first-class product assets
-**And** the docs remain aligned with the actual implementation and deployment paths
-
-### Story 5.4: Publish Operational Security and Release Guidance
-
-As a self-hosting operator,
-I want explicit security and release guidance,
-So that I can run, upgrade, and expose the product without relying on guesswork.
+As a maintainer,
+I want the expanded capability surface covered by automated regression checks,
+So that phase 2 can ship without weakening transport, safety, or documentation guarantees.
 
 **Acceptance Criteria:**
 
-**Given** a user evaluates the product for home or home-lab deployment
-**When** they review the operational documentation
-**Then** they can understand the default trust model, supported exposure boundaries, and recommended protections for remote operation
-**And** the project includes a clear security contact or policy for reporting issues
-**And** release, upgrade, and compatibility expectations are documented for supported deployment paths
-**And** examples and logs avoid exposing unnecessary sensitive information by default
+**Given** the phase-2 epics are implemented
+**When** unit, integration, contract, and smoke tests run in CI
+**Then** the checks cover the new capability families, transport parity, and regression-prone validation behavior.
+
+**Given** phase-2 documentation and examples change
+**When** release validation is performed
+**Then** the release includes current docs and example assets aligned with the implemented tool surface.
