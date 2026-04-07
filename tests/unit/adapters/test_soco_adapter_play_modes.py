@@ -115,7 +115,7 @@ class TestSetPlayMode:
         with _patch_soco(zone):
             state = adapter.set_play_mode("192.168.1.10", "Living Room", cross_fade=True)
         assert state.cross_fade is True
-        zone.cross_fade.__set__(zone, True)  # verify cross_fade was set
+        assert zone.cross_fade is True  # MagicMock attribute was updated by adapter
 
     def test_set_shuffle_and_repeat_together(self) -> None:
         adapter = SoCoAdapter()
