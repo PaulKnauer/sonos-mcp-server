@@ -261,6 +261,91 @@ class SoCoAdapter:
         except Exception as exc:
             raise GroupError(f"Failed to activate party mode: {exc}") from exc
 
+    def get_play_mode(self, ip_address: str, room_name: str) -> PlayModeState:
+        """Return the current play mode settings for the zone.
+
+        Args:
+            ip_address: LAN IP of the Sonos zone (must be coordinator for grouped rooms).
+            room_name: Human-readable room name (included in the result).
+
+        Returns:
+            ``PlayModeState`` with shuffle, repeat, and cross_fade values.
+
+        Raises:
+            PlaybackError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            play_mode = str(zone.play_mode).upper()
+            cross_fade = bool(zone.cross_fade)
+            repeat, shuffle = _SOCO_TO_DOMAIN.get(play_mode, ("none", False))
+            return PlayModeState(
+                room_name=room_name,
+                shuffle=shuffle,
+                repeat=repeat,
+                cross_fade=cross_fade,
+            )
+        except Exception as exc:
+            raise PlaybackError(f"Failed to get play mode for {room_name!r}: {exc}") from exc
+
+    def set_play_mode(
+        self,
+        ip_address: str,
+        room_name: str,
+        shuffle: bool | None = None,
+        repeat: str | None = None,
+        cross_fade: bool | None = None,
+    ) -> PlayModeState:
+        """Apply play mode changes to the zone and return the resulting state.
+
+        Reads the current play_mode and cross_fade first, then applies only
+        the fields that were explicitly provided. Writes the computed
+        play_mode string back to the zone.
+
+        Args:
+            ip_address: LAN IP of the Sonos zone (must be coordinator for grouped rooms).
+            room_name: Human-readable room name (included in the result).
+            shuffle: If provided, set shuffle on/off.
+            repeat: If provided, set repeat mode ("none", "all", or "one").
+            cross_fade: If provided, set crossfade on/off.
+
+        Returns:
+            ``PlayModeState`` reflecting the resulting zone state.
+
+        Raises:
+            PlaybackError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            current_play_mode = str(zone.play_mode).upper()
+            current_cross_fade = bool(zone.cross_fade)
+            current_repeat, current_shuffle = _SOCO_TO_DOMAIN.get(current_play_mode, ("none", False))
+
+            new_shuffle = shuffle if shuffle is not None else current_shuffle
+            new_repeat = repeat if repeat is not None else current_repeat
+            new_cross_fade = cross_fade if cross_fade is not None else current_cross_fade
+
+            new_play_mode = _DOMAIN_TO_SOCO.get((new_repeat, new_shuffle))
+            if new_play_mode is None:
+                raise PlaybackError(
+                    f"Invalid play mode combination: shuffle={new_shuffle}, repeat={new_repeat!r}."
+                )
+
+            zone.play_mode = new_play_mode
+            if cross_fade is not None:
+                zone.cross_fade = new_cross_fade
+
+            return PlayModeState(
+                room_name=room_name,
+                shuffle=new_shuffle,
+                repeat=new_repeat,
+                cross_fade=new_cross_fade,
+            )
+        except PlaybackError:
+            raise
+        except Exception as exc:
+            raise PlaybackError(f"Failed to set play mode for {room_name!r}: {exc}") from exc
+
     def _call_playback(self, ip_address: str, action: Callable[[Any], object]) -> None:
         try:
             zone = self._make_zone(ip_address)
