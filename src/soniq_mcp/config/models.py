@@ -47,6 +47,8 @@ KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
         "join_group",
         "unjoin_room",
         "party_mode",
+        "get_play_mode",
+        "set_play_mode",
     }
 )
 
