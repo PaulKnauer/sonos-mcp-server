@@ -1,4 +1,4 @@
-# generated: 2026-03-24
+# generated: 2026-04-07
 # last_updated: 2026-04-07
 # project: sonos-mcp-server
 # project_key: NOKEY
@@ -34,7 +34,7 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-03-24
+generated: 2026-04-07
 last_updated: 2026-04-07
 project: sonos-mcp-server
 project_key: NOKEY
@@ -42,38 +42,41 @@ tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
 
 development_status:
-  epic-1: done
-  1-1-initialize-the-soniqmcp-application-scaffold: done
-  1-2-implement-typed-configuration-and-validation: done
-  1-3-run-soniqmcp-locally-over-stdio: done
-  1-4-enforce-safe-defaults-and-tool-exposure-controls: done
-  1-5-deliver-local-setup-and-troubleshooting-guidance: done
+  # Epic 1: Advanced Playback and Audio Control
+  epic-1: in-progress
+  1-1-expose-play-mode-controls-for-active-rooms: done
+  1-2-support-seek-and-sleep-timer-operations: backlog
+  1-3-add-room-level-audio-eq-controls: backlog
+  1-4-harden-advanced-playback-contracts-and-regression-coverage: backlog
   epic-1-retrospective: optional
 
-  epic-2: done
-  2-1-discover-addressable-rooms-and-system-topology: done
-  2-2-control-core-playback-in-a-target-room: done
-  2-3-control-volume-and-mute-safely: done
-  2-4-apply-reliable-sonos-service-and-adapter-boundaries: done
+  # Epic 2: Input and Group Audio Expansion
+  epic-2: backlog
+  2-1-support-capability-aware-input-switching: backlog
+  2-2-add-group-level-volume-and-mute-controls: backlog
+  2-3-strengthen-topology-and-grouping-support-for-expanded-audio-flows: backlog
+  2-4-document-and-test-expanded-group-and-input-behavior: backlog
   epic-2-retrospective: optional
 
-  epic-3: done
-  3-1-manage-the-sonos-queue: done
-  3-2-access-and-play-favourites-and-playlists: done
-  3-3-control-room-grouping-and-multi-room-playback: done
+  # Epic 3: Alarm and Playlist Lifecycle Management
+  epic-3: backlog
+  3-1-add-alarm-discovery-and-lifecycle-operations: backlog
+  3-2-introduce-sonos-playlist-crud-operations: backlog
+  3-3-preserve-existing-playlist-playback-alongside-playlist-lifecycle-support: backlog
+  3-4-add-tests-and-docs-for-alarm-and-playlist-lifecycle-flows: backlog
   epic-3-retrospective: optional
 
-  epic-4: done
-  4-1-run-soniqmcp-over-streamable-http: done
-  4-2-package-the-server-as-a-docker-image: done
-  4-3-provide-a-helm-chart-for-self-hosted-deployment: done
-  4-4-document-remote-docker-helm-and-cross-device-usage: done
-  4-5-establish-ci-quality-gates-and-release-automation: done
+  # Epic 4: Local Music Library Access and Selection
+  epic-4: backlog
+  4-1-add-bounded-local-music-library-browsing: backlog
+  4-2-support-selection-and-playback-from-library-results: backlog
+  4-3-preserve-parity-for-library-access-across-direct-and-agent-mediated-usage: backlog
   epic-4-retrospective: optional
 
-  epic-5: done
-  5-1-support-agent-mediated-integration-patterns: done
-  5-2-deliver-consistent-diagnostics-and-troubleshooting-support: done
-  5-3-deliver-productized-examples-prompts-and-command-surface: done
-  5-4-publish-operational-security-and-release-guidance: done
+  # Epic 5: Phase-2 Contract Hardening and Documentation
+  epic-5: backlog
+  5-1-extend-schemas-and-error-contracts-for-phase-2-capability-families: backlog
+  5-2-preserve-transport-parity-and-tool-exposure-controls: backlog
+  5-3-update-setup-examples-and-troubleshooting-for-phase-2: backlog
+  5-4-expand-automated-regression-coverage-for-phase-2-rollout: backlog
   epic-5-retrospective: optional

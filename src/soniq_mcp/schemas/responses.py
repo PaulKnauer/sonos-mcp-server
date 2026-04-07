@@ -8,6 +8,8 @@ Fields use ``snake_case`` throughout.
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel
 
 from soniq_mcp.domain.models import (
@@ -252,7 +254,7 @@ class PlayModeResponse(BaseModel):
 
     room_name: str
     shuffle: bool
-    repeat: str
+    repeat: Literal["none", "all", "one"]
     cross_fade: bool
 
     @classmethod

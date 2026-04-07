@@ -61,6 +61,15 @@ def _coerce_queue_position(val: object) -> int | None:
     return None
 
 
+def _decode_play_mode(play_mode: object) -> tuple[str, bool]:
+    """Normalize a SoCo play_mode value into domain repeat/shuffle state."""
+    normalized = str(play_mode).upper()
+    decoded = _SOCO_TO_DOMAIN.get(normalized)
+    if decoded is None:
+        raise PlaybackError(f"Unsupported Sonos play_mode value {normalized!r}.")
+    return decoded
+
+
 class SoCoAdapter:
     """Shared wrapper around ``soco.SoCo(ip_address)`` operations."""
 
@@ -276,9 +285,8 @@ class SoCoAdapter:
         """
         try:
             zone = self._make_zone(ip_address)
-            play_mode = str(zone.play_mode).upper()
             cross_fade = bool(zone.cross_fade)
-            repeat, shuffle = _SOCO_TO_DOMAIN.get(play_mode, ("none", False))
+            repeat, shuffle = _decode_play_mode(zone.play_mode)
             return PlayModeState(
                 room_name=room_name,
                 shuffle=shuffle,
@@ -317,9 +325,8 @@ class SoCoAdapter:
         """
         try:
             zone = self._make_zone(ip_address)
-            current_play_mode = str(zone.play_mode).upper()
             current_cross_fade = bool(zone.cross_fade)
-            current_repeat, current_shuffle = _SOCO_TO_DOMAIN.get(current_play_mode, ("none", False))
+            current_repeat, current_shuffle = _decode_play_mode(zone.play_mode)
 
             new_shuffle = shuffle if shuffle is not None else current_shuffle
             new_repeat = repeat if repeat is not None else current_repeat
@@ -331,7 +338,8 @@ class SoCoAdapter:
                     f"Invalid play mode combination: shuffle={new_shuffle}, repeat={new_repeat!r}."
                 )
 
-            zone.play_mode = new_play_mode
+            if new_play_mode != zone.play_mode:
+                zone.play_mode = new_play_mode
             if cross_fade is not None:
                 zone.cross_fade = new_cross_fade
 

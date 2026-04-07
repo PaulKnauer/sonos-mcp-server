@@ -7,6 +7,7 @@ These are transport-agnostic and shared across service and tool layers.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Literal
 
 
 @dataclass(frozen=True)
@@ -200,5 +201,5 @@ class PlayModeState:
 
     room_name: str
     shuffle: bool
-    repeat: str  # "none" | "all" | "one"
+    repeat: Literal["none", "all", "one"]
     cross_fade: bool
