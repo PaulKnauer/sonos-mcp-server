@@ -12,7 +12,11 @@ from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
 from soniq_mcp.config import SoniqConfig
-from soniq_mcp.domain.exceptions import PlaybackError, RoomNotFoundError, SonosDiscoveryError
+from soniq_mcp.domain.exceptions import (
+    PlaybackError,
+    RoomNotFoundError,
+    SonosDiscoveryError,
+)
 from soniq_mcp.domain.safety import assert_tool_permitted
 from soniq_mcp.schemas.errors import ErrorResponse
 from soniq_mcp.schemas.responses import PlayModeResponse
@@ -50,7 +54,7 @@ def register(app: FastMCP, config: SoniqConfig, play_mode_service: object) -> No
             annotations=_READ_ONLY_TOOL_HINTS,
         )
         def get_play_mode(room: str) -> dict:
-            """Return the current shuffle, repeat, and crossfade settings for the specified Sonos room."""
+            """Return the current shuffle, repeat, and crossfade settings."""
             assert_tool_permitted("get_play_mode", config)
             try:
                 state = play_mode_service.get_play_mode(room)

@@ -8,7 +8,7 @@ playback and volume capability layers. Higher layers must not import
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Literal
 
 from soniq_mcp.domain.exceptions import (
     FavouritesError,
@@ -17,10 +17,19 @@ from soniq_mcp.domain.exceptions import (
     QueueError,
     VolumeError,
 )
-from soniq_mcp.domain.models import Favourite, PlayModeState, PlaybackState, QueueItem, SonosPlaylist, TrackInfo
+from soniq_mcp.domain.models import (
+    Favourite,
+    PlaybackState,
+    PlayModeState,
+    QueueItem,
+    SonosPlaylist,
+    TrackInfo,
+)
+
+RepeatMode = Literal["none", "all", "one"]
 
 # Maps SoCo play_mode strings to (repeat, shuffle) domain values.
-_SOCO_TO_DOMAIN: dict[str, tuple[str, bool]] = {
+_SOCO_TO_DOMAIN: dict[str, tuple[RepeatMode, bool]] = {
     "NORMAL": ("none", False),
     "REPEAT_ALL": ("all", False),
     "REPEAT_ONE": ("one", False),
@@ -30,7 +39,7 @@ _SOCO_TO_DOMAIN: dict[str, tuple[str, bool]] = {
 }
 
 # Maps (repeat, shuffle) domain values to SoCo play_mode strings.
-_DOMAIN_TO_SOCO: dict[tuple[str, bool], str] = {v: k for k, v in _SOCO_TO_DOMAIN.items()}
+_DOMAIN_TO_SOCO: dict[tuple[RepeatMode, bool], str] = {v: k for k, v in _SOCO_TO_DOMAIN.items()}
 
 _EMPTY_SENTINELS = {"", "NOT_IMPLEMENTED"}
 
@@ -61,7 +70,7 @@ def _coerce_queue_position(val: object) -> int | None:
     return None
 
 
-def _decode_play_mode(play_mode: object) -> tuple[str, bool]:
+def _decode_play_mode(play_mode: object) -> tuple[RepeatMode, bool]:
     """Normalize a SoCo play_mode value into domain repeat/shuffle state."""
     normalized = str(play_mode).upper()
     decoded = _SOCO_TO_DOMAIN.get(normalized)
@@ -301,7 +310,7 @@ class SoCoAdapter:
         ip_address: str,
         room_name: str,
         shuffle: bool | None = None,
-        repeat: str | None = None,
+        repeat: RepeatMode | None = None,
         cross_fade: bool | None = None,
     ) -> PlayModeState:
         """Apply play mode changes to the zone and return the resulting state.

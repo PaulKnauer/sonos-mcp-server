@@ -26,7 +26,12 @@ def make_room(
 
 
 def make_play_mode_state(room_name: str = "Living Room") -> PlayModeState:
-    return PlayModeState(room_name=room_name, shuffle=False, repeat="none", cross_fade=False)
+    return PlayModeState(
+        room_name=room_name,
+        shuffle=False,
+        repeat="none",
+        cross_fade=False,
+    )
 
 
 class FakeRoomService:
@@ -69,7 +74,12 @@ class FakeAdapter:
         new_shuffle = shuffle if shuffle is not None else self._state.shuffle
         new_repeat = repeat if repeat is not None else self._state.repeat
         new_cross_fade = cross_fade if cross_fade is not None else self._state.cross_fade
-        return PlayModeState(room_name=room_name, shuffle=new_shuffle, repeat=new_repeat, cross_fade=new_cross_fade)
+        return PlayModeState(
+            room_name=room_name,
+            shuffle=new_shuffle,
+            repeat=new_repeat,
+            cross_fade=new_cross_fade,
+        )
 
 
 class TestGetPlayMode:
@@ -84,8 +94,19 @@ class TestGetPlayMode:
         assert adapter.get_calls == [("192.168.1.10", "Living Room")]
 
     def test_routes_to_coordinator_ip_for_grouped_room(self) -> None:
-        coordinator = make_room(name="Kitchen", ip="192.168.1.20", uid="RINCON_2", is_coordinator=True)
-        member = make_room(name="Living Room", ip="192.168.1.10", uid="RINCON_1", is_coordinator=False, coordinator_uid="RINCON_2")
+        coordinator = make_room(
+            name="Kitchen",
+            ip="192.168.1.20",
+            uid="RINCON_2",
+            is_coordinator=True,
+        )
+        member = make_room(
+            name="Living Room",
+            ip="192.168.1.10",
+            uid="RINCON_1",
+            is_coordinator=False,
+            coordinator_uid="RINCON_2",
+        )
         room_svc = FakeRoomService([coordinator, member])
         adapter = FakeAdapter()
         svc = PlayModeService(room_svc, adapter, None)
@@ -117,8 +138,19 @@ class TestSetPlayMode:
         assert result.shuffle is True
 
     def test_routes_set_to_coordinator_ip(self) -> None:
-        coordinator = make_room(name="Kitchen", ip="192.168.1.20", uid="RINCON_2", is_coordinator=True)
-        member = make_room(name="Living Room", ip="192.168.1.10", uid="RINCON_1", is_coordinator=False, coordinator_uid="RINCON_2")
+        coordinator = make_room(
+            name="Kitchen",
+            ip="192.168.1.20",
+            uid="RINCON_2",
+            is_coordinator=True,
+        )
+        member = make_room(
+            name="Living Room",
+            ip="192.168.1.10",
+            uid="RINCON_1",
+            is_coordinator=False,
+            coordinator_uid="RINCON_2",
+        )
         room_svc = FakeRoomService([coordinator, member])
         adapter = FakeAdapter()
         svc = PlayModeService(room_svc, adapter, None)
@@ -162,7 +194,13 @@ class TestSetPlayMode:
             svc.set_play_mode("Unknown Room", shuffle=True)
 
     def test_falls_back_to_room_ip_when_coordinator_uid_not_found(self) -> None:
-        member = make_room(name="Living Room", ip="192.168.1.10", uid="RINCON_1", is_coordinator=False, coordinator_uid="RINCON_MISSING")
+        member = make_room(
+            name="Living Room",
+            ip="192.168.1.10",
+            uid="RINCON_1",
+            is_coordinator=False,
+            coordinator_uid="RINCON_MISSING",
+        )
         room_svc = FakeRoomService([member])
         adapter = FakeAdapter()
         svc = PlayModeService(room_svc, adapter, None)

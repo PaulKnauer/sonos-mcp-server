@@ -8,7 +8,11 @@ import pytest
 from mcp.server.fastmcp import FastMCP
 
 from soniq_mcp.config import SoniqConfig
-from soniq_mcp.domain.exceptions import PlaybackError, RoomNotFoundError, SonosDiscoveryError
+from soniq_mcp.domain.exceptions import (
+    PlaybackError,
+    RoomNotFoundError,
+    SonosDiscoveryError,
+)
 from soniq_mcp.domain.models import PlayModeState
 from soniq_mcp.tools.play_modes import register
 
@@ -60,7 +64,12 @@ class FakePlayModeService:
         new_shuffle = shuffle if shuffle is not None else self._state.shuffle
         new_repeat = repeat if repeat is not None else self._state.repeat
         new_cross_fade = cross_fade if cross_fade is not None else self._state.cross_fade
-        return PlayModeState(room_name=room, shuffle=new_shuffle, repeat=new_repeat, cross_fade=new_cross_fade)
+        return PlayModeState(
+            room_name=room,
+            shuffle=new_shuffle,
+            repeat=new_repeat,
+            cross_fade=new_cross_fade,
+        )
 
 
 def make_app(

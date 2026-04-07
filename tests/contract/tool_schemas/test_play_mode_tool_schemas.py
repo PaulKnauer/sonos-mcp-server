@@ -118,7 +118,10 @@ class TestSetPlayModeContract:
     async def test_response_includes_play_mode_fields(self, registered_app: FastMCP) -> None:
         import json
 
-        result = await registered_app.call_tool("set_play_mode", {"room": "Living Room", "shuffle": True})
+        result = await registered_app.call_tool(
+            "set_play_mode",
+            {"room": "Living Room", "shuffle": True},
+        )
         data = json.loads(result[0].text)
         assert "room_name" in data
         assert "shuffle" in data
