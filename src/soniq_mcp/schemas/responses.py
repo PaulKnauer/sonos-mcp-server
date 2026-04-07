@@ -247,6 +247,24 @@ class GroupResponse(BaseModel):
     members: list[str]
 
 
+class PlayModeResponse(BaseModel):
+    """Response for play mode get and set tools."""
+
+    room_name: str
+    shuffle: bool
+    repeat: str
+    cross_fade: bool
+
+    @classmethod
+    def from_domain(cls, state: PlayModeState) -> PlayModeResponse:
+        return cls(
+            room_name=state.room_name,
+            shuffle=state.shuffle,
+            repeat=state.repeat,
+            cross_fade=state.cross_fade,
+        )
+
+
 class GroupTopologyResponse(BaseModel):
     """Current grouping state of the Sonos household."""
 
