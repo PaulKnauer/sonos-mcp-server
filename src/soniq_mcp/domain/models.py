@@ -185,3 +185,20 @@ class SonosPlaylist:
     title: str
     uri: str
     item_id: str | None = field(default=None)
+
+
+@dataclass(frozen=True)
+class PlayModeState:
+    """Current play mode settings for a Sonos zone.
+
+    Attributes:
+        room_name: Human-readable name of the room.
+        shuffle: True if shuffle mode is active.
+        repeat: Repeat mode — "none", "all", or "one".
+        cross_fade: True if crossfade between tracks is enabled.
+    """
+
+    room_name: str
+    shuffle: bool
+    repeat: str  # "none" | "all" | "one"
+    cross_fade: bool
