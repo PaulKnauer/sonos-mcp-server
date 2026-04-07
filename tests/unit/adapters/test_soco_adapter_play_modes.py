@@ -146,15 +146,6 @@ class TestSetPlayMode:
 
     def test_soco_error_raises_playback_error(self) -> None:
         adapter = SoCoAdapter()
-        zone = make_fake_zone(play_mode="NORMAL", cross_fade=False)
-        zone.play_mode = "NORMAL"  # readable
-        # Make assignment raise
-        def _raise(val):
-            raise RuntimeError("Device busy")
-        zone.__class__ = type("FakeZone", (), {
-            "play_mode": property(lambda self: "NORMAL", lambda self, v: (_ for _ in ()).throw(RuntimeError("Device busy"))),
-            "cross_fade": property(lambda self: False),
-        })
-        with _patch_soco(zone):
-            with pytest.raises(PlaybackError):
+        with patch("soco.SoCo", side_effect=RuntimeError("connection refused")):
+            with pytest.raises(PlaybackError, match="connection refused"):
                 adapter.set_play_mode("192.168.1.10", "Living Room", shuffle=True)
