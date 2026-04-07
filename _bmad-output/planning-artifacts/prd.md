@@ -1,4 +1,5 @@
 ---
+date: '2026-03-23'
 stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-02b-vision', 'step-02c-executive-summary', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation', 'step-07-project-type', 'step-08-scoping', 'step-09-functional', 'step-10-nonfunctional', 'step-11-polish', 'step-12-complete']
 inputDocuments: []
 workflowType: 'prd'
@@ -16,6 +17,8 @@ lastEdited: '2026-04-02'
 editHistory:
   - date: '2026-04-02'
     changes: 'Added Tier 1 and Tier 2 SoCo capability expansion scope, roadmap updates, and functional requirements from the capability gap analysis.'
+  - date: '2026-04-02'
+    changes: 'Applied validation-driven refinements: measurable NFRs, developer-tool completeness, journey traceability updates, and scope/FR wording fixes.'
 ---
 
 # Product Requirements Document - Soniq
@@ -45,33 +48,31 @@ This is a `developer_tool` in the `general` domain, with a smart-home and home-a
 
 ### User Success
 
-Users can control their Sonos system naturally through either a directly connected MCP-capable AI client or an agent-driven assistant workflow. The server exposes a sufficiently rich toolset for conversational music control patterns, including selecting rooms, controlling playback, adjusting volume, managing groups, working with playlists or favourites, and supporting higher-level AI use cases such as music suggestions that lead into playback actions.
-
-The product succeeds when users can complete common Sonos control tasks quickly without needing to understand Sonos protocols, MCP internals, or container orchestration details. For less technical users, success means the setup path feels guided, opinionated, and forgiving. For advanced users, success means the product remains flexible enough to support home-lab deployment, agent integrations, and direct MCP client wiring without fighting the platform.
-
-A key user success moment is when a user can install the server, connect it to their preferred AI client, and issue natural requests that reliably affect the Sonos system in the expected room or group. A higher-order success moment is when the MCP server enables fluid conversational control patterns, including AI-assisted music recommendations and background playback workflows, even though the conversational intelligence itself lives in the client or agent layer rather than in the MCP server.
+- Within the first-run experience, a user shall be able to install the server, complete configuration validation, connect a supported MCP-capable AI client, and successfully execute `play`, `pause`, `volume`, and room-targeting actions in under 20 minutes by following only the official setup documentation.
+- In usability testing against the documented local `stdio` path, at least 90% of representative users shall complete five common Sonos tasks without needing to understand Sonos protocols, MCP internals, or container orchestration details.
+- For supported conversational control flows, at least 95% of successful commands shall affect the intended room or group without requiring a corrective follow-up action.
+- The v1 tool surface shall cover room discovery, playback, volume, grouping, queue inspection, favourites or playlist playback, and configuration validation, with Tier 1 expansion areas scheduled in the follow-on roadmap rather than left undefined.
 
 ### Business Success
 
-In the first three months, success means the product is reliably running in your own home environment, is usable through local `stdio` integration, and supports containerized deployment with a stable Docker image and working Helm chart. It should also be packaged and documented well enough to be credible to outside users rather than remaining a private experiment.
-
-Within twelve months, success means the project is recognized as a compelling Python-native Sonos MCP option with public packaging and distribution paths, including PyPI, container publishing, and Helm-based deployment guidance. It should be competitive enough that users evaluating existing alternatives would reasonably choose it because of capability depth, deployment maturity, and setup quality. Community indicators such as installs, GitHub interest, or outside usage matter, but they are secondary to proving that the product is genuinely production-grade and practically useful.
-
-The project also serves a personal learning goal, but that goal is not the success metric by itself. The product must stand on its own as a credible solution that others could adopt with confidence.
+- Within the first 3 months, the product shall run continuously in the primary home environment for at least 14 consecutive days without requiring an unplanned rebuild or manual recovery, and it shall support verified local `stdio`, Docker, and Helm-based deployment paths.
+- Within the first public-release cycle, the project shall publish a Python package, a container image, and operator documentation that allows an external evaluator to complete installation and first control actions using only the published materials.
+- Within 12 months, the project shall maintain public distribution through `PyPI` and container publishing and provide enough documented capability depth and deployment maturity that a user comparing Python-native Sonos MCP options can evaluate it as a credible top-tier choice.
+- Community interest may be tracked through installs, GitHub stars, issues, or outside usage reports, but those signals are secondary to proving that the product is operationally credible and adoptable by users beyond the original builder.
 
 ### Technical Success
 
-The product meets a world-class engineering bar for architecture, maintainability, and operational quality. It supports both local `stdio` usage and deployed HTTP-based MCP access, with a clean separation of concerns between transport, configuration, Sonos control logic, and deployment assets.
-
-Setup quality is a first-class technical requirement. The product should provide a smooth installation and configuration experience with sensible defaults for the most common deployment paths, strong validation, clear error handling, and an opinionated day-0 path that minimizes configuration burden. Advanced options remain available, but the default path should work for most users without exposing unnecessary complexity.
-
-Testing is comprehensive where it matters: business logic, configuration validation, error handling, transport behavior, and other meaningful risk points. The goal is not maximizing coverage as a vanity metric, but achieving confidence in the parts of the system that determine correctness, reliability, and user trust. Docker and Helm deployment paths should work without manual patching, and documentation should be good enough that installation, upgrade, and troubleshooting flows are predictable and repeatable.
+- The product shall support both local `stdio` usage and deployed HTTP-based MCP access in the same release, with documented and testable separation between transport, configuration, Sonos control logic, and deployment assets.
+- Default setup profiles shall allow a clean local installation and a clean containerized installation to pass configuration validation without manual file editing beyond documented required values.
+- Automated tests shall cover configuration validation, core service behavior, and regression-prone control paths, and the protected-branch CI workflow shall execute those checks on every change.
+- Docker and Helm deployment paths shall start successfully from the documented instructions in clean test environments without undocumented patching, and upgrade/troubleshooting documentation shall remain accurate for the released version.
 
 ### Measurable Outcomes
 
-A successful initial release allows a user to install and configure the product, connect it to an MCP-capable AI client, and execute common Sonos actions locally via `stdio` with minimal friction. A successful deployed configuration allows the same product to run from a containerized environment using HTTP-based transport and documented deployment patterns.
-
-The product should ship with a core tool surface that is competitive with existing Sonos MCP alternatives, plus a superior setup and deployment experience. That competitive surface should expand beyond basic playback and grouping into higher-value Sonos controls such as play modes, seek, sleep timer, audio EQ, input switching, alarms, richer playlist operations, group-level audio control, and local library access as the roadmap progresses. It should publish successfully to PyPI, publish container images for practical use, and provide Helm packaging suitable for self-hosted home-lab environments. The configuration experience should include sensible defaults and validation that prevent common setup failures before runtime.
+- A successful initial release shall allow a new user to install and configure the product, connect an MCP-capable AI client, and execute at least five common Sonos actions locally via `stdio` during first-run setup.
+- A successful deployed configuration shall allow the same release artifact to run from a containerized environment using the documented HTTP-based transport path and complete the same core control actions from a second device on the home network.
+- The released product shall publish successfully to `PyPI`, publish a container image suitable for practical self-hosted use, and provide a Helm packaging path that passes documented installation and startup verification.
+- The roadmap shall define competitive expansion beyond basic playback and grouping through Tier 1 and Tier 2 Sonos capabilities, with the next planned areas explicitly named in the PRD rather than implied.
 
 ## Product Scope
 
@@ -99,13 +100,13 @@ Future work can include more advanced transport evolution, event subscriptions, 
 
 Paul is a home tinkerer with a Sonos system across several rooms and an interest in making AI tools useful beyond chat. He uses an MCP-capable AI client on his computer and wants a direct, low-friction way to control Sonos without standing up infrastructure before he knows the product is worthwhile.
 
-The opening scene is local and simple. He installs the server on the same machine as his AI client, uses a guided setup flow, accepts sensible defaults, validates the configuration, and connects over `stdio`. He asks the AI to suggest music for a mood, start playback in a specific room, adjust the volume, and later regroup rooms. The product delivers value when these actions work naturally and reliably without requiring him to understand Sonos protocols or MCP transport details.
+The opening scene is local and simple. He installs the server on the same machine as his AI client, uses a guided setup flow, accepts documented default settings for the standard local profile, validates the configuration, and connects over `stdio`. He asks the AI to suggest music for a mood, start playback in a specific room, adjust the volume, change shuffle or repeat mode, seek within the current track, and later regroup rooms. The product delivers value when these actions work naturally and reliably without requiring him to understand Sonos protocols or MCP transport details.
 
 The climax is when he realizes he can get meaningful, conversational Sonos control from a local AI client with very little setup burden. The resolution is that local `stdio` becomes the easiest day-0 experience and the fastest path to value.
 
 **Reference use case:** running the MCP server locally on the same machine as Claude Desktop, ChatGPT-compatible MCP tooling, or another desktop MCP client.
 
-This journey reveals requirements for local-first onboarding, `stdio` support, sensible defaults, guided configuration, room targeting, playlist or favourites support, and strong validation before runtime.
+This journey reveals requirements for local-first onboarding, `stdio` support, documented default profiles, guided configuration, room targeting, playlist or favourites support, play mode control, seek support, and strong validation before runtime.
 
 ### Journey 2: Primary User, Setup Failure and Recovery Path
 
@@ -147,7 +148,7 @@ This journey reveals requirements for clear remote deployment guidance, home-net
 
 An advanced user wants to connect the server into Home Assistant, `n8n`, or a custom agent workflow. Their goal is not just direct control, but richer AI-driven experiences where recommendations, routines, or conversational reasoning lead to Sonos actions. The MCP server is the action layer, not the agent brain, so its job is to expose clean, expressive, dependable tools.
 
-The opening scene is ambition: the user wants an assistant that can reason about mood, time, preferences, and context, then use the MCP server to perform the right audio actions. The product succeeds when its tool interface is broad enough to support real orchestration and stable enough that integrations do not feel like brittle glue code.
+The opening scene is ambition: the user wants an assistant that can reason about mood, time, preferences, and context, then use the MCP server to perform the right audio actions. The product succeeds when its tool interface is broad enough to support real orchestration and stable enough that integrations do not feel like brittle glue code. That includes higher-value Sonos controls such as sleep behavior, audio EQ, input switching, alarm scheduling, richer playlist operations, and music-library-driven playback selection.
 
 The climax is when the integration becomes composable and reusable, supporting direct AI-client usage and agent-driven orchestration with the same underlying control model. The resolution is that the MCP server becomes a platform capability for home audio automation rather than a one-off integration.
 
@@ -255,6 +256,18 @@ Official installation methods for the PRD are:
 
 This mix is important because it supports different user maturity levels. Some users will want the fastest path through `pip` and local `stdio`; others will want a containerized service with repeatable infrastructure; less technical users may benefit most from an installer or guided setup flow.
 
+### Language Support Matrix
+
+The product must define language support in terms of server implementation, package distribution, and client interoperability. The server implementation is Python-only for v1. Official package distribution is Python-first through `PyPI`, with container delivery for language-agnostic runtime use. Client interoperability should be documented for any MCP-compatible client regardless of implementation language, with explicit examples for Python-hosted workflows, desktop AI clients, and networked clients that consume MCP over supported transports.
+
+The PRD should treat Python as the only implementation language commitment for v1. It should not imply official SDKs or native packages for JavaScript, Go, Rust, or other languages unless those become explicit roadmap items.
+
+### API Surface Summary
+
+The product must define a clear consumer-facing tool surface organized by capability area rather than by internal module boundaries. At minimum, the documented surface should group tools into playback control, queue and favourites management, room topology and grouping, advanced playback controls, setup and diagnostics, and deployment/runtime guidance.
+
+The product should also document the expected interaction model for the tool surface: room-targeted control, coordinator-aware actions where Sonos semantics require them, supported advanced-control guards for device-specific features, and parity expectations between direct AI-client use and agent-mediated workflows.
+
 ### Client Integration Examples
 
 The PRD should treat the following as first-class example integrations:
@@ -277,6 +290,12 @@ The documentation set for v1 should include:
 - example prompts and use cases
 
 These examples should be practical and scenario-based, including local same-machine use, home-network deployment, cross-device access, and integration with external automation or agent systems. The documentation must help users choose the right runtime model for their situation instead of assuming one universal deployment pattern.
+
+### Migration and Upgrade Guidance
+
+The product must define an explicit upgrade and migration posture for users adopting new releases. Documentation should state how users upgrade Python-package installs, containerized deployments, and Helm-based deployments, and should note when configuration changes, tool-surface changes, or breaking behavior changes require manual action.
+
+For v1, the minimum migration commitment is release-note quality guidance covering version-to-version upgrade steps, configuration changes, deprecated options, and any tool-surface changes that could affect MCP clients or automations.
 
 ### Implementation Considerations
 
@@ -317,6 +336,13 @@ This means the MVP must deliver both core Sonos utility and a polished operation
 - PyPI package
 - guided setup and configuration validation
 - MCP client configuration examples
+
+**Explicitly Out of Scope for MVP:**
+- event subscriptions and push-style state propagation
+- third-party music-service-specific integrations beyond what existing Sonos abstractions already expose cleanly
+- soundbar-specialized tuning features that require device-family-specific behavior
+- multi-tenant or internet-exposed deployment models
+- non-Python implementation targets or client SDKs
 
 This MVP should be sufficient to make the product feel complete for its intended use cases. It should support the core direct-control and integration journeys without forcing users to wait for basic credibility features in later phases.
 
@@ -397,8 +423,8 @@ Phase 4 is where `Soniq` can become not just a strong Sonos MCP server, but a fo
 - FR25: Users can view the current Sonos grouping topology.
 - FR26: Users can add a room to an existing group.
 - FR27: Users can remove a room from its current group.
-- FR28: Users can trigger whole-home or multi-room grouping when appropriate.
-- FR29: Users can view system-level room and speaker information relevant to control operations.
+- FR28: Users can trigger whole-home or multi-room grouping through explicit commands that target all discovered rooms or a specified room set.
+- FR29: Users can view a defined system-information set that supports control operations, including room names, coordinator state, group membership, and addressable speaker identity data.
 - FR30: Users can view and change shuffle mode for a selected room or its active coordinator.
 - FR31: Users can view and change repeat mode for a selected room or its active coordinator.
 - FR32: Users can view and change crossfade mode for a selected room or its active coordinator.
@@ -424,7 +450,7 @@ Phase 4 is where `Soniq` can become not just a strong Sonos MCP server, but a fo
 - FR46: Users can run the product through an official container image.
 - FR47: Users can deploy the product through an official Helm chart.
 - FR48: Users can configure the product for a single-household home Sonos environment.
-- FR49: Users can use sensible default settings for common setup paths.
+- FR49: Users can use documented default configuration profiles for the common local `stdio` and home-network deployment paths.
 - FR50: Users can validate configuration before attempting normal runtime operation.
 - FR51: Users can identify configuration errors through actionable setup feedback.
 - FR52: Users can access guided setup and onboarding documentation for supported usage patterns.
@@ -453,50 +479,50 @@ Phase 4 is where `Soniq` can become not just a strong Sonos MCP server, but a fo
 - FR66: Users can view, create, update, and delete Sonos alarms for supported households and rooms.
 - FR67: Users can view, create, update, and delete Sonos playlists exposed through the household.
 - FR68: Users can control group-level volume and mute state for an active Sonos group.
-- FR69: Users can browse and select content from the local Sonos music library with result handling suitable for large collections.
-- FR70: Users can use the same advanced control surface through direct AI-client interactions and agent-mediated workflows without learning a different capability model.
+- FR69: Users can browse and select content from the local Sonos music library with pagination or bounded-result behavior that remains usable for collections of at least 1,000 items.
+- FR70: Users can use the same named advanced-control capabilities through direct AI-client interactions and agent-mediated workflows, with no capability-category mismatch between the two access patterns.
 
 ## Non-Functional Requirements
 
 ### Performance
 
-- NFR1: Core control actions such as play, pause, stop, room targeting, and volume changes should return an initial tool response quickly enough to feel responsive in conversational use.
-- NFR2: Configuration validation and startup checks should complete quickly enough to support an iterative setup experience rather than a long trial-and-error cycle.
-- NFR3: The product should remain responsive when handling typical single-household usage patterns, including multiple control actions during an active session.
-- NFR4: Local `stdio` operation should feel at least as responsive as remote home-network operation for equivalent actions.
+- NFR1: Core control actions such as play, pause, stop, room targeting, and volume changes shall return an initial MCP tool response in under 2 seconds for 95% of requests in a healthy single-household environment.
+- NFR2: Configuration validation and startup checks shall complete in under 10 seconds for 95% of runs on supported local and containerized setups.
+- NFR3: The product shall sustain at least 20 sequential control actions within a 60-second window in a single active session without process restart, request timeout, or control-state corruption.
+- NFR4: Local `stdio` operation shall have median end-to-end request latency no worse than 20% faster than equivalent home-network operation under the same household conditions.
 
 ### Reliability
 
-- NFR5: The product should behave predictably and consistently across repeated control actions against the same Sonos environment.
-- NFR6: The product should fail gracefully when speakers are unreachable, configuration is invalid, or MCP transport setup is incorrect.
-- NFR7: The product should provide actionable diagnostic feedback when control actions fail or cannot be completed as requested.
-- NFR8: The product should preserve user trust by minimizing surprising outcomes, especially for room targeting and volume-related operations.
-- NFR9: Official install and deployment paths should be repeatable without requiring undocumented manual intervention.
+- NFR5: Repeating the same supported control action against the same target room under unchanged household conditions shall produce the same resulting Sonos state in at least 99% of test runs.
+- NFR6: When speakers are unreachable, configuration is invalid, or MCP transport setup is incorrect, the product shall return a typed failure response with corrective guidance and without unhandled process termination in 100% of tested failure cases.
+- NFR7: For every user-correctable runtime failure, the product shall return an error message that identifies the failed action, the affected target, and at least one corrective next step.
+- NFR8: Volume-changing actions shall respect configured safety limits in 100% of test cases, and room-targeted actions shall not affect an unintended room in any supported single-command success scenario.
+- NFR9: Official Python-package, Docker, and Helm installation paths shall succeed from documented instructions without undocumented manual intervention in clean test environments.
 
 ### Security
 
-- NFR10: The default security posture should assume local or trusted home-network usage rather than public internet exposure.
-- NFR11: The product should not require broader network exposure than necessary for supported usage patterns.
-- NFR12: The product should support MCP-compatible permission and tool-restriction models where the client ecosystem supports them.
-- NFR13: Configuration and deployment guidance should clearly distinguish safe default exposure from advanced or user-managed exposure choices.
-- NFR14: The product should avoid storing or exposing unnecessary sensitive information in logs, examples, or default configuration flows.
+- NFR10: Default configuration shall bind the product only to local process or trusted home-network use cases and shall not require public-internet exposure for any supported v1 workflow.
+- NFR11: No documented deployment pattern shall require broader network access than the minimum needed for the selected runtime mode and Sonos household reachability.
+- NFR12: Where the client ecosystem supports MCP permission or tool-restriction controls, the product shall expose enough metadata and configuration control to disable restricted tool categories before runtime.
+- NFR13: Configuration and deployment guidance shall document at least one safe-default exposure pattern and at least one explicitly advanced exposure pattern, with the risks of the latter stated in operator-facing language.
+- NFR14: Logs, examples, and default configuration flows shall exclude secrets, auth tokens, and household-specific identifiers except where the user explicitly enables diagnostic verbosity.
 
 ### Integration
 
-- NFR15: The product should provide stable, well-documented MCP capability semantics across supported transports.
-- NFR16: The product should support the same core control model across direct AI-client usage and agent-mediated usage.
-- NFR17: Official examples should cover local `stdio`, Docker-based runtime, Helm deployment, and representative MCP client configurations.
-- NFR18: The product should provide enough configuration and troubleshooting clarity that supported clients and automation systems can be integrated without reverse engineering product behavior.
+- NFR15: The product shall preserve functional parity for all documented core tools across supported transports, except where transport limitations are explicitly documented.
+- NFR16: The product shall preserve the same room-targeting model, safety behavior, and advanced-capability naming across direct AI-client usage and agent-mediated usage.
+- NFR17: Official examples shall cover local `stdio`, Docker-based runtime, Helm deployment, and at least three representative MCP client or automation configurations.
+- NFR18: A new user following the official integration documentation shall be able to complete a supported client integration without consulting source code or undocumented configuration files.
 
 ### Maintainability and Quality
 
-- NFR19: The codebase should be organized so that Sonos control logic, MCP transport logic, configuration handling, and deployment assets can evolve independently.
-- NFR20: The product should include automated testing coverage for business logic, configuration validation, and other meaningful risk areas rather than coverage for its own sake.
-- NFR21: The architecture should support adding new MCP clients, deployment patterns, and downstream agent consumers without major restructuring.
-- NFR22: Documentation, examples, and operational assets should be maintained as product-critical artifacts rather than optional supporting material.
+- NFR19: The codebase shall preserve separable module boundaries for Sonos control logic, MCP transport logic, configuration handling, and deployment assets so that changes in one area do not require cross-cutting edits in all others for routine feature additions.
+- NFR20: Automated tests shall cover configuration validation, core Sonos control behavior, and regression-prone service logic, and the CI path shall run those checks on every protected-branch change.
+- NFR21: Adding a new MCP client example, deployment pattern, or downstream agent integration shall not require redesign of the core Sonos control domain model.
+- NFR22: Documentation, examples, and operational assets shall be versioned and updated in the same release cycle as behavior changes that would otherwise make them inaccurate.
 
 ### Scalability
 
-- NFR23: The product should support the expected load profile of a single-household, self-hosted Sonos environment without degradation in normal use.
-- NFR24: The product should be able to support multiple client interactions within the same home environment without requiring redesign of the core product model.
-- NFR25: The product does not need to optimize for multi-tenant or internet-scale deployment in v1, and quality decisions should favor home-use robustness over generalized scale.
+- NFR23: The product shall support a single-household, self-hosted environment with at least 10 addressable Sonos rooms without functional degradation in supported control flows.
+- NFR24: The product shall tolerate concurrent interaction from at least 3 client sessions within the same household without requiring redesign of the core product model or causing inconsistent room state.
+- NFR25: The product shall not require optimization for multi-tenant or internet-scale deployment in v1, and architecture decisions shall favor single-household robustness over generalized scale efficiency.

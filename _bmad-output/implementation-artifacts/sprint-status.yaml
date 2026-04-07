@@ -1,5 +1,5 @@
 # generated: 2026-03-24
-# last_updated: 2026-03-24
+# last_updated: 2026-04-07
 # project: sonos-mcp-server
 # project_key: NOKEY
 # tracking_system: file-system
@@ -13,14 +13,14 @@
 #   - done: All stories in epic completed
 #
 # Epic Status Transitions:
-#   - backlog -> in-progress: Automatically when first story is created
-#   - in-progress -> done: Manually when all stories reach done
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
 #
 # Story Status:
 #   - backlog: Story only exists in epic file
-#   - ready-for-dev: Story file created in implementation artifacts
+#   - ready-for-dev: Story file created in stories folder
 #   - in-progress: Developer actively working on implementation
-#   - review: Ready for code review
+#   - review: Ready for code review (via Dev's code-review workflow)
 #   - done: Story completed
 #
 # Retrospective Status:
@@ -29,17 +29,17 @@
 #
 # WORKFLOW NOTES:
 # ===============
-# - Epic 1 is in progress because implementation artifacts exist for its stories.
-# - Story 1.1 has been completed and merged.
-# - Stories 1.2 to 1.5 have story files and are ready for development.
-# - Later epics remain in backlog because no implementation artifacts exist yet.
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-24
-last_updated: 2026-03-29  # story 5.4 closed
+last_updated: 2026-04-07
 project: sonos-mcp-server
 project_key: NOKEY
 tracking_system: file-system
-story_location: "_bmad-output/implementation-artifacts"
+story_location: _bmad-output/implementation-artifacts
 
 development_status:
   epic-1: done
@@ -71,14 +71,9 @@ development_status:
   4-5-establish-ci-quality-gates-and-release-automation: done
   epic-4-retrospective: optional
 
-  epic-5: in-progress
+  epic-5: done
   5-1-support-agent-mediated-integration-patterns: done
   5-2-deliver-consistent-diagnostics-and-troubleshooting-support: done
   5-3-deliver-productized-examples-prompts-and-command-surface: done
   5-4-publish-operational-security-and-release-guidance: done
   epic-5-retrospective: optional
-
-open_delivery_risks:
-  - "No CI workflow, coverage gate, lint/type-check gate, or automated release verification is currently tracked in implemented stories."
-  - "Remote deployment assets are still placeholders, so Docker/Helm/runtime claims should be treated as planned work rather than current capability."
-  - "Operational security guidance and release/upgrade expectations need explicit documentation before calling the product production-ready."
