@@ -83,9 +83,7 @@ class TestGetPlayMode:
 
     def test_soco_error_raises_playback_error(self) -> None:
         adapter = SoCoAdapter()
-        zone = MagicMock()
-        type(zone).play_mode = property(fct := lambda self: (_ for _ in ()).throw(RuntimeError("UPnP error")))
-        with _patch_soco(zone):
+        with patch("soco.SoCo", side_effect=RuntimeError("UPnP error")):
             with pytest.raises(PlaybackError, match="UPnP error"):
                 adapter.get_play_mode("192.168.1.10", "Living Room")
 
