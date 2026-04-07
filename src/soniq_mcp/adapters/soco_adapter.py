@@ -17,7 +17,20 @@ from soniq_mcp.domain.exceptions import (
     QueueError,
     VolumeError,
 )
-from soniq_mcp.domain.models import Favourite, PlaybackState, QueueItem, SonosPlaylist, TrackInfo
+from soniq_mcp.domain.models import Favourite, PlayModeState, PlaybackState, QueueItem, SonosPlaylist, TrackInfo
+
+# Maps SoCo play_mode strings to (repeat, shuffle) domain values.
+_SOCO_TO_DOMAIN: dict[str, tuple[str, bool]] = {
+    "NORMAL": ("none", False),
+    "REPEAT_ALL": ("all", False),
+    "REPEAT_ONE": ("one", False),
+    "SHUFFLE_NOREPEAT": ("none", True),
+    "SHUFFLE": ("all", True),
+    "SHUFFLE_REPEAT_ONE": ("one", True),
+}
+
+# Maps (repeat, shuffle) domain values to SoCo play_mode strings.
+_DOMAIN_TO_SOCO: dict[tuple[str, bool], str] = {v: k for k, v in _SOCO_TO_DOMAIN.items()}
 
 _EMPTY_SENTINELS = {"", "NOT_IMPLEMENTED"}
 
