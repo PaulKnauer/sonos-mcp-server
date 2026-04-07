@@ -25,6 +25,7 @@ def register_all(app: FastMCP, config: SoniqConfig) -> None:
     from soniq_mcp.services.volume_service import VolumeService
     from soniq_mcp.tools.favourites import register as register_favourites
     from soniq_mcp.tools.groups import register as register_groups
+    from soniq_mcp.tools.play_modes import register as register_play_modes
     from soniq_mcp.tools.playback import register as register_playback
     from soniq_mcp.tools.playlists import register as register_playlists
     from soniq_mcp.tools.queue import register as register_queue
