@@ -49,6 +49,9 @@ KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
         "party_mode",
         "get_play_mode",
         "set_play_mode",
+        "seek",
+        "get_sleep_timer",
+        "set_sleep_timer",
     }
 )
 

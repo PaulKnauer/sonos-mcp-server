@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from soniq_mcp.config.models import SoniqConfig
-from soniq_mcp.domain.models import PlaybackState, TrackInfo
+from soniq_mcp.domain.models import PlaybackState, SleepTimerState, TrackInfo
 from soniq_mcp.services.sonos_service import SonosService
 
 
@@ -98,3 +98,33 @@ class PlaybackService:
             PlaybackError: If the SoCo operation fails.
         """
         return self._sonos_service.get_track_info(room_name)
+
+    def seek(self, room_name: str, position: str) -> PlaybackState:
+        """Seek to a position in the current track.
+
+        Raises:
+            RoomNotFoundError: If room_name does not match any discovered zone.
+            SonosDiscoveryError: If network discovery fails.
+            PlaybackError: If position format is invalid or the SoCo operation fails.
+        """
+        return self._sonos_service.seek(room_name, position)
+
+    def get_sleep_timer(self, room_name: str) -> SleepTimerState:
+        """Return the current sleep timer state for the named room.
+
+        Raises:
+            RoomNotFoundError: If room_name does not match any discovered zone.
+            SonosDiscoveryError: If network discovery fails.
+            PlaybackError: If the SoCo operation fails.
+        """
+        return self._sonos_service.get_sleep_timer(room_name)
+
+    def set_sleep_timer(self, room_name: str, minutes: int) -> SleepTimerState:
+        """Set or clear the sleep timer for the named room.
+
+        Raises:
+            RoomNotFoundError: If room_name does not match any discovered zone.
+            SonosDiscoveryError: If network discovery fails.
+            PlaybackError: If minutes is negative or the SoCo operation fails.
+        """
+        return self._sonos_service.set_sleep_timer(room_name, minutes)

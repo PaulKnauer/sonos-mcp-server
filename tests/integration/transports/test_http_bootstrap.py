@@ -43,6 +43,9 @@ EXPECTED_TOOL_NAMES = {
     "set_volume",
     "set_play_mode",
     "get_play_mode",
+    "seek",
+    "get_sleep_timer",
+    "set_sleep_timer",
     "stop",
     "unjoin_room",
     "unmute",
@@ -109,8 +112,8 @@ class TestHttpToolSurfaceParity:
         tool_names = {t.name for t in app._tool_manager.list_tools()}
         assert "ping" in tool_names
 
-    def test_http_server_exposes_all_31_tools(self) -> None:
-        """Verify exact tool-surface parity for Story 4.1 + Story 1.1 play mode tools."""
+    def test_http_server_exposes_all_34_tools(self) -> None:
+        """Verify exact tool-surface parity for Story 4.1 + Story 1.1 play mode + Story 1.2 seek/sleep timer."""
         cfg = SoniqConfig(transport=TransportMode.HTTP)
         app = create_server(config=cfg)
         tool_names = {t.name for t in app._tool_manager.list_tools()}

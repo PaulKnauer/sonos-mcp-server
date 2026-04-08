@@ -5,7 +5,8 @@ from __future__ import annotations
 import logging
 
 from soniq_mcp.config.models import SoniqConfig
-from soniq_mcp.domain.models import PlaybackState, Room, TrackInfo, VolumeState
+from soniq_mcp.domain.exceptions import PlaybackError
+from soniq_mcp.domain.models import PlaybackState, Room, SleepTimerState, TrackInfo, VolumeState
 from soniq_mcp.domain.safety import check_volume
 
 log = logging.getLogger(__name__)
@@ -44,8 +45,59 @@ class SonosService:
         return self._adapter.get_playback_state(room.ip_address, room.name)
 
     def get_track_info(self, room_name: str) -> TrackInfo:
-        room = self._resolve_track_info_room(room_name)
+        room = self._resolve_coordinator(room_name)
         return self._adapter.get_track_info(room.ip_address)
+
+    def seek(self, room_name: str, position: str) -> PlaybackState:
+        """Seek to a position in the current track and return resulting playback state.
+
+        Args:
+            room_name: Target room name.
+            position: Track position as ``"HH:MM:SS"`` string.
+
+        Raises:
+            RoomNotFoundError: If room_name does not match any discovered zone.
+            PlaybackError: If position format is invalid or the SoCo operation fails.
+            SonosDiscoveryError: If network discovery fails.
+        """
+        self._validate_seek_position(position)
+        room = self._resolve_coordinator(room_name)
+        self._adapter.seek(room.ip_address, position)
+        return self._adapter.get_playback_state(room.ip_address, room_name)
+
+    def get_sleep_timer(self, room_name: str) -> SleepTimerState:
+        """Return the current sleep timer state for the named room.
+
+        Routes to the group coordinator when the room is grouped.
+
+        Raises:
+            RoomNotFoundError: If room_name does not match any discovered zone.
+            PlaybackError: If the SoCo operation fails.
+            SonosDiscoveryError: If network discovery fails.
+        """
+        room = self._resolve_coordinator(room_name)
+        return self._adapter.get_sleep_timer(room.ip_address, room_name)
+
+    def set_sleep_timer(self, room_name: str, minutes: int) -> SleepTimerState:
+        """Set or clear the sleep timer for the named room.
+
+        Routes to the group coordinator when the room is grouped.
+
+        Args:
+            room_name: Target room name.
+            minutes: Minutes until sleep; ``0`` clears the timer.
+
+        Raises:
+            RoomNotFoundError: If room_name does not match any discovered zone.
+            PlaybackError: If minutes is negative or the SoCo operation fails.
+            SonosDiscoveryError: If network discovery fails.
+        """
+        if minutes < 0:
+            raise PlaybackError(
+                f"Invalid minutes value {minutes!r}. Must be >= 0."
+            )
+        room = self._resolve_coordinator(room_name)
+        return self._adapter.set_sleep_timer(room.ip_address, room_name, minutes)
 
     def get_volume_state(self, room_name: str) -> VolumeState:
         room = self._room_service.get_room(room_name)
@@ -75,7 +127,13 @@ class SonosService:
         room = self._room_service.get_room(room_name)
         self._adapter.set_mute(room.ip_address, False)
 
-    def _resolve_track_info_room(self, room_name: str) -> Room:
+    def _resolve_coordinator(self, room_name: str) -> Room:
+        """Resolve the coordinator room for session-level operations.
+
+        If the target room belongs to a group, returns the coordinator's Room
+        so operations are directed at the correct zone. Falls back to the room
+        itself if the coordinator UID cannot be resolved.
+        """
         room = self._room_service.get_room(room_name)
         coordinator_uid = room.group_coordinator_uid
         if not coordinator_uid:
@@ -85,15 +143,33 @@ class SonosService:
         for candidate in rooms:
             if candidate.uid == coordinator_uid:
                 log.debug(
-                    "get_track_info: room=%r routed to coordinator=%r",
+                    "coordinator routing: room=%r routed to coordinator=%r",
                     room_name,
                     candidate.name,
                 )
                 return candidate
 
         log.debug(
-            "get_track_info: coordinator uid %r not found for room=%r; using room ip",
+            "coordinator routing: coordinator uid %r not found for room=%r; using room ip",
             coordinator_uid,
             room_name,
         )
         return room
+
+    def _validate_seek_position(self, position: str) -> None:
+        """Validate explicit HH:MM:SS seek positions.
+
+        Sonos accepts positions in HH:MM:SS form, but regex-only validation
+        would still allow impossible values like ``00:99:99``.
+        """
+        parts = position.split(":")
+        if len(parts) != 3 or not all(part.isdigit() for part in parts):
+            raise PlaybackError(
+                f"Invalid seek position {position!r}. Expected HH:MM:SS format."
+            )
+
+        hours, minutes, seconds = (int(part) for part in parts)
+        if minutes >= 60 or seconds >= 60:
+            raise PlaybackError(
+                f"Invalid seek position {position!r}. Minutes and seconds must be < 60."
+            )

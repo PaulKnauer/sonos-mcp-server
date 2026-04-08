@@ -9,7 +9,7 @@ from mcp.server.fastmcp import FastMCP
 
 from soniq_mcp.config import SoniqConfig
 from soniq_mcp.domain.exceptions import PlaybackError, RoomNotFoundError, SonosDiscoveryError
-from soniq_mcp.domain.models import PlaybackState, TrackInfo
+from soniq_mcp.domain.models import PlaybackState, SleepTimerState, TrackInfo
 from soniq_mcp.tools.playback import register
 
 
@@ -65,6 +65,23 @@ class FakePlaybackService:
         self._check_errors(room)
         return TrackInfo(title="Test Song", artist="Test Artist", duration="0:03:45")
 
+    def seek(self, room: str, position: str) -> PlaybackState:
+        self.calls.append(("seek", room))
+        self._check_errors(room)
+        return PlaybackState(transport_state="PLAYING", room_name=self._room_name)
+
+    def get_sleep_timer(self, room: str) -> SleepTimerState:
+        self.calls.append(("get_sleep_timer", room))
+        self._check_errors(room)
+        return SleepTimerState(room_name=self._room_name, active=True, remaining_seconds=600, remaining_minutes=10)
+
+    def set_sleep_timer(self, room: str, minutes: int) -> SleepTimerState:
+        self.calls.append(("set_sleep_timer", room))
+        self._check_errors(room)
+        if minutes == 0:
+            return SleepTimerState(room_name=self._room_name, active=False)
+        return SleepTimerState(room_name=self._room_name, active=True, remaining_seconds=minutes * 60, remaining_minutes=minutes)
+
 
 def make_app(
     raise_room_not_found: bool = False,
@@ -105,6 +122,9 @@ class TestToolRegistration:
         "previous_track",
         "get_playback_state",
         "get_track_info",
+        "seek",
+        "get_sleep_timer",
+        "set_sleep_timer",
     ]
 
     def test_all_tools_registered(self) -> None:
@@ -261,3 +281,139 @@ class TestGetTrackInfoTool:
         app, _ = make_app()
         tool = get_tool(app, "get_track_info")
         assert tool.annotations.readOnlyHint is True
+
+
+# ── Seek ──────────────────────────────────────────────────────────────────────
+
+
+class TestSeekTool:
+    @pytest.mark.anyio
+    async def test_success_returns_playback_state(self) -> None:
+        app, _ = make_app()
+        data = await call_and_parse(app, "seek", {"room": "Living Room", "position": "0:01:30"})
+        assert data["transport_state"] == "PLAYING"
+        assert data["room_name"] == "Living Room"
+
+    @pytest.mark.anyio
+    async def test_room_not_found(self) -> None:
+        app, _ = make_app(raise_room_not_found=True)
+        data = await call_and_parse(app, "seek", {"room": "X", "position": "0:01:00"})
+        assert "error" in data
+        assert data["field"] == "room"
+
+    @pytest.mark.anyio
+    async def test_playback_error(self) -> None:
+        app, _ = make_app(raise_playback_error=True)
+        data = await call_and_parse(app, "seek", {"room": "Living Room", "position": "0:01:00"})
+        assert "error" in data
+        assert data["field"] == "playback"
+
+    @pytest.mark.anyio
+    async def test_discovery_error(self) -> None:
+        app, _ = make_app(raise_discovery_error=True)
+        data = await call_and_parse(app, "seek", {"room": "Living Room", "position": "0:01:00"})
+        assert "error" in data
+        assert data["field"] == "sonos_network"
+
+    def test_has_control_annotations(self) -> None:
+        app, _ = make_app()
+        tool = get_tool(app, "seek")
+        assert tool.annotations.readOnlyHint is False
+        assert tool.annotations.destructiveHint is False
+
+    def test_disabled_when_in_tools_disabled(self) -> None:
+        app, _ = make_app(tools_disabled=["seek"])
+        assert get_tool(app, "seek") is None
+
+
+# ── Get Sleep Timer ────────────────────────────────────────────────────────────
+
+
+class TestGetSleepTimerTool:
+    @pytest.mark.anyio
+    async def test_success_returns_timer_state(self) -> None:
+        app, _ = make_app()
+        data = await call_and_parse(app, "get_sleep_timer", {"room": "Living Room"})
+        assert data["active"] is True
+        assert data["remaining_seconds"] == 600
+        assert data["remaining_minutes"] == 10
+        assert data["room_name"] == "Living Room"
+
+    @pytest.mark.anyio
+    async def test_room_not_found(self) -> None:
+        app, _ = make_app(raise_room_not_found=True)
+        data = await call_and_parse(app, "get_sleep_timer", {"room": "X"})
+        assert "error" in data
+        assert data["field"] == "room"
+
+    @pytest.mark.anyio
+    async def test_playback_error(self) -> None:
+        app, _ = make_app(raise_playback_error=True)
+        data = await call_and_parse(app, "get_sleep_timer", {"room": "Living Room"})
+        assert "error" in data
+
+    @pytest.mark.anyio
+    async def test_discovery_error(self) -> None:
+        app, _ = make_app(raise_discovery_error=True)
+        data = await call_and_parse(app, "get_sleep_timer", {"room": "Living Room"})
+        assert "error" in data
+
+    def test_has_read_only_annotations(self) -> None:
+        app, _ = make_app()
+        tool = get_tool(app, "get_sleep_timer")
+        assert tool.annotations.readOnlyHint is True
+
+    def test_disabled_when_in_tools_disabled(self) -> None:
+        app, _ = make_app(tools_disabled=["get_sleep_timer"])
+        assert get_tool(app, "get_sleep_timer") is None
+
+
+# ── Set Sleep Timer ────────────────────────────────────────────────────────────
+
+
+class TestSetSleepTimerTool:
+    @pytest.mark.anyio
+    async def test_success_returns_timer_state(self) -> None:
+        app, _ = make_app()
+        data = await call_and_parse(app, "set_sleep_timer", {"room": "Living Room", "minutes": 30})
+        assert data["active"] is True
+        assert data["remaining_seconds"] == 1800
+        assert data["remaining_minutes"] == 30
+        assert data["room_name"] == "Living Room"
+
+    @pytest.mark.anyio
+    async def test_zero_minutes_clears_timer(self) -> None:
+        app, _ = make_app()
+        data = await call_and_parse(app, "set_sleep_timer", {"room": "Living Room", "minutes": 0})
+        assert data["active"] is False
+
+    @pytest.mark.anyio
+    async def test_room_not_found(self) -> None:
+        app, _ = make_app(raise_room_not_found=True)
+        data = await call_and_parse(app, "set_sleep_timer", {"room": "X", "minutes": 10})
+        assert "error" in data
+        assert data["field"] == "room"
+
+    @pytest.mark.anyio
+    async def test_playback_error(self) -> None:
+        app, _ = make_app(raise_playback_error=True)
+        data = await call_and_parse(app, "set_sleep_timer", {"room": "Living Room", "minutes": 10})
+        assert "error" in data
+        assert data["field"] == "playback"
+
+    @pytest.mark.anyio
+    async def test_discovery_error(self) -> None:
+        app, _ = make_app(raise_discovery_error=True)
+        data = await call_and_parse(app, "set_sleep_timer", {"room": "Living Room", "minutes": 10})
+        assert "error" in data
+        assert data["field"] == "sonos_network"
+
+    def test_has_control_annotations(self) -> None:
+        app, _ = make_app()
+        tool = get_tool(app, "set_sleep_timer")
+        assert tool.annotations.readOnlyHint is False
+        assert tool.annotations.destructiveHint is False
+
+    def test_disabled_when_in_tools_disabled(self) -> None:
+        app, _ = make_app(tools_disabled=["set_sleep_timer"])
+        assert get_tool(app, "set_sleep_timer") is None

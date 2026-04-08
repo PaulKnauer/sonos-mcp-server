@@ -5,6 +5,7 @@ from __future__ import annotations
 from soniq_mcp.domain.models import (
     PlaybackState,
     Room,
+    SleepTimerState,
     Speaker,
     SystemTopology,
     TrackInfo,
@@ -14,6 +15,7 @@ from soniq_mcp.schemas.responses import (
     PlaybackStateResponse,
     RoomListResponse,
     RoomResponse,
+    SleepTimerResponse,
     SpeakerResponse,
     SystemTopologyResponse,
     TrackInfoResponse,
@@ -163,6 +165,54 @@ class TestTrackInfoResponse:
         assert isinstance(d, dict)
         assert "title" in d
         assert "room_name" in d
+
+
+class TestSleepTimerResponse:
+    def test_from_domain_active_timer(self) -> None:
+        state = SleepTimerState(
+            room_name="Living Room",
+            active=True,
+            remaining_seconds=1800,
+            remaining_minutes=30,
+        )
+        resp = SleepTimerResponse.from_domain(state)
+        assert resp.room_name == "Living Room"
+        assert resp.active is True
+        assert resp.remaining_seconds == 1800
+        assert resp.remaining_minutes == 30
+
+    def test_from_domain_inactive_timer(self) -> None:
+        state = SleepTimerState(
+            room_name="Kitchen",
+            active=False,
+            remaining_seconds=None,
+            remaining_minutes=None,
+        )
+        resp = SleepTimerResponse.from_domain(state)
+        assert resp.room_name == "Kitchen"
+        assert resp.active is False
+        assert resp.remaining_seconds is None
+        assert resp.remaining_minutes is None
+
+    def test_model_dump_snake_case(self) -> None:
+        state = SleepTimerState(
+            room_name="Office",
+            active=True,
+            remaining_seconds=600,
+            remaining_minutes=10,
+        )
+        d = SleepTimerResponse.from_domain(state).model_dump()
+        assert "room_name" in d
+        assert "active" in d
+        assert "remaining_seconds" in d
+        assert "remaining_minutes" in d
+
+    def test_model_dump_serialisable_inactive(self) -> None:
+        state = SleepTimerState(room_name="Bedroom", active=False)
+        d = SleepTimerResponse.from_domain(state).model_dump()
+        assert d["active"] is False
+        assert d["remaining_seconds"] is None
+        assert d["remaining_minutes"] is None
 
 
 class TestVolumeStateResponse:

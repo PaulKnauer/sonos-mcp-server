@@ -22,6 +22,7 @@ from soniq_mcp.domain.models import (
     PlaybackState,
     PlayModeState,
     QueueItem,
+    SleepTimerState,
     SonosPlaylist,
     TrackInfo,
 )
@@ -278,6 +279,79 @@ class SoCoAdapter:
             zone.partymode()
         except Exception as exc:
             raise GroupError(f"Failed to activate party mode: {exc}") from exc
+
+    def seek(self, ip_address: str, position: str) -> None:
+        """Seek to a position in the current track.
+
+        Args:
+            ip_address: LAN IP of the Sonos zone.
+            position: Track position as ``"HH:MM:SS"`` string.
+
+        Raises:
+            PlaybackError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            zone.seek(position)
+        except Exception as exc:
+            raise PlaybackError(f"Failed to seek to {position!r}: {exc}") from exc
+
+    def get_sleep_timer(self, ip_address: str, room_name: str) -> SleepTimerState:
+        """Return the current sleep timer state for the zone.
+
+        Args:
+            ip_address: LAN IP of the Sonos zone.
+            room_name: Human-readable room name (included in the result).
+
+        Returns:
+            ``SleepTimerState`` with active flag and remaining time fields.
+
+        Raises:
+            PlaybackError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            remaining = zone.get_sleep_timer()
+            if remaining:
+                remaining_seconds = int(remaining)
+                return SleepTimerState(
+                    room_name=room_name,
+                    active=True,
+                    remaining_seconds=remaining_seconds,
+                    remaining_minutes=remaining_seconds // 60,
+                )
+            return SleepTimerState(
+                room_name=room_name,
+                active=False,
+                remaining_seconds=None,
+                remaining_minutes=None,
+            )
+        except Exception as exc:
+            raise PlaybackError(f"Failed to get sleep timer for {room_name!r}: {exc}") from exc
+
+    def set_sleep_timer(self, ip_address: str, room_name: str, minutes: int) -> SleepTimerState:
+        """Set or clear the sleep timer for the zone.
+
+        Args:
+            ip_address: LAN IP of the Sonos zone.
+            room_name: Human-readable room name (included in the result).
+            minutes: Minutes until sleep; ``0`` clears the timer.
+
+        Returns:
+            ``SleepTimerState`` reflecting the resulting zone state.
+
+        Raises:
+            PlaybackError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            if minutes == 0:
+                zone.set_sleep_timer(None)
+            else:
+                zone.set_sleep_timer(minutes * 60)
+            return self.get_sleep_timer(ip_address, room_name)
+        except Exception as exc:
+            raise PlaybackError(f"Failed to set sleep timer for {room_name!r}: {exc}") from exc
 
     def get_play_mode(self, ip_address: str, room_name: str) -> PlayModeState:
         """Return the current play mode settings for the zone.

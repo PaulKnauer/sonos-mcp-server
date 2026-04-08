@@ -189,6 +189,23 @@ class SonosPlaylist:
 
 
 @dataclass(frozen=True)
+class SleepTimerState:
+    """Current sleep timer state for a Sonos zone.
+
+    Attributes:
+        room_name: Human-readable name of the room.
+        active: True if a sleep timer is currently active.
+        remaining_seconds: Seconds remaining, or None if inactive.
+        remaining_minutes: Minutes remaining (floored), or None if inactive.
+    """
+
+    room_name: str
+    active: bool
+    remaining_seconds: int | None = field(default=None)
+    remaining_minutes: int | None = field(default=None)
+
+
+@dataclass(frozen=True)
 class PlayModeState:
     """Current play mode settings for a Sonos zone.
 

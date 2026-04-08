@@ -15,7 +15,7 @@ from soniq_mcp.config import SoniqConfig
 from soniq_mcp.domain.exceptions import PlaybackError, RoomNotFoundError, SonosDiscoveryError
 from soniq_mcp.domain.safety import assert_tool_permitted
 from soniq_mcp.schemas.errors import ErrorResponse
-from soniq_mcp.schemas.responses import PlaybackStateResponse, TrackInfoResponse
+from soniq_mcp.schemas.responses import PlaybackStateResponse, SleepTimerResponse, TrackInfoResponse
 
 log = logging.getLogger(__name__)
 
@@ -188,4 +188,73 @@ def register(app: FastMCP, config: SoniqConfig, playback_service: object) -> Non
                 return ErrorResponse.from_playback_error(exc).model_dump()
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in get_track_info: %s", exc)
+                return ErrorResponse.from_discovery_error(exc).model_dump()
+
+    if "seek" not in config.tools_disabled:
+
+        @app.tool(
+            title="Seek",
+            annotations=_CONTROL_TOOL_HINTS,
+        )
+        def seek(room: str, position: str) -> dict:
+            """Seek to a position in the current track for the specified Sonos room.
+
+            The position must be in HH:MM:SS format (e.g. "0:01:30").
+            """
+            assert_tool_permitted("seek", config)
+            try:
+                state = playback_service.seek(room, position)
+                return PlaybackStateResponse.from_domain(state).model_dump()
+            except RoomNotFoundError:
+                return ErrorResponse.from_room_not_found(room).model_dump()
+            except PlaybackError as exc:
+                log.warning("Playback error in seek: %s", exc)
+                return ErrorResponse.from_playback_error(exc).model_dump()
+            except SonosDiscoveryError as exc:
+                log.warning("Discovery error in seek: %s", exc)
+                return ErrorResponse.from_discovery_error(exc).model_dump()
+
+    if "get_sleep_timer" not in config.tools_disabled:
+
+        @app.tool(
+            title="Get Sleep Timer",
+            annotations=_READ_ONLY_TOOL_HINTS,
+        )
+        def get_sleep_timer(room: str) -> dict:
+            """Return the current sleep timer state for the specified Sonos room."""
+            assert_tool_permitted("get_sleep_timer", config)
+            try:
+                state = playback_service.get_sleep_timer(room)
+                return SleepTimerResponse.from_domain(state).model_dump()
+            except RoomNotFoundError:
+                return ErrorResponse.from_room_not_found(room).model_dump()
+            except PlaybackError as exc:
+                log.warning("Playback error in get_sleep_timer: %s", exc)
+                return ErrorResponse.from_playback_error(exc).model_dump()
+            except SonosDiscoveryError as exc:
+                log.warning("Discovery error in get_sleep_timer: %s", exc)
+                return ErrorResponse.from_discovery_error(exc).model_dump()
+
+    if "set_sleep_timer" not in config.tools_disabled:
+
+        @app.tool(
+            title="Set Sleep Timer",
+            annotations=_CONTROL_TOOL_HINTS,
+        )
+        def set_sleep_timer(room: str, minutes: int) -> dict:
+            """Set or clear the sleep timer for the specified Sonos room.
+
+            Pass minutes=0 to cancel an active sleep timer.
+            """
+            assert_tool_permitted("set_sleep_timer", config)
+            try:
+                state = playback_service.set_sleep_timer(room, minutes)
+                return SleepTimerResponse.from_domain(state).model_dump()
+            except RoomNotFoundError:
+                return ErrorResponse.from_room_not_found(room).model_dump()
+            except PlaybackError as exc:
+                log.warning("Playback error in set_sleep_timer: %s", exc)
+                return ErrorResponse.from_playback_error(exc).model_dump()
+            except SonosDiscoveryError as exc:
+                log.warning("Discovery error in set_sleep_timer: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()

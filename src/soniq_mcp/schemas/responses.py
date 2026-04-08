@@ -18,6 +18,7 @@ from soniq_mcp.domain.models import (
     PlayModeState,
     QueueItem,
     Room,
+    SleepTimerState,
     SonosPlaylist,
     Speaker,
     SystemTopology,
@@ -247,6 +248,24 @@ class GroupResponse(BaseModel):
 
     coordinator: str
     members: list[str]
+
+
+class SleepTimerResponse(BaseModel):
+    """Response for sleep timer get and set tools."""
+
+    room_name: str
+    active: bool
+    remaining_seconds: int | None = None
+    remaining_minutes: int | None = None
+
+    @classmethod
+    def from_domain(cls, state: SleepTimerState) -> SleepTimerResponse:
+        return cls(
+            room_name=state.room_name,
+            active=state.active,
+            remaining_seconds=state.remaining_seconds,
+            remaining_minutes=state.remaining_minutes,
+        )
 
 
 class PlayModeResponse(BaseModel):

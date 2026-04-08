@@ -11,7 +11,7 @@ import pytest
 from mcp.server.fastmcp import FastMCP
 
 from soniq_mcp.config import SoniqConfig
-from soniq_mcp.domain.models import PlaybackState, TrackInfo
+from soniq_mcp.domain.models import PlaybackState, SleepTimerState, TrackInfo
 from soniq_mcp.tools.playback import register
 
 
@@ -36,6 +36,15 @@ class _StubPlaybackService:
 
     def get_track_info(self, room: str) -> TrackInfo:
         return TrackInfo()
+
+    def seek(self, room: str, position: str) -> PlaybackState:
+        return PlaybackState(transport_state="PLAYING", room_name=room)
+
+    def get_sleep_timer(self, room: str) -> SleepTimerState:
+        return SleepTimerState(room_name=room, active=False)
+
+    def set_sleep_timer(self, room: str, minutes: int) -> SleepTimerState:
+        return SleepTimerState(room_name=room, active=False)
 
 
 @pytest.fixture()
@@ -185,3 +194,104 @@ class TestGetTrackInfoContract:
         result = await registered_app.call_tool("get_track_info", {"room": "Living Room"})
         data = json.loads(result[0].text)
         assert "room_name" in data
+
+
+class TestSeekContract:
+    def test_tool_name_is_stable(self, registered_app: FastMCP) -> None:
+        assert "seek" in get_tools(registered_app)
+
+    def test_tool_description_is_present(self, registered_app: FastMCP) -> None:
+        desc = get_tools(registered_app)["seek"].description
+        assert desc and len(desc) > 0
+
+    def test_tool_has_room_parameter(self, registered_app: FastMCP) -> None:
+        schema = get_tools(registered_app)["seek"].parameters
+        assert "room" in schema.get("properties", {})
+        assert "room" in schema.get("required", [])
+
+    def test_tool_has_position_parameter(self, registered_app: FastMCP) -> None:
+        schema = get_tools(registered_app)["seek"].parameters
+        assert "position" in schema.get("properties", {})
+        assert "position" in schema.get("required", [])
+
+    def test_tool_is_not_read_only(self, registered_app: FastMCP) -> None:
+        annotations = get_tools(registered_app)["seek"].annotations
+        assert annotations is not None
+        assert annotations.readOnlyHint is False
+        assert annotations.destructiveHint is False
+
+    @pytest.mark.anyio
+    async def test_response_includes_transport_state(self, registered_app: FastMCP) -> None:
+        import json
+
+        result = await registered_app.call_tool("seek", {"room": "Living Room", "position": "0:01:00"})
+        data = json.loads(result[0].text)
+        assert "transport_state" in data
+        assert "room_name" in data
+
+
+class TestGetSleepTimerContract:
+    def test_tool_name_is_stable(self, registered_app: FastMCP) -> None:
+        assert "get_sleep_timer" in get_tools(registered_app)
+
+    def test_tool_description_is_present(self, registered_app: FastMCP) -> None:
+        desc = get_tools(registered_app)["get_sleep_timer"].description
+        assert desc and len(desc) > 0
+
+    def test_tool_has_room_parameter(self, registered_app: FastMCP) -> None:
+        schema = get_tools(registered_app)["get_sleep_timer"].parameters
+        assert "room" in schema.get("properties", {})
+        assert "room" in schema.get("required", [])
+
+    def test_tool_is_read_only(self, registered_app: FastMCP) -> None:
+        annotations = get_tools(registered_app)["get_sleep_timer"].annotations
+        assert annotations is not None
+        assert annotations.readOnlyHint is True
+        assert annotations.destructiveHint is False
+
+    @pytest.mark.anyio
+    async def test_response_includes_stable_fields(self, registered_app: FastMCP) -> None:
+        import json
+
+        result = await registered_app.call_tool("get_sleep_timer", {"room": "Living Room"})
+        data = json.loads(result[0].text)
+        assert "room_name" in data
+        assert "active" in data
+        assert "remaining_seconds" in data
+        assert "remaining_minutes" in data
+
+
+class TestSetSleepTimerContract:
+    def test_tool_name_is_stable(self, registered_app: FastMCP) -> None:
+        assert "set_sleep_timer" in get_tools(registered_app)
+
+    def test_tool_description_is_present(self, registered_app: FastMCP) -> None:
+        desc = get_tools(registered_app)["set_sleep_timer"].description
+        assert desc and len(desc) > 0
+
+    def test_tool_has_room_parameter(self, registered_app: FastMCP) -> None:
+        schema = get_tools(registered_app)["set_sleep_timer"].parameters
+        assert "room" in schema.get("properties", {})
+        assert "room" in schema.get("required", [])
+
+    def test_tool_has_minutes_parameter(self, registered_app: FastMCP) -> None:
+        schema = get_tools(registered_app)["set_sleep_timer"].parameters
+        assert "minutes" in schema.get("properties", {})
+        assert "minutes" in schema.get("required", [])
+
+    def test_tool_is_not_read_only(self, registered_app: FastMCP) -> None:
+        annotations = get_tools(registered_app)["set_sleep_timer"].annotations
+        assert annotations is not None
+        assert annotations.readOnlyHint is False
+        assert annotations.destructiveHint is False
+
+    @pytest.mark.anyio
+    async def test_response_includes_stable_fields(self, registered_app: FastMCP) -> None:
+        import json
+
+        result = await registered_app.call_tool("set_sleep_timer", {"room": "Living Room", "minutes": 30})
+        data = json.loads(result[0].text)
+        assert "room_name" in data
+        assert "active" in data
+        assert "remaining_seconds" in data
+        assert "remaining_minutes" in data
