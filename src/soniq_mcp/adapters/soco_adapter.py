@@ -11,6 +11,7 @@ from collections.abc import Callable
 from typing import Any, Literal
 
 from soniq_mcp.domain.exceptions import (
+    AudioSettingsError,
     FavouritesError,
     GroupError,
     PlaybackError,
@@ -18,6 +19,7 @@ from soniq_mcp.domain.exceptions import (
     VolumeError,
 )
 from soniq_mcp.domain.models import (
+    AudioSettingsState,
     Favourite,
     PlaybackState,
     PlayModeState,
