@@ -257,6 +257,18 @@ class TestSetSleepTimer:
         with pytest.raises(PlaybackError, match="Invalid minutes"):
             svc.set_sleep_timer("Living Room", -1)
 
+    def test_boolean_minutes_raise_validation_error(self) -> None:
+        room = make_room("Living Room")
+        svc, _ = make_service(rooms=[room])
+        with pytest.raises(PlaybackValidationError, match="Invalid minutes"):
+            svc.set_sleep_timer("Living Room", True)
+
+    def test_string_minutes_raise_validation_error(self) -> None:
+        room = make_room("Living Room")
+        svc, _ = make_service(rooms=[room])
+        with pytest.raises(PlaybackValidationError, match="Invalid minutes"):
+            svc.set_sleep_timer("Living Room", "5")
+
     def test_grouped_room_routes_to_coordinator(self) -> None:
         coordinator = make_room("Living Room", uid="RINCON_COORD", ip_address="192.168.1.10")
         member = make_room(
