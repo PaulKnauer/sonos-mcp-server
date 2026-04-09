@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from soniq_mcp.domain.models import (
+    AudioSettingsState,
     PlaybackState,
     Room,
     SleepTimerState,
@@ -12,6 +13,7 @@ from soniq_mcp.domain.models import (
     VolumeState,
 )
 from soniq_mcp.schemas.responses import (
+    AudioSettingsResponse,
     PlaybackStateResponse,
     RoomListResponse,
     RoomResponse,
