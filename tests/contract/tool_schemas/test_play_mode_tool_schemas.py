@@ -102,7 +102,12 @@ class TestSetPlayModeContract:
         assert "shuffle" in props
         assert "repeat" in props
         assert "cross_fade" in props
-        # All mode params are optional — not in required
+        assert props["shuffle"]["anyOf"] == [{"type": "boolean"}, {"type": "null"}]
+        assert props["repeat"]["anyOf"] == [
+            {"type": "string", "enum": ["none", "all", "one"]},
+            {"type": "null"},
+        ]
+        assert props["cross_fade"]["anyOf"] == [{"type": "boolean"}, {"type": "null"}]
         required = schema.get("required", [])
         assert "shuffle" not in required
         assert "repeat" not in required
