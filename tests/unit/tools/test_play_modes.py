@@ -185,3 +185,88 @@ class TestSetPlayModeTool:
         app, _ = make_app(tools_disabled=["set_play_mode"])
         tools = {t.name for t in app._tool_manager.list_tools()}
         assert "set_play_mode" not in tools
+
+
+class _ValidatingRoomService:
+    def __init__(self, room: Room | None = None) -> None:
+        self._room = room or Room(
+            name="Living Room",
+            uid="RINCON_1",
+            ip_address="192.168.1.10",
+            is_coordinator=True,
+            group_coordinator_uid=None,
+        )
+
+    def get_room(self, name: str) -> Room:
+        if name != self._room.name:
+            raise RoomNotFoundError(name)
+        return self._room
+
+    def list_rooms(self) -> list[Room]:
+        return [self._room]
+
+
+class _ValidatingAdapter:
+    def __init__(self) -> None:
+        self.set_calls: list[tuple[str, str, object, object, object]] = []
+
+    def get_play_mode(self, ip_address: str, room_name: str) -> PlayModeState:
+        return PlayModeState(room_name=room_name, shuffle=False, repeat="none", cross_fade=False)
+
+    def set_play_mode(
+        self,
+        ip_address: str,
+        room_name: str,
+        shuffle=None,
+        repeat=None,
+        cross_fade=None,
+    ) -> PlayModeState:
+        self.set_calls.append((ip_address, room_name, shuffle, repeat, cross_fade))
+        return PlayModeState(
+            room_name=room_name,
+            shuffle=False if shuffle is None else shuffle,
+            repeat="none" if repeat is None else repeat,
+            cross_fade=False if cross_fade is None else cross_fade,
+        )
+
+
+def make_validating_app() -> tuple[FastMCP, _ValidatingAdapter]:
+    adapter = _ValidatingAdapter()
+    service = PlayModeService(_ValidatingRoomService(), adapter, None)
+    app = FastMCP("test")
+    register(app, SoniqConfig(), service)
+    return app, adapter
+
+
+class TestSetPlayModeRawValidation:
+    @pytest.mark.anyio
+    async def test_invalid_string_shuffle_returns_validation_error_without_write(self) -> None:
+        app, adapter = make_validating_app()
+        result = await app.call_tool("set_play_mode", {"room": "Living Room", "shuffle": "true"})
+        data = json.loads(result[0].text)
+        assert data["category"] == "validation"
+        assert data["field"] == "playback"
+        assert "shuffle" in data["error"]
+        assert adapter.set_calls == []
+
+    @pytest.mark.anyio
+    async def test_invalid_string_cross_fade_returns_validation_error_without_write(self) -> None:
+        app, adapter = make_validating_app()
+        result = await app.call_tool(
+            "set_play_mode", {"room": "Living Room", "cross_fade": "true"}
+        )
+        data = json.loads(result[0].text)
+        assert data["category"] == "validation"
+        assert data["field"] == "playback"
+        assert "cross_fade" in data["error"]
+        assert adapter.set_calls == []
+
+    @pytest.mark.anyio
+    async def test_invalid_repeat_value_returns_validation_error_without_write(self) -> None:
+        app, adapter = make_validating_app()
+        result = await app.call_tool("set_play_mode", {"room": "Living Room", "repeat": "loop"})
+        data = json.loads(result[0].text)
+        assert data["category"] == "validation"
+        assert data["field"] == "playback"
+        assert "repeat" in data["error"]
+        assert adapter.set_calls == []
