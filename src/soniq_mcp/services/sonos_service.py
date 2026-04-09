@@ -48,7 +48,7 @@ class SonosService:
         room = self._resolve_coordinator(room_name)
         return self._adapter.get_track_info(room.ip_address)
 
-    def seek(self, room_name: str, position: str) -> PlaybackState:
+    def seek(self, room_name: str, position: object) -> PlaybackState:
         """Seek to a position in the current track and return resulting playback state.
 
         Args:
@@ -60,9 +60,9 @@ class SonosService:
             PlaybackError: If position format is invalid or the SoCo operation fails.
             SonosDiscoveryError: If network discovery fails.
         """
-        self._validate_seek_position(position)
+        validated_position = self._validate_seek_position(position)
         room = self._resolve_coordinator(room_name)
-        self._adapter.seek(room.ip_address, position)
+        self._adapter.seek(room.ip_address, validated_position)
         return self._adapter.get_playback_state(room.ip_address, room_name)
 
     def get_sleep_timer(self, room_name: str) -> SleepTimerState:
