@@ -161,6 +161,12 @@ class TestSeek:
         with pytest.raises(PlaybackError, match="Invalid seek position"):
             svc.seek("Living Room", "1 minute 30 seconds")
 
+    def test_non_string_position_raises_validation_error(self) -> None:
+        room = make_room("Living Room")
+        svc, _ = make_service(rooms=[room])
+        with pytest.raises(PlaybackValidationError, match="Invalid seek position"):
+            svc.seek("Living Room", True)
+
     def test_invalid_position_with_out_of_range_minutes_raises(self) -> None:
         room = make_room("Living Room")
         svc, _ = make_service(rooms=[room])
