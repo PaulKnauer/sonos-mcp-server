@@ -58,6 +58,13 @@ class TestErrorResponseSchema:
         assert err.category == ErrorCategory.VALIDATION
         assert err.field == "audio_settings"
 
+    def test_playback_validation_error_uses_validation_category(self) -> None:
+        err = ErrorResponse.from_playback_error(
+            PlaybackValidationError("Invalid minutes value '5'. Expected a non-negative integer.")
+        )
+        assert err.category == ErrorCategory.VALIDATION
+        assert err.field == "playback"
+
     def test_error_response_redacts_urls_hosts_and_paths(self) -> None:
         err = ErrorResponse.from_playback_error(
             PlaybackError(
