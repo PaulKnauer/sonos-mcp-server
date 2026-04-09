@@ -61,17 +61,16 @@ class PlayModeService:
             PlaybackError: If repeat value is invalid or the SoCo operation fails.
             SonosDiscoveryError: If network discovery fails.
         """
-        if repeat is not None and repeat not in _VALID_REPEAT_VALUES:
-            raise PlaybackError(
-                f"Invalid repeat value {repeat!r}. Allowed values: 'none', 'all', 'one'."
-            )
+        validated_shuffle = self._validate_optional_bool("shuffle", shuffle)
+        validated_repeat = self._validate_repeat(repeat)
+        validated_cross_fade = self._validate_optional_bool("cross_fade", cross_fade)
         room = self._resolve_coordinator(room_name)
         return self._adapter.set_play_mode(
             room.ip_address,
             room_name,
-            shuffle=shuffle,
-            repeat=repeat,
-            cross_fade=cross_fade,
+            shuffle=validated_shuffle,
+            repeat=validated_repeat,
+            cross_fade=validated_cross_fade,
         )
 
     def _resolve_coordinator(self, room_name: str) -> Room:
