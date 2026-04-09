@@ -52,6 +52,10 @@ KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
         "seek",
         "get_sleep_timer",
         "set_sleep_timer",
+        "get_eq_settings",
+        "set_bass",
+        "set_treble",
+        "set_loudness",
     }
 )
 
