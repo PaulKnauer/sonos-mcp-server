@@ -287,6 +287,24 @@ class PlayModeResponse(BaseModel):
         )
 
 
+class AudioSettingsResponse(BaseModel):
+    """Response for audio EQ get and set tools."""
+
+    room_name: str
+    bass: int
+    treble: int
+    loudness: bool
+
+    @classmethod
+    def from_domain(cls, state: AudioSettingsState) -> AudioSettingsResponse:
+        return cls(
+            room_name=state.room_name,
+            bass=state.bass,
+            treble=state.treble,
+            loudness=state.loudness,
+        )
+
+
 class GroupTopologyResponse(BaseModel):
     """Current grouping state of the Sonos household."""
 
