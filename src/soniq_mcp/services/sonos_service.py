@@ -78,7 +78,7 @@ class SonosService:
         room = self._resolve_coordinator(room_name)
         return self._adapter.get_sleep_timer(room.ip_address, room_name)
 
-    def set_sleep_timer(self, room_name: str, minutes: int) -> SleepTimerState:
+    def set_sleep_timer(self, room_name: str, minutes: object) -> SleepTimerState:
         """Set or clear the sleep timer for the named room.
 
         Routes to the group coordinator when the room is grouped.
@@ -92,10 +92,9 @@ class SonosService:
             PlaybackError: If minutes is negative or the SoCo operation fails.
             SonosDiscoveryError: If network discovery fails.
         """
-        if minutes < 0:
-            raise PlaybackError(f"Invalid minutes value {minutes!r}. Must be >= 0.")
+        validated_minutes = self._validate_sleep_timer_minutes(minutes)
         room = self._resolve_coordinator(room_name)
-        return self._adapter.set_sleep_timer(room.ip_address, room_name, minutes)
+        return self._adapter.set_sleep_timer(room.ip_address, room_name, validated_minutes)
 
     def get_volume_state(self, room_name: str) -> VolumeState:
         room = self._room_service.get_room(room_name)
