@@ -232,6 +232,8 @@ class TestSeekContract:
         data = json.loads(result[0].text)
         assert "transport_state" in data
         assert "room_name" in data
+        assert isinstance(data["transport_state"], str)
+        assert isinstance(data["room_name"], str)
 
 
 class TestGetSleepTimerContract:
