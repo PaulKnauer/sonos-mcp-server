@@ -39,6 +39,23 @@ _CONTROL_TOOL_HINTS = ToolAnnotations(
     openWorldHint=False,
 )
 
+_OPTIONAL_BOOLEAN_INPUT = Annotated[
+    object,
+    Field(json_schema_extra={"anyOf": [{"type": "boolean"}, {"type": "null"}]}, default=None),
+]
+_OPTIONAL_REPEAT_INPUT = Annotated[
+    object,
+    Field(
+        json_schema_extra={
+            "anyOf": [
+                {"type": "string", "enum": ["none", "all", "one"]},
+                {"type": "null"},
+            ]
+        },
+        default=None,
+    ),
+]
+
 
 def register(app: FastMCP, config: SoniqConfig, play_mode_service: object) -> None:
     """Register play mode tools onto the FastMCP application.
