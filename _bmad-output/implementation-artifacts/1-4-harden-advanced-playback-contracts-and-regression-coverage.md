@@ -1,6 +1,6 @@
 # Story 1.4: Harden advanced playback contracts and regression coverage
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -138,6 +138,8 @@ gpt-5
 - Expanded HTTP-vs-stdio metadata parity checks to include advanced playback/audio tools so transport drift is caught in one integration slice.
 - Focused advanced playback/audio validation: `191 passed` across contract, transport, tool, and service suites.
 - Full regression rerun after Story 1.4 changes: `928 passed, 3 skipped`; `make lint` passes.
+- Review follow-up hardening: preserved explicit MCP schemas for `set_play_mode` and `set_sleep_timer` while moving raw-input validation into the service layer.
+- Post-review verification after the hardening fix: focused regression slice `157 passed`; full suite `936 passed, 3 skipped`; `make lint` passes.
 
 ### Completion Notes List
 
@@ -148,17 +150,29 @@ gpt-5
 - Extended transport parity coverage in `tests/integration/transports/test_http_bootstrap.py` to compare advanced playback/audio tool metadata and parameter schemas across HTTP and `stdio`.
 - Added missing playback tool assertions for stable `field` values on playback and discovery failures in sleep timer flows.
 - Expanded `docs/prompts/example-uses.md` with direct-client and Streamable HTTP automation examples for play mode, seek, sleep timer, and room EQ.
+- Fixed the review finding that `set_play_mode` and `set_sleep_timer` still allowed FastMCP coercion despite stricter contract tests by restoring schema-only typing in the tool layer and enforcing strict validation in the service layer.
+- Added validation-category coverage for raw string/boolean boundary cases in play mode and sleep timer service/tool tests, and tightened playback error-schema coverage accordingly.
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/1-4-harden-advanced-playback-contracts-and-regression-coverage.md`
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
 - `docs/prompts/example-uses.md`
+- `src/soniq_mcp/domain/exceptions.py`
+- `src/soniq_mcp/services/play_mode_service.py`
+- `src/soniq_mcp/services/sonos_service.py`
+- `src/soniq_mcp/tools/play_modes.py`
+- `src/soniq_mcp/tools/playback.py`
+- `tests/contract/error_mapping/test_error_schemas.py`
 - `tests/contract/tool_schemas/test_play_mode_tool_schemas.py`
 - `tests/contract/tool_schemas/test_playback_tool_schemas.py`
 - `tests/integration/transports/test_http_bootstrap.py`
+- `tests/unit/services/test_play_mode_service.py`
+- `tests/unit/services/test_playback_service_seek_sleep_timer.py`
 - `tests/unit/tools/test_playback.py`
+- `tests/unit/tools/test_play_modes.py`
 
 ### Change Log
 
 - Story 1.4 implementation: harden advanced playback/audio contract tests, transport parity checks, and prompt examples for direct and agent-mediated usage (Date: 2026-04-09)
+- Story 1.4 review follow-up: block FastMCP coercion drift for play mode and sleep timer setters while preserving explicit MCP schemas and validation-category responses (Date: 2026-04-09)
