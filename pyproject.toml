@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Sonos MCP server"
 requires-python = ">=3.12"
 dependencies = [
+    "cryptography>=46.0.7",
     "mcp[cli]>=1.26.0",
     "python-dotenv>=1.2.2",
     "soco>=0.30.14",
