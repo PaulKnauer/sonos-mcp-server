@@ -153,18 +153,38 @@ class SonosService:
         )
         return room
 
-    def _validate_seek_position(self, position: str) -> None:
+    def _validate_seek_position(self, position: object) -> str:
         """Validate explicit HH:MM:SS seek positions.
 
         Sonos accepts positions in HH:MM:SS form, but regex-only validation
         would still allow impossible values like ``00:99:99``.
         """
+        if not isinstance(position, str):
+            raise PlaybackValidationError(
+                f"Invalid seek position {position!r}. Expected HH:MM:SS format."
+            )
+
         parts = position.split(":")
         if len(parts) != 3 or not all(part.isdigit() for part in parts):
-            raise PlaybackError(f"Invalid seek position {position!r}. Expected HH:MM:SS format.")
+            raise PlaybackValidationError(
+                f"Invalid seek position {position!r}. Expected HH:MM:SS format."
+            )
 
         hours, minutes, seconds = (int(part) for part in parts)
         if minutes >= 60 or seconds >= 60:
-            raise PlaybackError(
+            raise PlaybackValidationError(
                 f"Invalid seek position {position!r}. Minutes and seconds must be < 60."
             )
+        return position
+
+    def _validate_sleep_timer_minutes(self, minutes: object) -> int:
+        """Validate sleep timer minutes without accepting bool or string coercions."""
+        if isinstance(minutes, bool) or not isinstance(minutes, int):
+            raise PlaybackValidationError(
+                f"Invalid minutes value {minutes!r}. Expected a non-negative integer."
+            )
+        if minutes < 0:
+            raise PlaybackValidationError(
+                f"Invalid minutes value {minutes!r}. Expected a non-negative integer."
+            )
+        return minutes
