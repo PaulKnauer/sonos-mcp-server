@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 
 from soniq_mcp.config.models import SoniqConfig
-from soniq_mcp.domain.exceptions import PlaybackError
+from soniq_mcp.domain.exceptions import PlaybackError, PlaybackValidationError
 from soniq_mcp.domain.models import PlaybackState, Room, SleepTimerState, TrackInfo, VolumeState
 from soniq_mcp.domain.safety import check_volume
 
