@@ -9,7 +9,8 @@ from mcp.server.fastmcp import FastMCP
 
 from soniq_mcp.config import SoniqConfig
 from soniq_mcp.domain.exceptions import PlaybackError, RoomNotFoundError, SonosDiscoveryError
-from soniq_mcp.domain.models import PlaybackState, SleepTimerState, TrackInfo
+from soniq_mcp.domain.models import PlaybackState, Room, SleepTimerState, TrackInfo
+from soniq_mcp.services.playback_service import PlaybackService
 from soniq_mcp.tools.playback import register
 
 
