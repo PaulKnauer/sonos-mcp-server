@@ -41,9 +41,9 @@ class PlayModeService:
     def set_play_mode(
         self,
         room_name: str,
-        shuffle: bool | None = None,
-        repeat: str | None = None,
-        cross_fade: bool | None = None,
+        shuffle: object = None,
+        repeat: object = None,
+        cross_fade: object = None,
     ) -> PlayModeState:
         """Apply play mode changes for the named room.
 
