@@ -6,7 +6,7 @@ All validation occurs here before adapter writes are attempted.
 
 from __future__ import annotations
 
-from soniq_mcp.domain.exceptions import AudioSettingsError
+from soniq_mcp.domain.exceptions import AudioSettingsValidationError
 from soniq_mcp.domain.models import AudioSettingsState
 
 _EQ_MIN = -10
@@ -93,21 +93,25 @@ class AudioSettingsService:
             SonosDiscoveryError: If network discovery fails.
         """
         if not isinstance(enabled, bool):
-            raise AudioSettingsError(f"loudness must be a boolean, got {type(enabled).__name__!r}.")
+            raise AudioSettingsValidationError(
+                f"loudness must be a boolean, got {type(enabled).__name__!r}."
+            )
         room = self._room_service.get_room(room_name)
         self._adapter.set_loudness(room.ip_address, enabled)
         return self._adapter.get_audio_settings(room.ip_address, room_name)
 
     @staticmethod
-    def _validate_eq_level(level: int, field: str) -> None:
+    def _validate_eq_level(level: object, field: str) -> None:
         """Validate that level is an integer in the inclusive range [-10, 10].
 
         Raises:
             AudioSettingsError: If validation fails.
         """
         if not isinstance(level, int) or isinstance(level, bool):
-            raise AudioSettingsError(f"{field} must be an integer, got {type(level).__name__!r}.")
+            raise AudioSettingsValidationError(
+                f"{field} must be an integer, got {type(level).__name__!r}."
+            )
         if level < _EQ_MIN or level > _EQ_MAX:
-            raise AudioSettingsError(
+            raise AudioSettingsValidationError(
                 f"{field} must be in the range {_EQ_MIN}..{_EQ_MAX}, got {level}."
             )

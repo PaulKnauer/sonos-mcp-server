@@ -103,6 +103,10 @@ class TestSetBassContract:
         assert "room" in required
         assert "level" in required
 
+    def test_level_parameter_is_declared_as_integer(self, registered_app: FastMCP) -> None:
+        schema = get_tools(registered_app)["set_bass"].parameters
+        assert schema["properties"]["level"]["type"] == "integer"
+
     def test_tool_is_not_read_only(self, registered_app: FastMCP) -> None:
         annotations = get_tools(registered_app)["set_bass"].annotations
         assert annotations is not None
@@ -138,6 +142,10 @@ class TestSetTrebleContract:
         assert "room" in required
         assert "level" in required
 
+    def test_level_parameter_is_declared_as_integer(self, registered_app: FastMCP) -> None:
+        schema = get_tools(registered_app)["set_treble"].parameters
+        assert schema["properties"]["level"]["type"] == "integer"
+
     def test_tool_is_not_read_only(self, registered_app: FastMCP) -> None:
         annotations = get_tools(registered_app)["set_treble"].annotations
         assert annotations.readOnlyHint is False
@@ -170,6 +178,10 @@ class TestSetLoudnessContract:
         required = schema.get("required", [])
         assert "room" in required
         assert "enabled" in required
+
+    def test_enabled_parameter_is_declared_as_boolean(self, registered_app: FastMCP) -> None:
+        schema = get_tools(registered_app)["set_loudness"].parameters
+        assert schema["properties"]["enabled"]["type"] == "boolean"
 
     def test_tool_is_not_read_only(self, registered_app: FastMCP) -> None:
         annotations = get_tools(registered_app)["set_loudness"].annotations

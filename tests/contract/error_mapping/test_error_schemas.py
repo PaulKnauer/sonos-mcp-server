@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from soniq_mcp.domain.exceptions import (
+    AudioSettingsValidationError,
     ErrorCategory,
     PlaybackError,
     QueueError,
@@ -48,6 +49,13 @@ class TestErrorResponseSchema:
         err = ErrorResponse.from_queue_error(QueueError("queue is busy"))
         assert err.category == ErrorCategory.OPERATION
         assert err.field == "queue"
+
+    def test_audio_settings_validation_error_uses_validation_category(self) -> None:
+        err = ErrorResponse.from_audio_settings_error(
+            AudioSettingsValidationError("bass must be in the range -10..10, got 11.")
+        )
+        assert err.category == ErrorCategory.VALIDATION
+        assert err.field == "audio_settings"
 
     def test_error_response_redacts_urls_hosts_and_paths(self) -> None:
         err = ErrorResponse.from_playback_error(

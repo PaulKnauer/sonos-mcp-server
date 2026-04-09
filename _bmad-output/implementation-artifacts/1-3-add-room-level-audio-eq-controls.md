@@ -1,6 +1,6 @@
 # Story 1.3: Add room-level audio EQ controls
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -64,6 +64,10 @@ so that I can tune the listening experience from the same AI control surface.
   - [x] Add response-schema tests in `tests/unit/schemas/test_responses.py`
   - [x] Add contract tests in `tests/contract/tool_schemas/test_audio_tool_schemas.py`
 
+### Review Findings
+
+- [x] [Review][Patch] Setter tool schemas no longer declare argument types [src/soniq_mcp/tools/audio.py:71]
+
 ## Dev Notes
 
 ### Story intent and architectural boundary
@@ -126,6 +130,10 @@ claude-sonnet-4-6
 - Environment created from last committed state; sprint-status.yaml and story file were uncommitted and handled outside the environment.
 - All 901 unit/contract/integration tests pass with 0 failures.
 - `bool` is a subclass of `int` in Python — `_validate_eq_level` explicitly rejects `bool` values to prevent `True`/`False` being silently accepted as integer EQ levels.
+- Follow-up fix validated the real FastMCP boundary: invalid EQ inputs now reach the service unchanged and return structured validation errors instead of being coerced or rejected as raw `ToolError`s.
+- Full regression rerun after the follow-up fix: `921 passed, 3 skipped`; `make lint` passes.
+- Review follow-up fix restored explicit MCP schema types for EQ setter parameters while preserving raw runtime inputs for service-level validation; verified with live FastMCP schema dumps.
+- Full regression rerun after the schema-contract fix: `924 passed, 3 skipped`; `make lint` passes.
 
 ### Completion Notes List
 
@@ -136,6 +144,10 @@ claude-sonnet-4-6
 - `tools/audio.py` registers all four tools with correct read-only/control annotations; all setters return `AudioSettingsResponse`.
 - `KNOWN_TOOL_NAMES` extended with 4 new tools; transport parity test updated from 34 to 38 tools.
 - 901 total tests pass (0 regressions). ~102 new tests across adapter, service, tool, schema, and contract layers.
+- Added `AudioSettingsValidationError` so invalid EQ requests map to `ErrorCategory.VALIDATION` while adapter/device failures remain operational.
+- Preserved raw invalid EQ inputs at the FastMCP boundary using `Annotated[object, Field(...)]` so values like `"5"`, `true`, `"true"`, and `2` still reach the dedicated audio-settings validation path unchanged.
+- Restored explicit MCP setter parameter schema types (`integer` for bass/treble, `boolean` for loudness) to keep the client-visible contract aligned with the story and acceptance criteria.
+- Added contract assertions for EQ setter parameter types to prevent future schema regressions, alongside the existing invalid-input and error-category coverage.
 
 ### File List
 
@@ -154,9 +166,12 @@ claude-sonnet-4-6
 - `tests/unit/services/test_audio_settings_service.py`
 - `tests/unit/tools/test_audio.py`
 - `tests/unit/schemas/test_responses.py`
+- `tests/contract/error_mapping/test_error_schemas.py`
 - `tests/contract/tool_schemas/test_audio_tool_schemas.py`
 - `tests/integration/transports/test_http_bootstrap.py`
 
 ### Change Log
 
 - Story 1.3 implementation: Add room-level audio EQ controls (`get_eq_settings`, `set_bass`, `set_treble`, `set_loudness`) — 4 new MCP tools, dedicated service and adapter layer, full test coverage (Date: 2026-04-09)
+- Story 1.3 follow-up fix: restore typed validation errors for invalid EQ tool inputs and split validation vs operational audio-setting failures (Date: 2026-04-09)
+- Story 1.3 review follow-up: restore EQ setter schema types without reintroducing FastMCP coercion; add schema contract assertions (Date: 2026-04-09)

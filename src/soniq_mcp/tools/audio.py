@@ -8,9 +8,11 @@ Exposes ``get_eq_settings``, ``set_bass``, ``set_treble``, and
 from __future__ import annotations
 
 import logging
+from typing import Annotated
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
+from pydantic import Field
 
 from soniq_mcp.config import SoniqConfig
 from soniq_mcp.domain.exceptions import (
@@ -23,6 +25,9 @@ from soniq_mcp.schemas.errors import ErrorResponse
 from soniq_mcp.schemas.responses import AudioSettingsResponse
 
 log = logging.getLogger(__name__)
+
+_INTEGER_INPUT = Annotated[object, Field(json_schema_extra={"type": "integer"})]
+_BOOLEAN_INPUT = Annotated[object, Field(json_schema_extra={"type": "boolean"})]
 
 _READ_ONLY_TOOL_HINTS = ToolAnnotations(
     readOnlyHint=True,
@@ -68,7 +73,7 @@ def register(app: FastMCP, config: SoniqConfig, audio_settings_service: object) 
     if "set_bass" not in config.tools_disabled:
 
         @app.tool(title="Set Bass", annotations=_CONTROL_TOOL_HINTS)
-        def set_bass(room: str, level: int) -> dict:
+        def set_bass(room: str, level: _INTEGER_INPUT) -> dict:
             """Set the bass level (-10 to 10) for a Sonos room."""
             assert_tool_permitted("set_bass", config)
             try:
@@ -85,7 +90,7 @@ def register(app: FastMCP, config: SoniqConfig, audio_settings_service: object) 
     if "set_treble" not in config.tools_disabled:
 
         @app.tool(title="Set Treble", annotations=_CONTROL_TOOL_HINTS)
-        def set_treble(room: str, level: int) -> dict:
+        def set_treble(room: str, level: _INTEGER_INPUT) -> dict:
             """Set the treble level (-10 to 10) for a Sonos room."""
             assert_tool_permitted("set_treble", config)
             try:
@@ -102,7 +107,7 @@ def register(app: FastMCP, config: SoniqConfig, audio_settings_service: object) 
     if "set_loudness" not in config.tools_disabled:
 
         @app.tool(title="Set Loudness", annotations=_CONTROL_TOOL_HINTS)
-        def set_loudness(room: str, enabled: bool) -> dict:
+        def set_loudness(room: str, enabled: _BOOLEAN_INPUT) -> dict:
             """Enable or disable loudness compensation for a Sonos room."""
             assert_tool_permitted("set_loudness", config)
             try:

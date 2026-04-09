@@ -8,12 +8,9 @@ import pytest
 from mcp.server.fastmcp import FastMCP
 
 from soniq_mcp.config import SoniqConfig
-from soniq_mcp.domain.exceptions import (
-    AudioSettingsError,
-    RoomNotFoundError,
-    SonosDiscoveryError,
-)
-from soniq_mcp.domain.models import AudioSettingsState
+from soniq_mcp.domain.exceptions import AudioSettingsError, RoomNotFoundError, SonosDiscoveryError
+from soniq_mcp.domain.models import AudioSettingsState, Room
+from soniq_mcp.services.audio_settings_service import AudioSettingsService
 from soniq_mcp.tools.audio import register
 
 
@@ -83,6 +80,46 @@ class FakeAudioSettingsService:
         )
 
 
+class FakeRoomService:
+    def __init__(self, room: Room | None = None) -> None:
+        self._room = room or Room(
+            name="Living Room",
+            uid="RINCON_1",
+            ip_address="192.168.1.10",
+            is_coordinator=True,
+        )
+
+    def get_room(self, name: str) -> Room:
+        if name != self._room.name:
+            raise RoomNotFoundError(name)
+        return self._room
+
+
+class FakeAdapter:
+    def __init__(self, state: AudioSettingsState | None = None) -> None:
+        self._state = state or make_state()
+        self.set_bass_calls: list[tuple[str, object]] = []
+        self.set_treble_calls: list[tuple[str, object]] = []
+        self.set_loudness_calls: list[tuple[str, object]] = []
+
+    def get_audio_settings(self, ip_address: str, room_name: str) -> AudioSettingsState:
+        return AudioSettingsState(
+            room_name=room_name,
+            bass=self._state.bass,
+            treble=self._state.treble,
+            loudness=self._state.loudness,
+        )
+
+    def set_bass(self, ip_address: str, level: object) -> None:
+        self.set_bass_calls.append((ip_address, level))
+
+    def set_treble(self, ip_address: str, level: object) -> None:
+        self.set_treble_calls.append((ip_address, level))
+
+    def set_loudness(self, ip_address: str, enabled: object) -> None:
+        self.set_loudness_calls.append((ip_address, enabled))
+
+
 def make_app(
     raise_room_not_found: bool = False,
     raise_audio_settings_error: bool = False,
@@ -100,6 +137,16 @@ def make_app(
     app = FastMCP("test")
     register(app, config, svc)
     return app, svc
+
+
+def make_validating_app(
+    state: AudioSettingsState | None = None,
+) -> tuple[FastMCP, FakeAdapter]:
+    config = SoniqConfig()
+    adapter = FakeAdapter(state=state)
+    app = FastMCP("test")
+    register(app, config, AudioSettingsService(FakeRoomService(), adapter))
+    return app, adapter
 
 
 class TestGetEqSettingsTool:
@@ -197,6 +244,15 @@ class TestSetBassTool:
         assert annotations.readOnlyHint is False
         assert annotations.destructiveHint is False
 
+    @pytest.mark.anyio
+    async def test_invalid_string_level_returns_validation_error_without_write(self) -> None:
+        app, adapter = make_validating_app()
+        result = await app.call_tool("set_bass", {"room": "Living Room", "level": "5"})
+        data = json.loads(result[0].text)
+        assert data["category"] == "validation"
+        assert data["field"] == "audio_settings"
+        assert adapter.set_bass_calls == []
+
 
 class TestSetTrebleTool:
     @pytest.mark.anyio
@@ -238,6 +294,15 @@ class TestSetTrebleTool:
         tools = {t.name: t for t in app._tool_manager.list_tools()}
         annotations = tools["set_treble"].annotations
         assert annotations.readOnlyHint is False
+
+    @pytest.mark.anyio
+    async def test_invalid_bool_level_returns_validation_error_without_write(self) -> None:
+        app, adapter = make_validating_app()
+        result = await app.call_tool("set_treble", {"room": "Living Room", "level": True})
+        data = json.loads(result[0].text)
+        assert data["category"] == "validation"
+        assert data["field"] == "audio_settings"
+        assert adapter.set_treble_calls == []
 
 
 class TestSetLoudnessTool:
@@ -287,3 +352,21 @@ class TestSetLoudnessTool:
         tools = {t.name: t for t in app._tool_manager.list_tools()}
         annotations = tools["set_loudness"].annotations
         assert annotations.readOnlyHint is False
+
+    @pytest.mark.anyio
+    async def test_invalid_string_enabled_returns_validation_error_without_write(self) -> None:
+        app, adapter = make_validating_app()
+        result = await app.call_tool("set_loudness", {"room": "Living Room", "enabled": "true"})
+        data = json.loads(result[0].text)
+        assert data["category"] == "validation"
+        assert data["field"] == "audio_settings"
+        assert adapter.set_loudness_calls == []
+
+    @pytest.mark.anyio
+    async def test_invalid_integer_enabled_returns_validation_error_without_write(self) -> None:
+        app, adapter = make_validating_app()
+        result = await app.call_tool("set_loudness", {"room": "Living Room", "enabled": 2})
+        data = json.loads(result[0].text)
+        assert data["category"] == "validation"
+        assert data["field"] == "audio_settings"
+        assert adapter.set_loudness_calls == []
