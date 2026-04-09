@@ -286,7 +286,9 @@ class TestSetSleepTimerContract:
 
     def test_tool_has_minutes_parameter(self, registered_app: FastMCP) -> None:
         schema = get_tools(registered_app)["set_sleep_timer"].parameters
-        assert "minutes" in schema.get("properties", {})
+        props = schema.get("properties", {})
+        assert "minutes" in props
+        assert props["minutes"]["type"] == "integer"
         assert "minutes" in schema.get("required", [])
 
     def test_tool_is_not_read_only(self, registered_app: FastMCP) -> None:
