@@ -309,3 +309,7 @@ class TestSetSleepTimerContract:
         assert "active" in data
         assert "remaining_seconds" in data
         assert "remaining_minutes" in data
+        assert isinstance(data["room_name"], str)
+        assert isinstance(data["active"], bool)
+        assert isinstance(data["remaining_seconds"], int) or data["remaining_seconds"] is None
+        assert isinstance(data["remaining_minutes"], int) or data["remaining_minutes"] is None
