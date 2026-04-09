@@ -428,3 +428,90 @@ class TestSetSleepTimerTool:
     def test_disabled_when_in_tools_disabled(self) -> None:
         app, _ = make_app(tools_disabled=["set_sleep_timer"])
         assert get_tool(app, "set_sleep_timer") is None
+
+
+class _ValidatingRoomService:
+    def __init__(self, room: Room | None = None) -> None:
+        self._room = room or Room(
+            name="Living Room",
+            uid="RINCON_1",
+            ip_address="192.168.1.10",
+            is_coordinator=True,
+            group_coordinator_uid=None,
+        )
+
+    def get_room(self, name: str) -> Room:
+        if name != self._room.name:
+            raise RoomNotFoundError(name)
+        return self._room
+
+    def list_rooms(self) -> list[Room]:
+        return [self._room]
+
+
+class _ValidatingAdapter:
+    def __init__(self) -> None:
+        self.set_sleep_timer_calls: list[tuple[str, str, int]] = []
+
+    def set_sleep_timer(self, ip_address: str, room_name: str, minutes: int) -> SleepTimerState:
+        self.set_sleep_timer_calls.append((ip_address, room_name, minutes))
+        return SleepTimerState(
+            room_name=room_name,
+            active=True,
+            remaining_seconds=minutes * 60,
+            remaining_minutes=minutes,
+        )
+
+    def get_sleep_timer(self, ip_address: str, room_name: str) -> SleepTimerState:
+        return SleepTimerState(room_name=room_name, active=False)
+
+    def get_playback_state(self, ip_address: str, room_name: str) -> PlaybackState:
+        return PlaybackState(transport_state="PLAYING", room_name=room_name)
+
+    def seek(self, ip_address: str, position: str) -> None:
+        return None
+
+    def play(self, ip_address: str) -> None: ...
+    def pause(self, ip_address: str) -> None: ...
+    def stop(self, ip_address: str) -> None: ...
+    def next_track(self, ip_address: str) -> None: ...
+    def previous_track(self, ip_address: str) -> None: ...
+    def get_track_info(self, ip_address: str): ...
+    def get_volume(self, ip_address: str) -> int:
+        return 50
+
+    def get_mute(self, ip_address: str) -> bool:
+        return False
+
+
+def make_validating_app() -> tuple[FastMCP, _ValidatingAdapter]:
+    from soniq_mcp.config.models import SoniqConfig
+    from soniq_mcp.services.sonos_service import SonosService
+
+    adapter = _ValidatingAdapter()
+    sonos_service = SonosService(_ValidatingRoomService(), adapter, SoniqConfig())
+    app = FastMCP("test")
+    register(app, SoniqConfig(), PlaybackService(sonos_service=sonos_service))
+    return app, adapter
+
+
+class TestSetSleepTimerRawValidation:
+    @pytest.mark.anyio
+    async def test_invalid_boolean_minutes_returns_validation_error_without_write(self) -> None:
+        app, adapter = make_validating_app()
+        result = await app.call_tool("set_sleep_timer", {"room": "Living Room", "minutes": True})
+        data = json.loads(result[0].text)
+        assert data["category"] == "validation"
+        assert data["field"] == "playback"
+        assert "minutes" in data["error"]
+        assert adapter.set_sleep_timer_calls == []
+
+    @pytest.mark.anyio
+    async def test_invalid_string_minutes_returns_validation_error_without_write(self) -> None:
+        app, adapter = make_validating_app()
+        result = await app.call_tool("set_sleep_timer", {"room": "Living Room", "minutes": "5"})
+        data = json.loads(result[0].text)
+        assert data["category"] == "validation"
+        assert data["field"] == "playback"
+        assert "minutes" in data["error"]
+        assert adapter.set_sleep_timer_calls == []
