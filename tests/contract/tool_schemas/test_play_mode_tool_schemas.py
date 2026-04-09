@@ -132,3 +132,8 @@ class TestSetPlayModeContract:
         assert "shuffle" in data
         assert "repeat" in data
         assert "cross_fade" in data
+        assert isinstance(data["room_name"], str)
+        assert isinstance(data["shuffle"], bool)
+        assert isinstance(data["repeat"], str)
+        assert data["repeat"] in ("none", "all", "one")
+        assert isinstance(data["cross_fade"], bool)
