@@ -14,7 +14,7 @@ from soniq_mcp.domain.models import PlayModeState, Room
 
 log = logging.getLogger(__name__)
 
-_VALID_REPEAT_VALUES = frozenset({"none", "all", "one"})
+_VALID_REPEAT_VALUES: Final[frozenset[str]] = frozenset({"none", "all", "one"})
 
 
 class PlayModeService:
