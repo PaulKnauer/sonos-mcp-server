@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from soniq_mcp.domain.exceptions import PlaybackError, RoomNotFoundError
+from soniq_mcp.domain.exceptions import PlaybackError, PlaybackValidationError, RoomNotFoundError
 from soniq_mcp.domain.models import PlayModeState, Room
 from soniq_mcp.services.play_mode_service import PlayModeService
 
