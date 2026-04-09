@@ -6,6 +6,7 @@ from soniq_mcp.domain.exceptions import (
     AudioSettingsValidationError,
     ErrorCategory,
     PlaybackError,
+    PlaybackValidationError,
     QueueError,
     SonosDiscoveryError,
 )
