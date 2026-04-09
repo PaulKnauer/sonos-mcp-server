@@ -7,9 +7,11 @@ to ``PlayModeService``. Play mode covers shuffle, repeat, and crossfade.
 from __future__ import annotations
 
 import logging
+from typing import Annotated
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
+from pydantic import Field
 
 from soniq_mcp.config import SoniqConfig
 from soniq_mcp.domain.exceptions import (
