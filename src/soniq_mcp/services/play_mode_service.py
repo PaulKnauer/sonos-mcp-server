@@ -7,8 +7,9 @@ All operations route to the group coordinator when the target room is grouped.
 from __future__ import annotations
 
 import logging
+from typing import Final
 
-from soniq_mcp.domain.exceptions import PlaybackError
+from soniq_mcp.domain.exceptions import PlaybackError, PlaybackValidationError
 from soniq_mcp.domain.models import PlayModeState, Room
 
 log = logging.getLogger(__name__)
