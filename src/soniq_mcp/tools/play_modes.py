@@ -95,9 +95,9 @@ def register(app: FastMCP, config: SoniqConfig, play_mode_service: object) -> No
         )
         def set_play_mode(
             room: str,
-            shuffle: bool | None = None,
-            repeat: str | None = None,
-            cross_fade: bool | None = None,
+            shuffle: _OPTIONAL_BOOLEAN_INPUT = None,
+            repeat: _OPTIONAL_REPEAT_INPUT = None,
+            cross_fade: _OPTIONAL_BOOLEAN_INPUT = None,
         ) -> dict:
             """Set shuffle, repeat, and/or crossfade for the specified Sonos room.
 
