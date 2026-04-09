@@ -245,7 +245,7 @@ def register(app: FastMCP, config: SoniqConfig, playback_service: object) -> Non
             title="Set Sleep Timer",
             annotations=_CONTROL_TOOL_HINTS,
         )
-        def set_sleep_timer(room: str, minutes: int) -> dict:
+        def set_sleep_timer(room: str, minutes: _INTEGER_INPUT) -> dict:
             """Set or clear the sleep timer for the specified Sonos room.
 
             Pass minutes=0 to cancel an active sleep timer.
