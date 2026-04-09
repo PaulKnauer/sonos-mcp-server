@@ -13,6 +13,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 from soniq_mcp.domain.models import (
+    AudioSettingsState,
     Favourite,
     PlaybackState,
     PlayModeState,
