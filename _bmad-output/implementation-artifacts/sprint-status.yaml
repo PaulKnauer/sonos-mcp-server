@@ -46,7 +46,7 @@ development_status:
   epic-1: in-progress
   1-1-expose-play-mode-controls-for-active-rooms: done
   1-2-support-seek-and-sleep-timer-operations: done
-  1-3-add-room-level-audio-eq-controls: backlog
+  1-3-add-room-level-audio-eq-controls: in-progress
   1-4-harden-advanced-playback-contracts-and-regression-coverage: backlog
   epic-1-retrospective: optional
 
