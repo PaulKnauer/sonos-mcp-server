@@ -13,7 +13,8 @@ from soniq_mcp.domain.exceptions import (
     RoomNotFoundError,
     SonosDiscoveryError,
 )
-from soniq_mcp.domain.models import PlayModeState
+from soniq_mcp.domain.models import PlayModeState, Room
+from soniq_mcp.services.play_mode_service import PlayModeService
 from soniq_mcp.tools.play_modes import register
 
 
