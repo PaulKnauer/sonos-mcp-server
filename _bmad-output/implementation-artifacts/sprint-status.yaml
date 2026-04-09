@@ -4,6 +4,15 @@
 # project_key: NOKEY
 # tracking_system: file-system
 # story_location: _bmad-output/implementation-artifacts
+# phase_id: phase-2
+# phase_label: Phase 2 (Tier 1 Expansion)
+# canonical_story_namespace: phase-2/<story-key>
+# collision_index: _bmad-output/phase-index.yaml
+#
+# PHASE NOTE:
+# This sprint tracker is authoritative for Phase 2 only.
+# Legacy Phase 1 artifacts remain in the same folder and reuse numeric story keys.
+# Resolve duplicate keys via _bmad-output/phase-index.yaml and prefer phase-2/* for current planning.
 #
 # STATUS DEFINITIONS:
 # ==================
@@ -40,6 +49,12 @@ project: sonos-mcp-server
 project_key: NOKEY
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
+phase_id: phase-2
+phase_label: "Phase 2 (Tier 1 Expansion)"
+canonical_story_namespace: "phase-2/<story-key>"
+collision_index: "_bmad-output/phase-index.yaml"
+current_completed_story: "phase-2/1-4-harden-advanced-playback-contracts-and-regression-coverage"
+next_story_hint: "phase-2/2-1-discover-addressable-rooms-and-system-topology"
 
 development_status:
   # Epic 1: Advanced Playback and Audio Control
@@ -52,9 +67,9 @@ development_status:
 
   # Epic 2: Input and Group Audio Expansion
   epic-2: in-progress
-  2-1-discover-addressable-rooms-and-system-topology: done
-  2-2-control-core-playback-in-a-target-room: ready-for-dev
-  2-3-control-volume-and-mute-safely: ready-for-dev
+  2-1-discover-addressable-rooms-and-system-topology: ready-for-dev
+  2-2-control-core-playback-in-a-target-room: backlog
+  2-3-control-volume-and-mute-safely: backlog
   2-4-apply-reliable-sonos-service-and-adapter-boundaries: backlog
   epic-2-retrospective: optional
 
