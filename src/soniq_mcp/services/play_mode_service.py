@@ -7,13 +7,14 @@ All operations route to the group coordinator when the target room is grouped.
 from __future__ import annotations
 
 import logging
+from typing import Final
 
-from soniq_mcp.domain.exceptions import PlaybackError
+from soniq_mcp.domain.exceptions import PlaybackError, PlaybackValidationError
 from soniq_mcp.domain.models import PlayModeState, Room
 
 log = logging.getLogger(__name__)
 
-_VALID_REPEAT_VALUES = frozenset({"none", "all", "one"})
+_VALID_REPEAT_VALUES: Final[frozenset[str]] = frozenset({"none", "all", "one"})
 
 
 class PlayModeService:
@@ -40,9 +41,9 @@ class PlayModeService:
     def set_play_mode(
         self,
         room_name: str,
-        shuffle: bool | None = None,
-        repeat: str | None = None,
-        cross_fade: bool | None = None,
+        shuffle: object = None,
+        repeat: object = None,
+        cross_fade: object = None,
     ) -> PlayModeState:
         """Apply play mode changes for the named room.
 
@@ -60,8 +61,12 @@ class PlayModeService:
             PlaybackError: If repeat value is invalid or the SoCo operation fails.
             SonosDiscoveryError: If network discovery fails.
         """
-        if repeat is not None and repeat not in _VALID_REPEAT_VALUES:
-            raise PlaybackError(
+        self._validate_optional_bool(shuffle, "shuffle")
+        self._validate_optional_bool(cross_fade, "cross_fade")
+        if repeat is not None and (
+            not isinstance(repeat, str) or repeat not in _VALID_REPEAT_VALUES
+        ):
+            raise PlaybackValidationError(
                 f"Invalid repeat value {repeat!r}. Allowed values: 'none', 'all', 'one'."
             )
         room = self._resolve_coordinator(room_name)
@@ -72,6 +77,13 @@ class PlayModeService:
             repeat=repeat,
             cross_fade=cross_fade,
         )
+
+    @staticmethod
+    def _validate_optional_bool(value: object, field: str) -> None:
+        if value is not None and not isinstance(value, bool):
+            raise PlaybackValidationError(
+                f"Invalid {field} value {value!r}. Expected a boolean."
+            )
 
     def _resolve_coordinator(self, room_name: str) -> Room:
         """Resolve the coordinator room for play mode operations.

@@ -9,7 +9,8 @@ from mcp.server.fastmcp import FastMCP
 
 from soniq_mcp.config import SoniqConfig
 from soniq_mcp.domain.exceptions import PlaybackError, RoomNotFoundError, SonosDiscoveryError
-from soniq_mcp.domain.models import PlaybackState, SleepTimerState, TrackInfo
+from soniq_mcp.domain.models import PlaybackState, Room, SleepTimerState, TrackInfo
+from soniq_mcp.services.playback_service import PlaybackService
 from soniq_mcp.tools.playback import register
 
 
@@ -108,6 +109,63 @@ def make_app(
     app = FastMCP("test")
     register(app, config, svc)
     return app, svc
+
+
+class FakeRoomService:
+    def __init__(self, room: Room | None = None) -> None:
+        self._room = room or Room(
+            name="Living Room",
+            uid="RINCON_1",
+            ip_address="192.168.1.10",
+            is_coordinator=True,
+        )
+
+    def get_room(self, name: str, timeout: float = 5.0) -> Room:
+        if name != self._room.name:
+            raise RoomNotFoundError(name)
+        return self._room
+
+    def list_rooms(self, timeout: float = 5.0) -> list[Room]:
+        return [self._room]
+
+
+class ValidatingAdapter:
+    def __init__(self) -> None:
+        self.seek_calls: list[tuple[str, object]] = []
+        self.set_sleep_timer_calls: list[tuple[str, str, object]] = []
+
+    def seek(self, ip_address: str, position: object) -> None:
+        self.seek_calls.append((ip_address, position))
+
+    def get_playback_state(self, ip_address: str, room_name: str) -> PlaybackState:
+        return PlaybackState(transport_state="PLAYING", room_name=room_name)
+
+    def get_sleep_timer(self, ip_address: str, room_name: str) -> SleepTimerState:
+        return SleepTimerState(room_name=room_name, active=False)
+
+    def set_sleep_timer(self, ip_address: str, room_name: str, minutes: object) -> SleepTimerState:
+        self.set_sleep_timer_calls.append((ip_address, room_name, minutes))
+        return SleepTimerState(
+            room_name=room_name,
+            active=minutes != 0,
+            remaining_seconds=minutes * 60 if minutes else None,
+            remaining_minutes=minutes if minutes else None,
+        )
+
+    def play(self, ip_address: str) -> None: ...
+    def pause(self, ip_address: str) -> None: ...
+    def stop(self, ip_address: str) -> None: ...
+    def next_track(self, ip_address: str) -> None: ...
+    def previous_track(self, ip_address: str) -> None: ...
+    def get_track_info(self, ip_address: str): ...
+
+
+def make_validating_app() -> tuple[FastMCP, ValidatingAdapter]:
+    config = SoniqConfig()
+    adapter = ValidatingAdapter()
+    app = FastMCP("test")
+    register(app, config, PlaybackService(FakeRoomService(), adapter, config))
+    return app, adapter
 
 
 def get_tool(app: FastMCP, name: str):
@@ -325,6 +383,14 @@ class TestSeekTool:
         assert "error" in data
         assert data["field"] == "sonos_network"
 
+    @pytest.mark.anyio
+    async def test_invalid_non_string_position_returns_validation_error_without_write(self) -> None:
+        app, adapter = make_validating_app()
+        data = await call_and_parse(app, "seek", {"room": "Living Room", "position": True})
+        assert data["category"] == "validation"
+        assert data["field"] == "playback"
+        assert adapter.seek_calls == []
+
     def test_has_control_annotations(self) -> None:
         app, _ = make_app()
         tool = get_tool(app, "seek")
@@ -361,12 +427,14 @@ class TestGetSleepTimerTool:
         app, _ = make_app(raise_playback_error=True)
         data = await call_and_parse(app, "get_sleep_timer", {"room": "Living Room"})
         assert "error" in data
+        assert data["field"] == "playback"
 
     @pytest.mark.anyio
     async def test_discovery_error(self) -> None:
         app, _ = make_app(raise_discovery_error=True)
         data = await call_and_parse(app, "get_sleep_timer", {"room": "Living Room"})
         assert "error" in data
+        assert data["field"] == "sonos_network"
 
     def test_has_read_only_annotations(self) -> None:
         app, _ = make_app()
@@ -417,6 +485,22 @@ class TestSetSleepTimerTool:
         data = await call_and_parse(app, "set_sleep_timer", {"room": "Living Room", "minutes": 10})
         assert "error" in data
         assert data["field"] == "sonos_network"
+
+    @pytest.mark.anyio
+    async def test_invalid_bool_minutes_returns_validation_error_without_write(self) -> None:
+        app, adapter = make_validating_app()
+        data = await call_and_parse(app, "set_sleep_timer", {"room": "Living Room", "minutes": True})
+        assert data["category"] == "validation"
+        assert data["field"] == "playback"
+        assert adapter.set_sleep_timer_calls == []
+
+    @pytest.mark.anyio
+    async def test_invalid_string_minutes_returns_validation_error_without_write(self) -> None:
+        app, adapter = make_validating_app()
+        data = await call_and_parse(app, "set_sleep_timer", {"room": "Living Room", "minutes": "5"})
+        assert data["category"] == "validation"
+        assert data["field"] == "playback"
+        assert adapter.set_sleep_timer_calls == []
 
     def test_has_control_annotations(self) -> None:
         app, _ = make_app()

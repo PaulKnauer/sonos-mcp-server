@@ -7,9 +7,11 @@ and get_track_info as thin handlers that delegate to ``PlaybackService``.
 from __future__ import annotations
 
 import logging
+from typing import Annotated
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
+from pydantic import Field
 
 from soniq_mcp.config import SoniqConfig
 from soniq_mcp.domain.exceptions import PlaybackError, RoomNotFoundError, SonosDiscoveryError
@@ -18,6 +20,8 @@ from soniq_mcp.schemas.errors import ErrorResponse
 from soniq_mcp.schemas.responses import PlaybackStateResponse, SleepTimerResponse, TrackInfoResponse
 
 log = logging.getLogger(__name__)
+
+_INTEGER_INPUT = Annotated[object, Field(json_schema_extra={"type": "integer"})]
 
 _READ_ONLY_TOOL_HINTS = ToolAnnotations(
     readOnlyHint=True,
@@ -241,7 +245,7 @@ def register(app: FastMCP, config: SoniqConfig, playback_service: object) -> Non
             title="Set Sleep Timer",
             annotations=_CONTROL_TOOL_HINTS,
         )
-        def set_sleep_timer(room: str, minutes: int) -> dict:
+        def set_sleep_timer(room: str, minutes: _INTEGER_INPUT) -> dict:
             """Set or clear the sleep timer for the specified Sonos room.
 
             Pass minutes=0 to cancel an active sleep timer.

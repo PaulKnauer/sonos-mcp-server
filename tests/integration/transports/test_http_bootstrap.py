@@ -62,6 +62,11 @@ REPRESENTATIVE_TOOL_NAMES = (
     "play",
     "set_volume",
     "party_mode",
+    "set_play_mode",
+    "seek",
+    "set_sleep_timer",
+    "set_bass",
+    "set_loudness",
 )
 
 

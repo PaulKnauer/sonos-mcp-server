@@ -108,6 +108,16 @@ class TestSetPlayModeContract:
         assert "repeat" not in required
         assert "cross_fade" not in required
 
+    def test_optional_mode_parameter_types_are_stable(self, registered_app: FastMCP) -> None:
+        schema = get_tools(registered_app)["set_play_mode"].parameters
+        props = schema["properties"]
+        assert props["shuffle"]["anyOf"] == [{"type": "boolean"}, {"type": "null"}]
+        assert props["repeat"]["anyOf"] == [
+            {"type": "string", "enum": ["none", "all", "one"]},
+            {"type": "null"},
+        ]
+        assert props["cross_fade"]["anyOf"] == [{"type": "boolean"}, {"type": "null"}]
+
     def test_tool_is_not_read_only(self, registered_app: FastMCP) -> None:
         annotations = get_tools(registered_app)["set_play_mode"].annotations
         assert annotations is not None
@@ -127,3 +137,16 @@ class TestSetPlayModeContract:
         assert "shuffle" in data
         assert "repeat" in data
         assert "cross_fade" in data
+
+    @pytest.mark.anyio
+    async def test_response_field_types_remain_normalized(self, registered_app: FastMCP) -> None:
+        import json
+
+        result = await registered_app.call_tool(
+            "set_play_mode",
+            {"room": "Living Room", "shuffle": True},
+        )
+        data = json.loads(result[0].text)
+        assert isinstance(data["shuffle"], bool)
+        assert isinstance(data["repeat"], str)
+        assert isinstance(data["cross_fade"], bool)

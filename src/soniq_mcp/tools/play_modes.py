@@ -7,9 +7,11 @@ to ``PlayModeService``. Play mode covers shuffle, repeat, and crossfade.
 from __future__ import annotations
 
 import logging
+from typing import Annotated
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
+from pydantic import Field
 
 from soniq_mcp.config import SoniqConfig
 from soniq_mcp.domain.exceptions import (
@@ -22,6 +24,22 @@ from soniq_mcp.schemas.errors import ErrorResponse
 from soniq_mcp.schemas.responses import PlayModeResponse
 
 log = logging.getLogger(__name__)
+
+_OPTIONAL_BOOLEAN_INPUT = Annotated[
+    object,
+    Field(json_schema_extra={"anyOf": [{"type": "boolean"}, {"type": "null"}]}),
+]
+_OPTIONAL_REPEAT_INPUT = Annotated[
+    object,
+    Field(
+        json_schema_extra={
+            "anyOf": [
+                {"type": "string", "enum": ["none", "all", "one"]},
+                {"type": "null"},
+            ]
+        }
+    ),
+]
 
 _READ_ONLY_TOOL_HINTS = ToolAnnotations(
     readOnlyHint=True,
@@ -76,9 +94,9 @@ def register(app: FastMCP, config: SoniqConfig, play_mode_service: object) -> No
         )
         def set_play_mode(
             room: str,
-            shuffle: bool | None = None,
-            repeat: str | None = None,
-            cross_fade: bool | None = None,
+            shuffle: _OPTIONAL_BOOLEAN_INPUT = None,
+            repeat: _OPTIONAL_REPEAT_INPUT = None,
+            cross_fade: _OPTIONAL_BOOLEAN_INPUT = None,
         ) -> dict:
             """Set shuffle, repeat, and/or crossfade for the specified Sonos room.
 

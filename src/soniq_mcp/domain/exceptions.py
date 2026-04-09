@@ -116,6 +116,12 @@ class PlaybackError(SoniqDomainError):
         super().__init__(message)
 
 
+class PlaybackValidationError(PlaybackError):
+    """Raised when a playback request fails local validation."""
+
+    error_category = ErrorCategory.VALIDATION
+
+
 class FavouritesError(SoniqDomainError):
     """Raised when a Sonos favourites or playlists operation fails."""
 

@@ -168,6 +168,24 @@ class TestSetPlayMode:
         with pytest.raises(PlaybackError, match="repeat"):
             svc.set_play_mode("Living Room", repeat="loop")
 
+    def test_rejects_non_boolean_shuffle_value(self) -> None:
+        room = make_room()
+        room_svc = FakeRoomService([room])
+        adapter = FakeAdapter()
+        svc = PlayModeService(room_svc, adapter, None)
+
+        with pytest.raises(PlaybackError, match="shuffle"):
+            svc.set_play_mode("Living Room", shuffle="true")  # type: ignore[arg-type]
+
+    def test_rejects_non_boolean_cross_fade_value(self) -> None:
+        room = make_room()
+        room_svc = FakeRoomService([room])
+        adapter = FakeAdapter()
+        svc = PlayModeService(room_svc, adapter, None)
+
+        with pytest.raises(PlaybackError, match="cross_fade"):
+            svc.set_play_mode("Living Room", cross_fade="true")  # type: ignore[arg-type]
+
     def test_accepts_all_valid_repeat_values(self) -> None:
         room = make_room()
         room_svc = FakeRoomService([room])

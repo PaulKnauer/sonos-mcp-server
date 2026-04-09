@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 
 from soniq_mcp.config.models import SoniqConfig
-from soniq_mcp.domain.exceptions import PlaybackError
+from soniq_mcp.domain.exceptions import PlaybackError, PlaybackValidationError
 from soniq_mcp.domain.models import PlaybackState, Room, SleepTimerState, TrackInfo, VolumeState
 from soniq_mcp.domain.safety import check_volume
 
@@ -78,7 +78,7 @@ class SonosService:
         room = self._resolve_coordinator(room_name)
         return self._adapter.get_sleep_timer(room.ip_address, room_name)
 
-    def set_sleep_timer(self, room_name: str, minutes: int) -> SleepTimerState:
+    def set_sleep_timer(self, room_name: str, minutes: object) -> SleepTimerState:
         """Set or clear the sleep timer for the named room.
 
         Routes to the group coordinator when the room is grouped.
@@ -92,8 +92,7 @@ class SonosService:
             PlaybackError: If minutes is negative or the SoCo operation fails.
             SonosDiscoveryError: If network discovery fails.
         """
-        if minutes < 0:
-            raise PlaybackError(f"Invalid minutes value {minutes!r}. Must be >= 0.")
+        self._validate_sleep_timer_minutes(minutes)
         room = self._resolve_coordinator(room_name)
         return self._adapter.set_sleep_timer(room.ip_address, room_name, minutes)
 
@@ -154,18 +153,32 @@ class SonosService:
         )
         return room
 
-    def _validate_seek_position(self, position: str) -> None:
+    def _validate_seek_position(self, position: object) -> None:
         """Validate explicit HH:MM:SS seek positions.
 
         Sonos accepts positions in HH:MM:SS form, but regex-only validation
         would still allow impossible values like ``00:99:99``.
         """
+        if not isinstance(position, str):
+            raise PlaybackValidationError(
+                f"Invalid seek position {position!r}. Expected HH:MM:SS format."
+            )
         parts = position.split(":")
         if len(parts) != 3 or not all(part.isdigit() for part in parts):
-            raise PlaybackError(f"Invalid seek position {position!r}. Expected HH:MM:SS format.")
+            raise PlaybackValidationError(
+                f"Invalid seek position {position!r}. Expected HH:MM:SS format."
+            )
 
         hours, minutes, seconds = (int(part) for part in parts)
         if minutes >= 60 or seconds >= 60:
-            raise PlaybackError(
+            raise PlaybackValidationError(
                 f"Invalid seek position {position!r}. Minutes and seconds must be < 60."
             )
+
+    def _validate_sleep_timer_minutes(self, minutes: object) -> None:
+        if not isinstance(minutes, int) or isinstance(minutes, bool):
+            raise PlaybackValidationError(
+                f"Invalid minutes value {minutes!r}. Minutes must be an integer >= 0."
+            )
+        if minutes < 0:
+            raise PlaybackValidationError(f"Invalid minutes value {minutes!r}. Must be >= 0.")

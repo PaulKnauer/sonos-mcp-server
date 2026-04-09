@@ -47,7 +47,7 @@ development_status:
   1-1-expose-play-mode-controls-for-active-rooms: done
   1-2-support-seek-and-sleep-timer-operations: done
   1-3-add-room-level-audio-eq-controls: done
-  1-4-harden-advanced-playback-contracts-and-regression-coverage: backlog
+  1-4-harden-advanced-playback-contracts-and-regression-coverage: review
   epic-1-retrospective: optional
 
   # Epic 2: Input and Group Audio Expansion

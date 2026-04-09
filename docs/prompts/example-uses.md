@@ -74,6 +74,37 @@ Claude calls `next_track` or `previous_track`.
 
 Claude calls `get_playback_state` and `get_track_info` to return the current track, artist, album, and transport state.
 
+### Control play mode
+
+> "Turn shuffle on in the Kitchen."
+> "Set repeat to all in the Living Room and leave the other play mode settings alone."
+> "Show me the current shuffle, repeat, and crossfade settings in the Bedroom."
+
+Claude calls `set_play_mode` or `get_play_mode` and returns the normalized shuffle, repeat, and `cross_fade` state for the target room.
+
+### Seek within the current track
+
+> "Seek the Living Room to 0:01:30."
+> "Jump the Kitchen ahead to 0:45:00 in the current track."
+
+Claude calls `seek` with the target room and `HH:MM:SS` position, then returns the resulting playback state.
+
+### Manage the sleep timer
+
+> "What is the sleep timer status in the Bedroom?"
+> "Set a 30 minute sleep timer in the Living Room."
+> "Clear the Kitchen sleep timer."
+
+Claude calls `get_sleep_timer` or `set_sleep_timer`. Use `0` minutes to clear an active timer.
+
+### Tune room EQ
+
+> "What are the bass, treble, and loudness settings in the Office?"
+> "Set the Kitchen bass to 4."
+> "Turn loudness off in the Living Room."
+
+Claude calls `get_eq_settings`, `set_bass`, `set_treble`, or `set_loudness` and returns the normalized EQ state for the room.
+
 ---
 
 ## Volume control
@@ -226,6 +257,31 @@ The automation system decides the branch. SoniqMCP remains the execution layer o
 > "Set the Office to volume 35, but never exceed the configured safety cap."
 
 Claude or the automation calls `set_volume`. Requests above `SONIQ_MCP_MAX_VOLUME_PCT` are rejected, so downstream agents inherit the same safety behavior as direct usage.
+
+### Advanced playback automation
+
+> "If the Living Room is playing, enable shuffle, seek to 0:20:00, and set a 45 minute sleep timer."
+
+Expected tool flow:
+
+1. `get_playback_state`
+2. `set_play_mode`
+3. `seek`
+4. `set_sleep_timer`
+
+This keeps the advanced playback flow transport-neutral while using the same tools available to a direct AI client.
+
+### Audio tuning automation
+
+> "Check the Bedroom EQ settings and, if loudness is on, turn it off and reduce treble by 2."
+
+Expected tool flow:
+
+1. `get_eq_settings`
+2. `set_loudness`
+3. `set_treble`
+
+The automation still uses the same room-level audio tools and normalized responses as a direct conversational client.
 
 ### Queue-aware automation
 

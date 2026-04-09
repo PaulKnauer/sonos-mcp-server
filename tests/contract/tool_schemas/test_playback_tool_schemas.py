@@ -214,6 +214,10 @@ class TestSeekContract:
         assert "position" in schema.get("properties", {})
         assert "position" in schema.get("required", [])
 
+    def test_position_parameter_is_declared_as_string(self, registered_app: FastMCP) -> None:
+        schema = get_tools(registered_app)["seek"].parameters
+        assert schema["properties"]["position"]["type"] == "string"
+
     def test_tool_is_not_read_only(self, registered_app: FastMCP) -> None:
         annotations = get_tools(registered_app)["seek"].annotations
         assert annotations is not None
@@ -230,6 +234,8 @@ class TestSeekContract:
         data = json.loads(result[0].text)
         assert "transport_state" in data
         assert "room_name" in data
+        assert isinstance(data["transport_state"], str)
+        assert isinstance(data["room_name"], str)
 
 
 class TestGetSleepTimerContract:
@@ -261,6 +267,8 @@ class TestGetSleepTimerContract:
         assert "active" in data
         assert "remaining_seconds" in data
         assert "remaining_minutes" in data
+        assert isinstance(data["room_name"], str)
+        assert isinstance(data["active"], bool)
 
 
 class TestSetSleepTimerContract:
@@ -281,6 +289,10 @@ class TestSetSleepTimerContract:
         assert "minutes" in schema.get("properties", {})
         assert "minutes" in schema.get("required", [])
 
+    def test_minutes_parameter_is_declared_as_integer(self, registered_app: FastMCP) -> None:
+        schema = get_tools(registered_app)["set_sleep_timer"].parameters
+        assert schema["properties"]["minutes"]["type"] == "integer"
+
     def test_tool_is_not_read_only(self, registered_app: FastMCP) -> None:
         annotations = get_tools(registered_app)["set_sleep_timer"].annotations
         assert annotations is not None
@@ -299,3 +311,7 @@ class TestSetSleepTimerContract:
         assert "active" in data
         assert "remaining_seconds" in data
         assert "remaining_minutes" in data
+        assert isinstance(data["room_name"], str)
+        assert isinstance(data["active"], bool)
+        assert isinstance(data["remaining_seconds"], int)
+        assert isinstance(data["remaining_minutes"], int)
