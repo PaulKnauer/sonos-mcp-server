@@ -217,6 +217,39 @@ class TestSleepTimerResponse:
         assert d["remaining_minutes"] is None
 
 
+class TestAudioSettingsResponse:
+    def test_from_domain(self) -> None:
+        state = AudioSettingsState(room_name="Living Room", bass=5, treble=-3, loudness=True)
+        resp = AudioSettingsResponse.from_domain(state)
+        assert resp.room_name == "Living Room"
+        assert resp.bass == 5
+        assert resp.treble == -3
+        assert resp.loudness is True
+
+    def test_from_domain_zero_values(self) -> None:
+        state = AudioSettingsState(room_name="Kitchen", bass=0, treble=0, loudness=False)
+        resp = AudioSettingsResponse.from_domain(state)
+        assert resp.bass == 0
+        assert resp.treble == 0
+        assert resp.loudness is False
+
+    def test_model_dump_snake_case(self) -> None:
+        state = AudioSettingsState(room_name="Office", bass=-2, treble=4, loudness=True)
+        d = AudioSettingsResponse.from_domain(state).model_dump()
+        assert "room_name" in d
+        assert "bass" in d
+        assert "treble" in d
+        assert "loudness" in d
+
+    def test_model_dump_serialisable(self) -> None:
+        state = AudioSettingsState(room_name="Bedroom", bass=10, treble=-10, loudness=False)
+        d = AudioSettingsResponse.from_domain(state).model_dump()
+        assert isinstance(d, dict)
+        assert d["bass"] == 10
+        assert d["treble"] == -10
+        assert d["loudness"] is False
+
+
 class TestVolumeStateResponse:
     def test_from_domain(self) -> None:
         state = VolumeState(room_name="Living Room", volume=55, is_muted=False)
