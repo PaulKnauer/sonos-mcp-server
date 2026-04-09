@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from soniq_mcp.domain.exceptions import PlaybackError, RoomNotFoundError, SonosDiscoveryError
+from soniq_mcp.domain.exceptions import (
+    PlaybackError,
+    PlaybackValidationError,
+    RoomNotFoundError,
+    SonosDiscoveryError,
+)
 from soniq_mcp.domain.models import PlaybackState, Room, SleepTimerState
 from soniq_mcp.services.playback_service import PlaybackService
 
