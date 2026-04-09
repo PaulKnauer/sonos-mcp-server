@@ -151,6 +151,17 @@ class ErrorResponse(BaseModel):
             ),
         )
 
+    @classmethod
+    def from_audio_settings_error(cls, exc: Exception) -> ErrorResponse:
+        return cls._from_domain_error(
+            exc,
+            field="audio_settings",
+            suggestion=(
+                "Check that the room is reachable and that bass/treble are integers "
+                "in the range -10..10 and loudness is a boolean."
+            ),
+        )
+
 
 def _sanitize_text(text: str) -> str:
     """Redact sensitive transport and filesystem details from user-facing text."""
