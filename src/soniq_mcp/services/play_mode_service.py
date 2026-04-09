@@ -100,3 +100,21 @@ class PlayModeService:
             room_name,
         )
         return room
+
+    def _validate_optional_bool(self, field_name: str, value: object) -> bool | None:
+        if value is None:
+            return None
+        if isinstance(value, bool):
+            return value
+        raise PlaybackValidationError(
+            f"Invalid {field_name} value {value!r}. Expected a boolean or null."
+        )
+
+    def _validate_repeat(self, repeat: object) -> str | None:
+        if repeat is None:
+            return None
+        if not isinstance(repeat, str) or repeat not in _VALID_REPEAT_VALUES:
+            raise PlaybackValidationError(
+                f"Invalid repeat value {repeat!r}. Allowed values: 'none', 'all', 'one'."
+            )
+        return repeat
