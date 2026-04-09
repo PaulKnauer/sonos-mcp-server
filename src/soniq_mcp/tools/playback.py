@@ -35,6 +35,8 @@ _CONTROL_TOOL_HINTS = ToolAnnotations(
     openWorldHint=False,
 )
 
+_INTEGER_INPUT = Annotated[object, Field(json_schema_extra={"type": "integer"})]
+
 
 def register(app: FastMCP, config: SoniqConfig, playback_service: object) -> None:
     """Register playback tools onto the FastMCP application.
