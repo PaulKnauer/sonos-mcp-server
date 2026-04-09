@@ -93,9 +93,7 @@ class AudioSettingsService:
             SonosDiscoveryError: If network discovery fails.
         """
         if not isinstance(enabled, bool):
-            raise AudioSettingsError(
-                f"loudness must be a boolean, got {type(enabled).__name__!r}."
-            )
+            raise AudioSettingsError(f"loudness must be a boolean, got {type(enabled).__name__!r}.")
         room = self._room_service.get_room(room_name)
         self._adapter.set_loudness(room.ip_address, enabled)
         return self._adapter.get_audio_settings(room.ip_address, room_name)
@@ -108,9 +106,7 @@ class AudioSettingsService:
             AudioSettingsError: If validation fails.
         """
         if not isinstance(level, int) or isinstance(level, bool):
-            raise AudioSettingsError(
-                f"{field} must be an integer, got {type(level).__name__!r}."
-            )
+            raise AudioSettingsError(f"{field} must be an integer, got {type(level).__name__!r}.")
         if level < _EQ_MIN or level > _EQ_MAX:
             raise AudioSettingsError(
                 f"{field} must be in the range {_EQ_MIN}..{_EQ_MAX}, got {level}."

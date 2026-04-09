@@ -93,9 +93,7 @@ class SonosService:
             SonosDiscoveryError: If network discovery fails.
         """
         if minutes < 0:
-            raise PlaybackError(
-                f"Invalid minutes value {minutes!r}. Must be >= 0."
-            )
+            raise PlaybackError(f"Invalid minutes value {minutes!r}. Must be >= 0.")
         room = self._resolve_coordinator(room_name)
         return self._adapter.set_sleep_timer(room.ip_address, room_name, minutes)
 
@@ -164,9 +162,7 @@ class SonosService:
         """
         parts = position.split(":")
         if len(parts) != 3 or not all(part.isdigit() for part in parts):
-            raise PlaybackError(
-                f"Invalid seek position {position!r}. Expected HH:MM:SS format."
-            )
+            raise PlaybackError(f"Invalid seek position {position!r}. Expected HH:MM:SS format.")
 
         hours, minutes, seconds = (int(part) for part in parts)
         if minutes >= 60 or seconds >= 60:

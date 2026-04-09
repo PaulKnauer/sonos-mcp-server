@@ -224,7 +224,9 @@ class TestSeekContract:
     async def test_response_includes_transport_state(self, registered_app: FastMCP) -> None:
         import json
 
-        result = await registered_app.call_tool("seek", {"room": "Living Room", "position": "0:01:00"})
+        result = await registered_app.call_tool(
+            "seek", {"room": "Living Room", "position": "0:01:00"}
+        )
         data = json.loads(result[0].text)
         assert "transport_state" in data
         assert "room_name" in data
@@ -289,7 +291,9 @@ class TestSetSleepTimerContract:
     async def test_response_includes_stable_fields(self, registered_app: FastMCP) -> None:
         import json
 
-        result = await registered_app.call_tool("set_sleep_timer", {"room": "Living Room", "minutes": 30})
+        result = await registered_app.call_tool(
+            "set_sleep_timer", {"room": "Living Room", "minutes": 30}
+        )
         data = json.loads(result[0].text)
         assert "room_name" in data
         assert "active" in data

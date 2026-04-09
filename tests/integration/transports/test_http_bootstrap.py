@@ -117,7 +117,7 @@ class TestHttpToolSurfaceParity:
         assert "ping" in tool_names
 
     def test_http_server_exposes_all_38_tools(self) -> None:
-        """Verify exact tool-surface parity for Story 4.1 + Story 1.1 play mode + Story 1.2 seek/sleep timer + Story 1.3 audio EQ."""
+        """Verify tool-surface parity for Story 4.1 and Stories 1.1-1.3."""
         cfg = SoniqConfig(transport=TransportMode.HTTP)
         app = create_server(config=cfg)
         tool_names = {t.name for t in app._tool_manager.list_tools()}

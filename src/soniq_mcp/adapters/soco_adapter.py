@@ -511,9 +511,7 @@ class SoCoAdapter:
             zone = self._make_zone(ip_address)
             zone.loudness = enabled
         except Exception as exc:
-            raise AudioSettingsError(
-                f"Failed to set loudness on {ip_address}: {exc}"
-            ) from exc
+            raise AudioSettingsError(f"Failed to set loudness on {ip_address}: {exc}") from exc
 
     def _call_playback(self, ip_address: str, action: Callable[[Any], object]) -> None:
         try:

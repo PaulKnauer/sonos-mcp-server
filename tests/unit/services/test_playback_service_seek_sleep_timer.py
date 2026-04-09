@@ -67,14 +67,24 @@ class FakeAdapter:
     def get_sleep_timer(self, ip_address: str, room_name: str) -> SleepTimerState:
         self.get_sleep_timer_calls.append(ip_address)
         self._maybe_raise()
-        return SleepTimerState(room_name=room_name, active=True, remaining_seconds=600, remaining_minutes=10)
+        return SleepTimerState(
+            room_name=room_name,
+            active=True,
+            remaining_seconds=600,
+            remaining_minutes=10,
+        )
 
     def set_sleep_timer(self, ip_address: str, room_name: str, minutes: int) -> SleepTimerState:
         self.set_sleep_timer_calls.append((ip_address, room_name, minutes))
         self._maybe_raise()
         if minutes == 0:
             return SleepTimerState(room_name=room_name, active=False)
-        return SleepTimerState(room_name=room_name, active=True, remaining_seconds=minutes * 60, remaining_minutes=minutes)
+        return SleepTimerState(
+            room_name=room_name,
+            active=True,
+            remaining_seconds=minutes * 60,
+            remaining_minutes=minutes,
+        )
 
     def get_playback_state(self, ip_address: str, room_name: str) -> PlaybackState:
         self.get_playback_state_calls.append(ip_address)
@@ -87,8 +97,11 @@ class FakeAdapter:
     def next_track(self, ip_address: str) -> None: ...
     def previous_track(self, ip_address: str) -> None: ...
     def get_track_info(self, ip_address: str): ...
-    def get_volume(self, ip_address: str) -> int: return 50
-    def get_mute(self, ip_address: str) -> bool: return False
+    def get_volume(self, ip_address: str) -> int:
+        return 50
+
+    def get_mute(self, ip_address: str) -> bool:
+        return False
 
 
 def make_service(

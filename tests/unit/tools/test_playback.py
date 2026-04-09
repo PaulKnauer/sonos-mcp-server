@@ -73,14 +73,24 @@ class FakePlaybackService:
     def get_sleep_timer(self, room: str) -> SleepTimerState:
         self.calls.append(("get_sleep_timer", room))
         self._check_errors(room)
-        return SleepTimerState(room_name=self._room_name, active=True, remaining_seconds=600, remaining_minutes=10)
+        return SleepTimerState(
+            room_name=self._room_name,
+            active=True,
+            remaining_seconds=600,
+            remaining_minutes=10,
+        )
 
     def set_sleep_timer(self, room: str, minutes: int) -> SleepTimerState:
         self.calls.append(("set_sleep_timer", room))
         self._check_errors(room)
         if minutes == 0:
             return SleepTimerState(room_name=self._room_name, active=False)
-        return SleepTimerState(room_name=self._room_name, active=True, remaining_seconds=minutes * 60, remaining_minutes=minutes)
+        return SleepTimerState(
+            room_name=self._room_name,
+            active=True,
+            remaining_seconds=minutes * 60,
+            remaining_minutes=minutes,
+        )
 
 
 def make_app(
