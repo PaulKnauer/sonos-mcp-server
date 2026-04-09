@@ -60,7 +60,7 @@ class TestErrorResponseSchema:
 
     def test_playback_validation_error_uses_validation_category(self) -> None:
         err = ErrorResponse.from_playback_error(
-            PlaybackValidationError("Invalid minutes value '5'. Minutes must be an integer >= 0.")
+            PlaybackValidationError("Invalid minutes value '5'. Expected a non-negative integer.")
         )
         assert err.category == ErrorCategory.VALIDATION
         assert err.field == "playback"

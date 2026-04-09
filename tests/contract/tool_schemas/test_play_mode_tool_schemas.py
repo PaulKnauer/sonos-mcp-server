@@ -102,7 +102,12 @@ class TestSetPlayModeContract:
         assert "shuffle" in props
         assert "repeat" in props
         assert "cross_fade" in props
-        # All mode params are optional — not in required
+        assert props["shuffle"]["anyOf"] == [{"type": "boolean"}, {"type": "null"}]
+        assert props["repeat"]["anyOf"] == [
+            {"type": "string", "enum": ["none", "all", "one"]},
+            {"type": "null"},
+        ]
+        assert props["cross_fade"]["anyOf"] == [{"type": "boolean"}, {"type": "null"}]
         required = schema.get("required", [])
         assert "shuffle" not in required
         assert "repeat" not in required
@@ -137,16 +142,8 @@ class TestSetPlayModeContract:
         assert "shuffle" in data
         assert "repeat" in data
         assert "cross_fade" in data
-
-    @pytest.mark.anyio
-    async def test_response_field_types_remain_normalized(self, registered_app: FastMCP) -> None:
-        import json
-
-        result = await registered_app.call_tool(
-            "set_play_mode",
-            {"room": "Living Room", "shuffle": True},
-        )
-        data = json.loads(result[0].text)
+        assert isinstance(data["room_name"], str)
         assert isinstance(data["shuffle"], bool)
         assert isinstance(data["repeat"], str)
+        assert data["repeat"] in ("none", "all", "one")
         assert isinstance(data["cross_fade"], bool)

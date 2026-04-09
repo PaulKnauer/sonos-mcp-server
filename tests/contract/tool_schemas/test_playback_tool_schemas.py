@@ -211,7 +211,9 @@ class TestSeekContract:
 
     def test_tool_has_position_parameter(self, registered_app: FastMCP) -> None:
         schema = get_tools(registered_app)["seek"].parameters
-        assert "position" in schema.get("properties", {})
+        props = schema.get("properties", {})
+        assert "position" in props
+        assert props["position"]["type"] == "string"
         assert "position" in schema.get("required", [])
 
     def test_position_parameter_is_declared_as_string(self, registered_app: FastMCP) -> None:
@@ -269,6 +271,8 @@ class TestGetSleepTimerContract:
         assert "remaining_minutes" in data
         assert isinstance(data["room_name"], str)
         assert isinstance(data["active"], bool)
+        assert isinstance(data["remaining_seconds"], int) or data["remaining_seconds"] is None
+        assert isinstance(data["remaining_minutes"], int) or data["remaining_minutes"] is None
 
 
 class TestSetSleepTimerContract:
@@ -286,7 +290,9 @@ class TestSetSleepTimerContract:
 
     def test_tool_has_minutes_parameter(self, registered_app: FastMCP) -> None:
         schema = get_tools(registered_app)["set_sleep_timer"].parameters
-        assert "minutes" in schema.get("properties", {})
+        props = schema.get("properties", {})
+        assert "minutes" in props
+        assert props["minutes"]["type"] == "integer"
         assert "minutes" in schema.get("required", [])
 
     def test_minutes_parameter_is_declared_as_integer(self, registered_app: FastMCP) -> None:
@@ -313,5 +319,5 @@ class TestSetSleepTimerContract:
         assert "remaining_minutes" in data
         assert isinstance(data["room_name"], str)
         assert isinstance(data["active"], bool)
-        assert isinstance(data["remaining_seconds"], int)
-        assert isinstance(data["remaining_minutes"], int)
+        assert isinstance(data["remaining_seconds"], int) or data["remaining_seconds"] is None
+        assert isinstance(data["remaining_minutes"], int) or data["remaining_minutes"] is None

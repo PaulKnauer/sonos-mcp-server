@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from typing import Final
 
-from soniq_mcp.domain.exceptions import PlaybackError, PlaybackValidationError
+from soniq_mcp.domain.exceptions import PlaybackValidationError
 from soniq_mcp.domain.models import PlayModeState, Room
 
 log = logging.getLogger(__name__)
@@ -61,29 +61,17 @@ class PlayModeService:
             PlaybackError: If repeat value is invalid or the SoCo operation fails.
             SonosDiscoveryError: If network discovery fails.
         """
-        self._validate_optional_bool(shuffle, "shuffle")
-        self._validate_optional_bool(cross_fade, "cross_fade")
-        if repeat is not None and (
-            not isinstance(repeat, str) or repeat not in _VALID_REPEAT_VALUES
-        ):
-            raise PlaybackValidationError(
-                f"Invalid repeat value {repeat!r}. Allowed values: 'none', 'all', 'one'."
-            )
+        validated_shuffle = self._validate_optional_bool("shuffle", shuffle)
+        validated_repeat = self._validate_repeat(repeat)
+        validated_cross_fade = self._validate_optional_bool("cross_fade", cross_fade)
         room = self._resolve_coordinator(room_name)
         return self._adapter.set_play_mode(
             room.ip_address,
             room_name,
-            shuffle=shuffle,
-            repeat=repeat,
-            cross_fade=cross_fade,
+            shuffle=validated_shuffle,
+            repeat=validated_repeat,
+            cross_fade=validated_cross_fade,
         )
-
-    @staticmethod
-    def _validate_optional_bool(value: object, field: str) -> None:
-        if value is not None and not isinstance(value, bool):
-            raise PlaybackValidationError(
-                f"Invalid {field} value {value!r}. Expected a boolean."
-            )
 
     def _resolve_coordinator(self, room_name: str) -> Room:
         """Resolve the coordinator room for play mode operations.
@@ -112,3 +100,21 @@ class PlayModeService:
             room_name,
         )
         return room
+
+    def _validate_optional_bool(self, field_name: str, value: object) -> bool | None:
+        if value is None:
+            return None
+        if isinstance(value, bool):
+            return value
+        raise PlaybackValidationError(
+            f"Invalid {field_name} value {value!r}. Expected a boolean or null."
+        )
+
+    def _validate_repeat(self, repeat: object) -> str | None:
+        if repeat is None:
+            return None
+        if not isinstance(repeat, str) or repeat not in _VALID_REPEAT_VALUES:
+            raise PlaybackValidationError(
+                f"Invalid repeat value {repeat!r}. Allowed values: 'none', 'all', 'one'."
+            )
+        return repeat

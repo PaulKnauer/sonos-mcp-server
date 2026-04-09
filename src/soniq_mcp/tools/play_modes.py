@@ -25,22 +25,6 @@ from soniq_mcp.schemas.responses import PlayModeResponse
 
 log = logging.getLogger(__name__)
 
-_OPTIONAL_BOOLEAN_INPUT = Annotated[
-    object,
-    Field(json_schema_extra={"anyOf": [{"type": "boolean"}, {"type": "null"}]}),
-]
-_OPTIONAL_REPEAT_INPUT = Annotated[
-    object,
-    Field(
-        json_schema_extra={
-            "anyOf": [
-                {"type": "string", "enum": ["none", "all", "one"]},
-                {"type": "null"},
-            ]
-        }
-    ),
-]
-
 _READ_ONLY_TOOL_HINTS = ToolAnnotations(
     readOnlyHint=True,
     destructiveHint=False,
@@ -54,6 +38,23 @@ _CONTROL_TOOL_HINTS = ToolAnnotations(
     idempotentHint=False,
     openWorldHint=False,
 )
+
+_OPTIONAL_BOOLEAN_INPUT = Annotated[
+    object,
+    Field(json_schema_extra={"anyOf": [{"type": "boolean"}, {"type": "null"}]}, default=None),
+]
+_OPTIONAL_REPEAT_INPUT = Annotated[
+    object,
+    Field(
+        json_schema_extra={
+            "anyOf": [
+                {"type": "string", "enum": ["none", "all", "one"]},
+                {"type": "null"},
+            ]
+        },
+        default=None,
+    ),
+]
 
 
 def register(app: FastMCP, config: SoniqConfig, play_mode_service: object) -> None:

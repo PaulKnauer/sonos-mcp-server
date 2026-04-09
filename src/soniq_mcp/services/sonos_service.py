@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 
 from soniq_mcp.config.models import SoniqConfig
-from soniq_mcp.domain.exceptions import PlaybackError, PlaybackValidationError
+from soniq_mcp.domain.exceptions import PlaybackValidationError
 from soniq_mcp.domain.models import PlaybackState, Room, SleepTimerState, TrackInfo, VolumeState
 from soniq_mcp.domain.safety import check_volume
 
@@ -48,7 +48,7 @@ class SonosService:
         room = self._resolve_coordinator(room_name)
         return self._adapter.get_track_info(room.ip_address)
 
-    def seek(self, room_name: str, position: str) -> PlaybackState:
+    def seek(self, room_name: str, position: object) -> PlaybackState:
         """Seek to a position in the current track and return resulting playback state.
 
         Args:
@@ -60,9 +60,9 @@ class SonosService:
             PlaybackError: If position format is invalid or the SoCo operation fails.
             SonosDiscoveryError: If network discovery fails.
         """
-        self._validate_seek_position(position)
+        validated_position = self._validate_seek_position(position)
         room = self._resolve_coordinator(room_name)
-        self._adapter.seek(room.ip_address, position)
+        self._adapter.seek(room.ip_address, validated_position)
         return self._adapter.get_playback_state(room.ip_address, room_name)
 
     def get_sleep_timer(self, room_name: str) -> SleepTimerState:
@@ -92,9 +92,9 @@ class SonosService:
             PlaybackError: If minutes is negative or the SoCo operation fails.
             SonosDiscoveryError: If network discovery fails.
         """
-        self._validate_sleep_timer_minutes(minutes)
+        validated_minutes = self._validate_sleep_timer_minutes(minutes)
         room = self._resolve_coordinator(room_name)
-        return self._adapter.set_sleep_timer(room.ip_address, room_name, minutes)
+        return self._adapter.set_sleep_timer(room.ip_address, room_name, validated_minutes)
 
     def get_volume_state(self, room_name: str) -> VolumeState:
         room = self._room_service.get_room(room_name)
@@ -153,7 +153,7 @@ class SonosService:
         )
         return room
 
-    def _validate_seek_position(self, position: object) -> None:
+    def _validate_seek_position(self, position: object) -> str:
         """Validate explicit HH:MM:SS seek positions.
 
         Sonos accepts positions in HH:MM:SS form, but regex-only validation
@@ -174,11 +174,16 @@ class SonosService:
             raise PlaybackValidationError(
                 f"Invalid seek position {position!r}. Minutes and seconds must be < 60."
             )
+        return position
 
-    def _validate_sleep_timer_minutes(self, minutes: object) -> None:
-        if not isinstance(minutes, int) or isinstance(minutes, bool):
+    def _validate_sleep_timer_minutes(self, minutes: object) -> int:
+        """Validate sleep timer minutes without accepting bool or string coercions."""
+        if isinstance(minutes, bool) or not isinstance(minutes, int):
             raise PlaybackValidationError(
-                f"Invalid minutes value {minutes!r}. Minutes must be an integer >= 0."
+                f"Invalid minutes value {minutes!r}. Expected a non-negative integer."
             )
         if minutes < 0:
-            raise PlaybackValidationError(f"Invalid minutes value {minutes!r}. Must be >= 0.")
+            raise PlaybackValidationError(
+                f"Invalid minutes value {minutes!r}. Expected a non-negative integer."
+            )
+        return minutes
