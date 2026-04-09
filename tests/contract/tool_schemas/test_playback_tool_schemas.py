@@ -211,7 +211,9 @@ class TestSeekContract:
 
     def test_tool_has_position_parameter(self, registered_app: FastMCP) -> None:
         schema = get_tools(registered_app)["seek"].parameters
-        assert "position" in schema.get("properties", {})
+        props = schema.get("properties", {})
+        assert "position" in props
+        assert props["position"]["type"] == "string"
         assert "position" in schema.get("required", [])
 
     def test_tool_is_not_read_only(self, registered_app: FastMCP) -> None:
