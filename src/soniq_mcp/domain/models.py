@@ -220,3 +220,20 @@ class PlayModeState:
     shuffle: bool
     repeat: Literal["none", "all", "one"]
     cross_fade: bool
+
+
+@dataclass(frozen=True)
+class AudioSettingsState:
+    """Current audio EQ settings for a single Sonos room.
+
+    Attributes:
+        room_name: Human-readable room name.
+        bass: Bass level (-10 to 10).
+        treble: Treble level (-10 to 10).
+        loudness: True if loudness compensation is enabled.
+    """
+
+    room_name: str
+    bass: int
+    treble: int
+    loudness: bool

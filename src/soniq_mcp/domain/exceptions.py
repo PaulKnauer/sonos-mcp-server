@@ -152,3 +152,19 @@ class GroupError(SoniqDomainError):
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
+
+
+class AudioSettingsError(SoniqDomainError):
+    """Raised when a Sonos audio EQ operation fails.
+
+    Covers both adapter-level SoCo failures and service-level validation
+    errors (invalid bass/treble range, invalid loudness type).
+
+    Args:
+        message: Human-readable description of the failure.
+    """
+
+    error_category = ErrorCategory.OPERATION
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)

@@ -11,6 +11,7 @@ from collections.abc import Callable
 from typing import Any, Literal
 
 from soniq_mcp.domain.exceptions import (
+    AudioSettingsError,
     FavouritesError,
     GroupError,
     PlaybackError,
@@ -18,6 +19,7 @@ from soniq_mcp.domain.exceptions import (
     VolumeError,
 )
 from soniq_mcp.domain.models import (
+    AudioSettingsState,
     Favourite,
     PlaybackState,
     PlayModeState,
@@ -436,6 +438,82 @@ class SoCoAdapter:
             raise
         except Exception as exc:
             raise PlaybackError(f"Failed to set play mode for {room_name!r}: {exc}") from exc
+
+    def get_audio_settings(self, ip_address: str, room_name: str) -> AudioSettingsState:
+        """Return the current bass, treble, and loudness settings for the zone.
+
+        Args:
+            ip_address: LAN IP of the Sonos zone.
+            room_name: Human-readable room name (included in the result).
+
+        Returns:
+            ``AudioSettingsState`` with bass, treble, and loudness values.
+
+        Raises:
+            AudioSettingsError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            return AudioSettingsState(
+                room_name=room_name,
+                bass=int(zone.bass),
+                treble=int(zone.treble),
+                loudness=bool(zone.loudness),
+            )
+        except Exception as exc:
+            raise AudioSettingsError(
+                f"Failed to get audio settings for {room_name!r}: {exc}"
+            ) from exc
+
+    def set_bass(self, ip_address: str, level: int) -> None:
+        """Set the bass level for the zone.
+
+        Args:
+            ip_address: LAN IP of the Sonos zone.
+            level: Bass level (-10 to 10).
+
+        Raises:
+            AudioSettingsError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            zone.bass = level
+        except Exception as exc:
+            raise AudioSettingsError(f"Failed to set bass on {ip_address}: {exc}") from exc
+
+    def set_treble(self, ip_address: str, level: int) -> None:
+        """Set the treble level for the zone.
+
+        Args:
+            ip_address: LAN IP of the Sonos zone.
+            level: Treble level (-10 to 10).
+
+        Raises:
+            AudioSettingsError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            zone.treble = level
+        except Exception as exc:
+            raise AudioSettingsError(f"Failed to set treble on {ip_address}: {exc}") from exc
+
+    def set_loudness(self, ip_address: str, enabled: bool) -> None:
+        """Set the loudness compensation for the zone.
+
+        Args:
+            ip_address: LAN IP of the Sonos zone.
+            enabled: True to enable loudness, False to disable.
+
+        Raises:
+            AudioSettingsError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            zone.loudness = enabled
+        except Exception as exc:
+            raise AudioSettingsError(
+                f"Failed to set loudness on {ip_address}: {exc}"
+            ) from exc
 
     def _call_playback(self, ip_address: str, action: Callable[[Any], object]) -> None:
         try:

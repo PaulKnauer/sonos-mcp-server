@@ -212,19 +212,25 @@ claude-sonnet-4-6 (container-use environment: knowing-fish)
 - Discovered `Tool.parameters` is the correct attribute (not `inputSchema`) in `mcp>=1.26.0` — fixed contract tests.
 - `KNOWN_TOOL_NAMES` must be updated before tool `tools_disabled` tests can pass — updated in Task 6.
 - 120 baseline tests → 176 passing after implementation (56 new tests, 3 hardware tests skipped).
+- Code review follow-up: extended `SystemTopology` with structured speaker data to satisfy AC 3 and FR29.
+- Code review follow-up: hardened discovery mapping so malformed zone records raise `SonosDiscoveryError` instead of returning invalid identifiers.
+- `make test` after review fixes: 186 passed, 3 hardware tests skipped.
 
 ### Completion Notes List
 
 - `src/soniq_mcp/domain/models.py`: `Room` (frozen dataclass with name, uid, ip_address, is_coordinator, group_coordinator_uid) and `SystemTopology` (frozen dataclass with rooms tuple, coordinator_count, total_count; `from_rooms()` factory).
+- `src/soniq_mcp/domain/models.py`: Added `Speaker` and extended `SystemTopology` with `speakers` and `speaker_count` so topology returns structured room and speaker information.
 - `src/soniq_mcp/domain/exceptions.py`: Added `RoomNotFoundError` and `SonosDiscoveryError`.
 - `src/soniq_mcp/adapters/discovery_adapter.py`: `DiscoveryAdapter.discover_rooms()` wraps `soco.discover()`, maps zones to `Room` objects, converts all SoCo exceptions to `SonosDiscoveryError`. Only file importing `soco`.
+- `src/soniq_mcp/adapters/discovery_adapter.py`: Added `discover_speakers()` and strict required-field validation so invalid zone metadata fails clearly instead of leaking bad room IDs.
 - `src/soniq_mcp/services/room_service.py`: `RoomService` with `list_rooms()` (sorted by name, case-insensitive), `get_topology()`, and `get_room()` (case-insensitive lookup, raises `RoomNotFoundError`).
-- `src/soniq_mcp/schemas/responses.py`: `RoomResponse`, `RoomListResponse`, `SystemTopologyResponse` — all Pydantic `BaseModel` with `from_domain()` factories and `model_dump()` for MCP serialization.
+- `src/soniq_mcp/services/room_service.py`: `get_topology()` now includes both room and speaker data in the topology snapshot.
+- `src/soniq_mcp/schemas/responses.py`: Added `SpeakerResponse` and extended `SystemTopologyResponse` with `speakers` and `speaker_count`.
 - `src/soniq_mcp/schemas/errors.py`: Added `from_discovery_error()` and `from_room_not_found()` factory methods.
 - `src/soniq_mcp/tools/system.py`: Thin handlers for `list_rooms` and `get_system_topology`. Permission-checked, `READ_ONLY` annotated, delegates to `RoomService`, catches `SonosDiscoveryError` and returns structured `ErrorResponse`.
 - `src/soniq_mcp/tools/__init__.py`: Wired `DiscoveryAdapter` → `RoomService` → `system.register()` inside `register_all()`.
 - `src/soniq_mcp/config/models.py`: `KNOWN_TOOL_NAMES` updated to include `"list_rooms"` and `"get_system_topology"`.
-- Tests: 56 new tests across unit/adapters, unit/domain, unit/services, unit/schemas, unit/tools, integration/adapters, contract/tool_schemas.
+- Tests: added coverage for speaker topology fields and malformed zone validation; suite now passes at 186 tests with 3 hardware skips.
 
 ### File List
 
@@ -250,7 +256,9 @@ claude-sonnet-4-6 (container-use environment: knowing-fish)
 - `tests/integration/adapters/test_discovery_adapter_integration.py`
 - `tests/contract/tool_schemas/__init__.py`
 - `tests/contract/tool_schemas/test_system_tool_schemas.py`
+- `_bmad-output/implementation-artifacts/2-1-discover-addressable-rooms-and-system-topology.md`
 
 ## Change Log
 
 - 2026-03-25: Story 2.1 implemented. Room discovery adapter, service, tools, schemas, and tests. 176 passing, 3 hardware tests skipped. Status → review.
+- 2026-03-27: Addressed code review findings. Added structured speaker data to topology, hardened invalid zone handling, and verified `make test` with 186 passing and 3 hardware skips.

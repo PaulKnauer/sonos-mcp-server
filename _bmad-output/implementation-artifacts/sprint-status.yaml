@@ -51,11 +51,11 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: Input and Group Audio Expansion
-  epic-2: backlog
-  2-1-support-capability-aware-input-switching: backlog
-  2-2-add-group-level-volume-and-mute-controls: backlog
-  2-3-strengthen-topology-and-grouping-support-for-expanded-audio-flows: backlog
-  2-4-document-and-test-expanded-group-and-input-behavior: backlog
+  epic-2: in-progress
+  2-1-discover-addressable-rooms-and-system-topology: done
+  2-2-control-core-playback-in-a-target-room: ready-for-dev
+  2-3-control-volume-and-mute-safely: ready-for-dev
+  2-4-apply-reliable-sonos-service-and-adapter-boundaries: backlog
   epic-2-retrospective: optional
 
   # Epic 3: Alarm and Playlist Lifecycle Management

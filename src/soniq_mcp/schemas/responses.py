@@ -13,6 +13,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 from soniq_mcp.domain.models import (
+    AudioSettingsState,
     Favourite,
     PlaybackState,
     PlayModeState,
@@ -283,6 +284,24 @@ class PlayModeResponse(BaseModel):
             shuffle=state.shuffle,
             repeat=state.repeat,
             cross_fade=state.cross_fade,
+        )
+
+
+class AudioSettingsResponse(BaseModel):
+    """Response for audio EQ get and set tools."""
+
+    room_name: str
+    bass: int
+    treble: int
+    loudness: bool
+
+    @classmethod
+    def from_domain(cls, state: AudioSettingsState) -> AudioSettingsResponse:
+        return cls(
+            room_name=state.room_name,
+            bass=state.bass,
+            treble=state.treble,
+            loudness=state.loudness,
         )
 
 
