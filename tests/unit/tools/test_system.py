@@ -15,12 +15,14 @@ def make_room(
     name: str = "Living Room",
     uid: str = "RINCON_001",
     is_coordinator: bool = True,
+    group_coordinator_uid: str | None = None,
 ) -> Room:
     return Room(
         name=name,
         uid=uid,
         ip_address="192.168.1.10",
         is_coordinator=is_coordinator,
+        group_coordinator_uid=group_coordinator_uid,
     )
 
 
@@ -151,3 +153,43 @@ class TestGetSystemTopologyTool:
         data = json.loads(result[0].text)  # type: ignore[attr-defined]
         assert "error" in data
         assert data["field"] == "sonos_network"
+
+    @pytest.mark.anyio
+    async def test_room_response_includes_group_coordinator_uid(self) -> None:
+        rooms = [
+            make_room("Living Room", "RINCON_001", is_coordinator=True),
+            make_room(
+                "Kitchen",
+                "RINCON_002",
+                is_coordinator=False,
+                group_coordinator_uid="RINCON_001",
+            ),
+        ]
+        app, _ = make_app_with_service(rooms=rooms)
+        result = await app.call_tool("get_system_topology", {})
+        import json
+
+        data = json.loads(result[0].text)  # type: ignore[attr-defined]
+        room_map = {r["name"]: r for r in data["rooms"]}
+        assert room_map["Living Room"]["group_coordinator_uid"] is None
+        assert room_map["Kitchen"]["group_coordinator_uid"] == "RINCON_001"
+
+    @pytest.mark.anyio
+    async def test_list_rooms_response_includes_group_coordinator_uid(self) -> None:
+        rooms = [
+            make_room("Living Room", "RINCON_001", is_coordinator=True),
+            make_room(
+                "Kitchen",
+                "RINCON_002",
+                is_coordinator=False,
+                group_coordinator_uid="RINCON_001",
+            ),
+        ]
+        app, _ = make_app_with_service(rooms=rooms)
+        result = await app.call_tool("list_rooms", {})
+        import json
+
+        data = json.loads(result[0].text)  # type: ignore[attr-defined]
+        room_map = {r["name"]: r for r in data["rooms"]}
+        assert "group_coordinator_uid" in room_map["Living Room"]
+        assert room_map["Kitchen"]["group_coordinator_uid"] == "RINCON_001"

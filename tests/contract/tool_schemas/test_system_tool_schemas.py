@@ -90,3 +90,45 @@ class TestGetSystemTopologyContract:
         data = json.loads(result[0].text)  # type: ignore[attr-defined]
         assert "speakers" in data
         assert "speaker_count" in data
+
+    @pytest.mark.anyio
+    async def test_room_response_includes_group_coordinator_uid_field(
+        self, registered_app: FastMCP
+    ) -> None:
+        from soniq_mcp.domain.models import Room, SystemTopology
+        from soniq_mcp.tools.system import register as register_system
+
+        app = FastMCP("contract-test-topology")
+        config = SoniqConfig()
+
+        class _StubWithRooms:
+            def list_rooms(self, timeout=5.0):
+                return [
+                    Room(
+                        name="Living Room",
+                        uid="UID1",
+                        ip_address="192.168.1.10",
+                        is_coordinator=True,
+                        group_coordinator_uid=None,
+                    ),
+                    Room(
+                        name="Kitchen",
+                        uid="UID2",
+                        ip_address="192.168.1.20",
+                        is_coordinator=False,
+                        group_coordinator_uid="UID1",
+                    ),
+                ]
+
+            def get_topology(self, timeout=5.0):
+                return SystemTopology.from_rooms(self.list_rooms())
+
+        register_system(app, config, _StubWithRooms())
+        result = await app.call_tool("get_system_topology", {})
+        import json
+
+        data = json.loads(result[0].text)
+        room_map = {r["name"]: r for r in data["rooms"]}
+        assert "group_coordinator_uid" in room_map["Living Room"]
+        assert room_map["Living Room"]["group_coordinator_uid"] is None
+        assert room_map["Kitchen"]["group_coordinator_uid"] == "UID1"

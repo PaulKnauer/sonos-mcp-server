@@ -69,7 +69,7 @@ development_status:
   epic-2: in-progress
   2-1-support-capability-aware-input-switching: done
   2-2-control-core-playback-in-a-target-room: done
-  2-3-control-volume-and-mute-safely: backlog
+  2-3-control-volume-and-mute-safely: done
   2-4-apply-reliable-sonos-service-and-adapter-boundaries: backlog
   epic-2-retrospective: optional
 

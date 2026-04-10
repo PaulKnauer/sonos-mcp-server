@@ -241,3 +241,31 @@ def register(app: FastMCP, config: SoniqConfig, group_service: object) -> None:
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in group_unmute: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+
+    if "group_rooms" not in config.tools_disabled:
+
+        @app.tool(
+            title="Group Rooms",
+            annotations=_CONTROL_TOOL_HINTS,
+        )
+        def group_rooms(rooms: list[str], coordinator: str | None = None) -> dict:
+            """Group an explicit set of rooms together, with an optional coordinator.
+
+            Resolves the requested rooms from the current household topology,
+            validates the room set, and applies the grouping. Returns the resulting
+            normalized group topology.
+            """
+            assert_tool_permitted("group_rooms", config)
+            try:
+                result_rooms = group_service.group_rooms(rooms, coordinator)
+                return GroupTopologyResponse.from_rooms(result_rooms).model_dump()
+            except GroupValidationError as exc:
+                return ErrorResponse.from_group_error(exc).model_dump()
+            except RoomNotFoundError as exc:
+                return ErrorResponse.from_room_not_found(exc.room_name).model_dump()
+            except GroupError as exc:
+                log.warning("Group error in group_rooms: %s", exc)
+                return ErrorResponse.from_group_error(exc).model_dump()
+            except SonosDiscoveryError as exc:
+                log.warning("Discovery error in group_rooms: %s", exc)
+                return ErrorResponse.from_discovery_error(exc).model_dump()

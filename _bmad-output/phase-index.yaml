@@ -118,3 +118,6 @@ phases:
       - story_key: "2-2"
         canonical_id: "phase-2/2-2-add-group-level-volume-and-mute-controls"
         file: "_bmad-output/implementation-artifacts/phase-2/2-2-add-group-level-volume-and-mute-controls.md"
+      - story_key: "2-3"
+        canonical_id: "phase-2/2-3-strengthen-topology-and-grouping-support-for-expanded-audio-flows"
+        file: "_bmad-output/implementation-artifacts/phase-2/2-3-strengthen-topology-and-grouping-support-for-expanded-audio-flows.md"

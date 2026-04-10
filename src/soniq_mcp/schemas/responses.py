@@ -37,6 +37,7 @@ class RoomResponse(BaseModel):
     uid: str
     ip_address: str
     is_coordinator: bool
+    group_coordinator_uid: str | None = None
 
     @classmethod
     def from_domain(cls, room: Room) -> RoomResponse:
@@ -45,6 +46,7 @@ class RoomResponse(BaseModel):
             uid=room.uid,
             ip_address=room.ip_address,
             is_coordinator=room.is_coordinator,
+            group_coordinator_uid=room.group_coordinator_uid,
         )
 
 

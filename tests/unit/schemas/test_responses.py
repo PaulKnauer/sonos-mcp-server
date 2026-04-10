@@ -34,8 +34,15 @@ def make_room(
     uid: str = "RINCON_001",
     ip_address: str = "192.168.1.10",
     is_coordinator: bool = True,
+    group_coordinator_uid: str | None = None,
 ) -> Room:
-    return Room(name=name, uid=uid, ip_address=ip_address, is_coordinator=is_coordinator)
+    return Room(
+        name=name,
+        uid=uid,
+        ip_address=ip_address,
+        is_coordinator=is_coordinator,
+        group_coordinator_uid=group_coordinator_uid,
+    )
 
 
 class TestRoomResponse:
@@ -46,12 +53,34 @@ class TestRoomResponse:
         assert resp.uid == "RINCON_001"
         assert resp.ip_address == "192.168.1.10"
         assert resp.is_coordinator is True
+        assert resp.group_coordinator_uid is None
+
+    def test_from_domain_with_group_coordinator_uid(self) -> None:
+        room = make_room(
+            name="Kitchen",
+            uid="RINCON_002",
+            is_coordinator=False,
+            group_coordinator_uid="RINCON_001",
+        )
+        resp = RoomResponse.from_domain(room)
+        assert resp.group_coordinator_uid == "RINCON_001"
+        assert resp.is_coordinator is False
 
     def test_model_dump_is_snake_case(self) -> None:
         resp = RoomResponse.from_domain(make_room())
         d = resp.model_dump()
         assert "is_coordinator" in d
         assert "ip_address" in d
+        assert "group_coordinator_uid" in d
+
+    def test_model_dump_group_coordinator_uid_none_for_coordinator(self) -> None:
+        d = RoomResponse.from_domain(make_room(is_coordinator=True)).model_dump()
+        assert d["group_coordinator_uid"] is None
+
+    def test_model_dump_group_coordinator_uid_present_for_member(self) -> None:
+        room = make_room(is_coordinator=False, group_coordinator_uid="RINCON_001")
+        d = RoomResponse.from_domain(room).model_dump()
+        assert d["group_coordinator_uid"] == "RINCON_001"
 
 
 class TestRoomListResponse:

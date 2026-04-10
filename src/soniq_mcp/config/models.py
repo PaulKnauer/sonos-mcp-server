@@ -52,6 +52,7 @@ KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
         "adjust_group_volume",
         "group_mute",
         "group_unmute",
+        "group_rooms",
         "get_play_mode",
         "set_play_mode",
         "seek",
