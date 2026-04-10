@@ -11,7 +11,7 @@ active_phase:
   sprint_status_file: "_bmad-output/implementation-artifacts/sprint-status.yaml"
   canonical_namespace: "phase-2"
   current_completed_story: "phase-2/1-4-harden-advanced-playback-contracts-and-regression-coverage"
-  next_story_hint: "phase-2/2-1-discover-addressable-rooms-and-system-topology"
+  next_story_hint: "phase-2/2-1-support-capability-aware-input-switching"
 
 collisions:
   - story_key: "1-1"
@@ -112,4 +112,6 @@ phases:
       - story_key: "1-4"
         canonical_id: "phase-2/1-4-harden-advanced-playback-contracts-and-regression-coverage"
         file: "_bmad-output/implementation-artifacts/1-4-harden-advanced-playback-contracts-and-regression-coverage.md"
-
+      - story_key: "2-1"
+        canonical_id: "phase-2/2-1-support-capability-aware-input-switching"
+        file: "_bmad-output/implementation-artifacts/phase-2/2-1-support-capability-aware-input-switching.md"

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from soniq_mcp.domain.models import (
     AudioSettingsState,
+    InputState,
     PlaybackState,
     Room,
     SleepTimerState,
@@ -14,6 +15,7 @@ from soniq_mcp.domain.models import (
 )
 from soniq_mcp.schemas.responses import (
     AudioSettingsResponse,
+    InputStateResponse,
     PlaybackStateResponse,
     RoomListResponse,
     RoomResponse,
@@ -86,6 +88,8 @@ class TestSpeakerResponse:
         assert resp.room_name == "Living Room"
         assert resp.model_name == "Sonos One"
         assert resp.is_visible is True
+        assert resp.supports_line_in is False
+        assert resp.supports_tv is False
 
 
 class TestSystemTopologyResponse:
@@ -248,6 +252,30 @@ class TestAudioSettingsResponse:
         assert d["bass"] == 10
         assert d["treble"] == -10
         assert d["loudness"] is False
+
+
+class TestInputStateResponse:
+    def test_from_domain(self) -> None:
+        state = InputState(
+            room_name="Living Room",
+            input_source="tv",
+            coordinator_room_name="Living Room",
+        )
+        resp = InputStateResponse.from_domain(state)
+        assert resp.room_name == "Living Room"
+        assert resp.input_source == "tv"
+        assert resp.coordinator_room_name == "Living Room"
+
+    def test_model_dump_snake_case(self) -> None:
+        state = InputState(
+            room_name="Kitchen",
+            input_source="line_in",
+            coordinator_room_name=None,
+        )
+        d = InputStateResponse.from_domain(state).model_dump()
+        assert "room_name" in d
+        assert "input_source" in d
+        assert "coordinator_room_name" in d
 
 
 class TestVolumeStateResponse:

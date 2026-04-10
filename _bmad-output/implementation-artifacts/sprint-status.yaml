@@ -54,7 +54,7 @@ phase_label: "Phase 2 (Tier 1 Expansion)"
 canonical_story_namespace: "phase-2/<story-key>"
 collision_index: "_bmad-output/phase-index.yaml"
 current_completed_story: "phase-2/1-4-harden-advanced-playback-contracts-and-regression-coverage"
-next_story_hint: "phase-2/2-1-discover-addressable-rooms-and-system-topology"
+next_story_hint: "phase-2/2-1-support-capability-aware-input-switching"
 
 development_status:
   # Epic 1: Advanced Playback and Audio Control
@@ -67,7 +67,7 @@ development_status:
 
   # Epic 2: Input and Group Audio Expansion
   epic-2: in-progress
-  2-1-discover-addressable-rooms-and-system-topology: ready-for-dev
+  2-1-support-capability-aware-input-switching: done
   2-2-control-core-playback-in-a-target-room: backlog
   2-3-control-volume-and-mute-safely: backlog
   2-4-apply-reliable-sonos-service-and-adapter-boundaries: backlog

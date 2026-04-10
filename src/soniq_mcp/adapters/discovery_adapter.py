@@ -13,6 +13,28 @@ from soniq_mcp.domain.models import Room, Speaker
 
 log = logging.getLogger(__name__)
 
+_TV_MODELS: frozenset[str] = frozenset({
+    "arc",
+    "arc sl",
+    "arc ultra",
+    "beam",
+    "playbase",
+    "playbar",
+    "ray",
+    "sonos amp",
+})
+
+_LINE_IN_MODELS: frozenset[str] = frozenset({
+    "sonos amp",
+    "port",
+    "connect",
+    "connect:amp",
+    "five",
+    "play:5",
+    "era 100",
+    "era 300",
+})
+
 
 class DiscoveryAdapter:
     """Wraps ``soco.discover()`` and maps results to domain ``Room`` objects.
@@ -145,6 +167,7 @@ class DiscoveryAdapter:
             model_name = speaker_info.get("model_name")
             if not isinstance(model_name, str) or not model_name.strip():
                 model_name = None
+            supports_line_in, supports_tv = DiscoveryAdapter._infer_input_capabilities(model_name)
 
             is_visible = getattr(zone, "is_visible", True)
             room_uid = uid if is_visible else None
@@ -157,6 +180,8 @@ class DiscoveryAdapter:
                 room_uid=room_uid,
                 model_name=model_name,
                 is_visible=bool(is_visible),
+                supports_line_in=supports_line_in,
+                supports_tv=supports_tv,
             )
         except Exception as exc:
             raise SonosDiscoveryError(f"Failed to read speaker properties: {exc}") from exc
@@ -167,3 +192,13 @@ class DiscoveryAdapter:
         if not isinstance(value, str) or not value.strip():
             raise ValueError(f"zone missing required {attr_name}")
         return value.strip()
+
+    @staticmethod
+    def _infer_input_capabilities(model_name: str | None) -> tuple[bool, bool]:
+        if not model_name:
+            return (False, False)
+
+        normalized = model_name.strip().lower()
+        supports_tv = any(model in normalized for model in _TV_MODELS)
+        supports_line_in = any(model in normalized for model in _LINE_IN_MODELS)
+        return (supports_line_in, supports_tv)

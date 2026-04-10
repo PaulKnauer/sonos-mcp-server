@@ -56,6 +56,8 @@ KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
         "set_bass",
         "set_treble",
         "set_loudness",
+        "switch_to_line_in",
+        "switch_to_tv",
     }
 )
 

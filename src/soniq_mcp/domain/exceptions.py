@@ -179,3 +179,18 @@ class AudioSettingsValidationError(AudioSettingsError):
     """Raised when an audio EQ request fails local validation."""
 
     error_category = ErrorCategory.VALIDATION
+
+
+class InputError(SoniqDomainError):
+    """Raised when a Sonos input-switching operation fails."""
+
+    error_category = ErrorCategory.OPERATION
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+class InputValidationError(InputError):
+    """Raised when an input-switching request fails local validation."""
+
+    error_category = ErrorCategory.VALIDATION

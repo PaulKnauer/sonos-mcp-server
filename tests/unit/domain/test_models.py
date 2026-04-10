@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from soniq_mcp.domain.models import (
+    InputState,
     PlaybackState,
     Room,
     Speaker,
@@ -74,6 +75,8 @@ class TestSpeaker:
         assert speaker.room_name == "Living Room"
         assert speaker.model_name == "Sonos One"
         assert speaker.is_visible is True
+        assert speaker.supports_line_in is False
+        assert speaker.supports_tv is False
 
 
 class TestSystemTopology:
@@ -204,3 +207,15 @@ class TestVolumeState:
         s1 = VolumeState(room_name="Living Room", volume=40, is_muted=False)
         s2 = VolumeState(room_name="Living Room", volume=60, is_muted=False)
         assert s1 != s2
+
+
+class TestInputState:
+    def test_fields(self) -> None:
+        state = InputState(
+            room_name="Living Room",
+            input_source="tv",
+            coordinator_room_name="Living Room",
+        )
+        assert state.room_name == "Living Room"
+        assert state.input_source == "tv"
+        assert state.coordinator_room_name == "Living Room"

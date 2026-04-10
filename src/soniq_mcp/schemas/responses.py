@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from soniq_mcp.domain.models import (
     AudioSettingsState,
     Favourite,
+    InputState,
     PlaybackState,
     PlayModeState,
     QueueItem,
@@ -70,6 +71,8 @@ class SpeakerResponse(BaseModel):
     room_uid: str | None = None
     model_name: str | None = None
     is_visible: bool
+    supports_line_in: bool
+    supports_tv: bool
 
     @classmethod
     def from_domain(cls, speaker: Speaker) -> SpeakerResponse:
@@ -81,6 +84,8 @@ class SpeakerResponse(BaseModel):
             room_uid=speaker.room_uid,
             model_name=speaker.model_name,
             is_visible=speaker.is_visible,
+            supports_line_in=speaker.supports_line_in,
+            supports_tv=speaker.supports_tv,
         )
 
 
@@ -302,6 +307,22 @@ class AudioSettingsResponse(BaseModel):
             bass=state.bass,
             treble=state.treble,
             loudness=state.loudness,
+        )
+
+
+class InputStateResponse(BaseModel):
+    """Response for input-switching tools."""
+
+    room_name: str
+    input_source: Literal["line_in", "tv"]
+    coordinator_room_name: str | None = None
+
+    @classmethod
+    def from_domain(cls, state: InputState) -> InputStateResponse:
+        return cls(
+            room_name=state.room_name,
+            input_source=state.input_source,
+            coordinator_room_name=state.coordinator_room_name,
         )
 
 

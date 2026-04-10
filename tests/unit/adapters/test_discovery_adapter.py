@@ -93,6 +93,21 @@ class TestDiscoveryAdapterZoneToSpeaker:
         assert speaker.room_name == "Living Room"
         assert speaker.model_name == "Sonos One"
         assert speaker.room_uid == "RINCON_001"
+        assert speaker.supports_line_in is False
+        assert speaker.supports_tv is False
+
+    def test_infers_input_capabilities_from_model_name(self) -> None:
+        zone = make_fake_zone()
+        zone.is_visible = True
+        zone.get_speaker_info.return_value = {
+            "zone_name": "Living Room",
+            "model_name": "Sonos Amp",
+        }
+
+        speaker = DiscoveryAdapter._zone_to_speaker(zone)
+
+        assert speaker.supports_line_in is True
+        assert speaker.supports_tv is True
 
     def test_speaker_info_falls_back_to_zone_name(self) -> None:
         zone = make_fake_zone()
@@ -104,6 +119,8 @@ class TestDiscoveryAdapterZoneToSpeaker:
         assert speaker.room_name == "Living Room"
         assert speaker.room_uid is None
         assert speaker.is_visible is False
+        assert speaker.supports_line_in is False
+        assert speaker.supports_tv is False
 
 
 class TestDiscoveryAdapterDiscoverRooms:

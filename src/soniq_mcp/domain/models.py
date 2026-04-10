@@ -41,6 +41,8 @@ class Speaker:
     room_uid: str | None = field(default=None)
     model_name: str | None = field(default=None)
     is_visible: bool = field(default=True)
+    supports_line_in: bool = field(default=False)
+    supports_tv: bool = field(default=False)
 
 
 @dataclass(frozen=True)
@@ -237,3 +239,12 @@ class AudioSettingsState:
     bass: int
     treble: int
     loudness: bool
+
+
+@dataclass(frozen=True)
+class InputState:
+    """Current external-input state for a single Sonos room."""
+
+    room_name: str
+    input_source: Literal["line_in", "tv"]
+    coordinator_room_name: str | None = field(default=None)

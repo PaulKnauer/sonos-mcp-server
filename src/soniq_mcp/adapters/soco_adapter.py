@@ -14,6 +14,7 @@ from soniq_mcp.domain.exceptions import (
     AudioSettingsError,
     FavouritesError,
     GroupError,
+    InputError,
     PlaybackError,
     QueueError,
     VolumeError,
@@ -281,6 +282,27 @@ class SoCoAdapter:
             zone.partymode()
         except Exception as exc:
             raise GroupError(f"Failed to activate party mode: {exc}") from exc
+
+    def switch_to_line_in(self, ip_address: str) -> None:
+        try:
+            zone = self._make_zone(ip_address)
+            zone.switch_to_line_in()
+        except Exception as exc:
+            raise InputError(f"Failed to switch to line-in on {ip_address}: {exc}") from exc
+
+    def switch_to_tv(self, ip_address: str) -> None:
+        try:
+            zone = self._make_zone(ip_address)
+            zone.switch_to_tv()
+        except Exception as exc:
+            raise InputError(f"Failed to switch to TV on {ip_address}: {exc}") from exc
+
+    def get_music_source(self, ip_address: str) -> str:
+        try:
+            zone = self._make_zone(ip_address)
+            return str(zone.music_source)
+        except Exception as exc:
+            raise InputError(f"Failed to inspect music source on {ip_address}: {exc}") from exc
 
     def seek(self, ip_address: str, position: str) -> None:
         """Seek to a position in the current track.

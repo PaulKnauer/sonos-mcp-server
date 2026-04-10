@@ -83,3 +83,15 @@ class RoomService:
             if room.name.lower() == normalised:
                 return room
         raise RoomNotFoundError(name)
+
+    def get_speakers_for_room(self, name: str, timeout: float = 5.0) -> list[Speaker]:
+        """Return all discovered speaker/device records associated with a room."""
+        room = self.get_room(name, timeout=timeout)
+        speakers: list[Speaker] = self._adapter.discover_speakers(timeout=timeout)
+        room_name = room.name.lower()
+        room_uid = room.uid
+        return [
+            speaker
+            for speaker in speakers
+            if (speaker.room_uid == room_uid) or (speaker.room_name.lower() == room_name)
+        ]

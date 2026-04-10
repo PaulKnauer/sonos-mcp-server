@@ -127,6 +127,24 @@ class TestRoomServiceGetTopology:
         assert topo.speakers[0].uid == "RINCON_001"
 
 
+class TestRoomServiceGetSpeakersForRoom:
+    def test_returns_matching_speakers(self) -> None:
+        rooms = [make_room("Living Room", "RINCON_001")]
+        svc = RoomService(FakeAdapter(rooms))
+
+        speakers = svc.get_speakers_for_room("Living Room")
+
+        assert len(speakers) == 1
+        assert speakers[0].room_uid == "RINCON_001"
+
+    def test_returns_empty_when_no_matching_speakers(self) -> None:
+        adapter = FakeAdapter([make_room("Living Room", "RINCON_001")])
+        adapter._speakers = []
+        svc = RoomService(adapter)
+
+        assert svc.get_speakers_for_room("Living Room") == []
+
+
 class TestRoomServiceGetRoom:
     def test_finds_room_by_name(self) -> None:
         rooms = [make_room("Living Room", "RINCON_001")]

@@ -162,6 +162,17 @@ class ErrorResponse(BaseModel):
             ),
         )
 
+    @classmethod
+    def from_input_error(cls, exc: Exception) -> ErrorResponse:
+        return cls._from_domain_error(
+            exc,
+            field="input_source",
+            suggestion=(
+                "Check that the room supports the requested input source and is reachable. "
+                "Use 'get_system_topology' to inspect current room and speaker metadata."
+            ),
+        )
+
 
 def _sanitize_text(text: str) -> str:
     """Redact sensitive transport and filesystem details from user-facing text."""
