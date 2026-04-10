@@ -121,3 +121,6 @@ phases:
       - story_key: "2-3"
         canonical_id: "phase-2/2-3-strengthen-topology-and-grouping-support-for-expanded-audio-flows"
         file: "_bmad-output/implementation-artifacts/phase-2/2-3-strengthen-topology-and-grouping-support-for-expanded-audio-flows.md"
+      - story_key: "2-4"
+        canonical_id: "phase-2/2-4-document-and-test-expanded-group-and-input-behavior"
+        file: "_bmad-output/implementation-artifacts/phase-2/2-4-document-and-test-expanded-group-and-input-behavior.md"

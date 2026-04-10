@@ -57,6 +57,20 @@ This keeps the workflow explicit and avoids brittle glue code.
 - A scheduled routine checks whether rooms are already grouped before choosing `join_group` or `party_mode`.
 - A recovery branch uses `server_info` and `list_rooms` before retrying a failed playback action.
 
+### Representative Epic 2 workflow
+
+For input and expanded group-audio flows, keep the sequence explicit:
+
+1. Call `ping`.
+2. Call `server_info`.
+3. Call `list_rooms`.
+4. Call `group_rooms` when the workflow needs an exact room set rather than incremental joins.
+5. Call `get_group_volume`, `set_group_volume`, `adjust_group_volume`, `group_mute`, or `group_unmute` for group-level audio changes.
+
+If the workflow is switching an active source instead of changing playback or volume, call `switch_to_tv` or `switch_to_line_in`.
+
+`n8n` owns the orchestration and branching. SoniqMCP remains the execution layer only.
+
 ---
 
 ## Safety and deployment guidance
@@ -75,6 +89,6 @@ This keeps the workflow explicit and avoids brittle glue code.
 1. Confirm the `n8n` host can reach `http://<host>:8000/mcp`.
 2. Confirm SoniqMCP itself can discover Sonos speakers on the same local network.
 3. Confirm the workflow is sending MCP tool calls that match the documented tool names and parameters.
-4. If the endpoint is reachable but actions fail, verify the target room exists by calling `list_rooms`.
+4. If the endpoint is reachable but actions fail, verify the target room exists by calling `ping`, `server_info`, and `list_rooms` before mutation.
 
 For general runtime and network setup issues, see [troubleshooting](../setup/troubleshooting.md). It documents the same `configuration`, `connectivity`, `validation`, and `operation` categories your workflow can branch on after a failed tool call.

@@ -8,6 +8,7 @@ import pytest
 from mcp.server.fastmcp import FastMCP
 
 from soniq_mcp.config import SoniqConfig
+from soniq_mcp.domain.exceptions import InputValidationError, SonosDiscoveryError
 from soniq_mcp.domain.models import InputState
 from soniq_mcp.tools.inputs import register
 
@@ -56,6 +57,36 @@ class TestSwitchToLineInContract:
         assert data["input_source"] == "line_in"
         assert "coordinator_room_name" in data
 
+    @pytest.mark.anyio
+    async def test_validation_error_shape_is_stable(self) -> None:
+        class _ValidationService(_StubInputService):
+            def switch_to_line_in(self, room: str) -> InputState:
+                raise InputValidationError("TV input is not available for this room.")
+
+        app = FastMCP("contract-test")
+        register(app, SoniqConfig(), _ValidationService())
+
+        result = await app.call_tool("switch_to_line_in", {"room": "Living Room"})
+        data = json.loads(result[0].text)
+        assert data["category"] == "validation"
+        assert data["field"] == "input_source"
+        assert "suggestion" in data
+
+    @pytest.mark.anyio
+    async def test_discovery_error_shape_is_stable(self) -> None:
+        class _DiscoveryService(_StubInputService):
+            def switch_to_line_in(self, room: str) -> InputState:
+                raise SonosDiscoveryError("Discovery failed for 192.168.1.20")
+
+        app = FastMCP("contract-test")
+        register(app, SoniqConfig(), _DiscoveryService())
+
+        result = await app.call_tool("switch_to_line_in", {"room": "Living Room"})
+        data = json.loads(result[0].text)
+        assert data["category"] == "connectivity"
+        assert data["field"] == "sonos_network"
+        assert "<redacted-host>" in data["error"]
+
 
 class TestSwitchToTvContract:
     def test_tool_name_is_stable(self, registered_app: FastMCP) -> None:
@@ -80,3 +111,18 @@ class TestSwitchToTvContract:
         assert data["room_name"] == "Living Room"
         assert data["input_source"] == "tv"
         assert "coordinator_room_name" in data
+
+    @pytest.mark.anyio
+    async def test_validation_error_shape_is_stable(self) -> None:
+        class _ValidationService(_StubInputService):
+            def switch_to_tv(self, room: str) -> InputState:
+                raise InputValidationError("TV input is not available for this room.")
+
+        app = FastMCP("contract-test")
+        register(app, SoniqConfig(), _ValidationService())
+
+        result = await app.call_tool("switch_to_tv", {"room": "Living Room"})
+        data = json.loads(result[0].text)
+        assert data["category"] == "validation"
+        assert data["field"] == "input_source"
+        assert "suggestion" in data

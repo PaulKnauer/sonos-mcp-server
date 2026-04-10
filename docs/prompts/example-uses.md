@@ -109,6 +109,8 @@ Claude calls `get_eq_settings`, `set_bass`, `set_treble`, or `set_loudness` and 
 
 ## Volume control
 
+Use room-level controls when you want to change only one room's speaker output. Use group-level controls when you want a synchronized Sonos group to move together. Use input-specific controls when you want to switch the active source instead of changing playback or loudness.
+
 ### Get current volume
 
 > "What's the volume in the Kitchen?"
@@ -137,6 +139,26 @@ Claude calls `adjust_volume` with a positive or negative delta.
 > "Is the Office muted?"
 
 Claude calls `mute`, `unmute`, or `get_mute`.
+
+---
+
+## Input switching
+
+Use input-specific controls when the task is "change the active source for this room." These tools are separate from room-level playback commands and group-level audio controls.
+
+### Switch to line-in
+
+> "Switch the Port in the Rack to line-in."
+> "Move the Family Room input to line-in."
+
+Claude calls `switch_to_line_in`. If the room does not support line-in, the tool returns a structured validation-style error instead of guessing.
+
+### Switch to TV
+
+> "Switch the Living Room Arc to TV audio."
+> "Put the Den soundbar on TV input."
+
+Claude calls `switch_to_tv` and returns the normalized input state for the addressed room.
 
 ---
 
@@ -220,6 +242,40 @@ Claude calls `unjoin_room`.
 
 Claude calls `party_mode` to join all rooms into a single whole-home group.
 
+### Group an explicit room set
+
+> "Group the Living Room, Kitchen, and Patio together."
+> "Create a group with Office and Bedroom, with Office as the coordinator."
+
+Claude calls `group_rooms` when you want an exact room set, optionally with an explicit coordinator, instead of incrementally calling `join_group`.
+
+---
+
+## Group audio control
+
+Use these tools when you want a synced group to behave as one audio target. For a single room only, stay with the room-level volume tools above.
+
+### Read the current group audio state
+
+> "What is the group volume for the Living Room group?"
+> "Is the Kitchen group muted?"
+
+Claude calls `get_group_volume` and returns the normalized coordinator, member list, volume, and mute state for the active group.
+
+### Set or adjust group volume
+
+> "Set the Living Room group volume to 35."
+> "Turn the Kitchen group up by 5."
+
+Claude calls `set_group_volume` or `adjust_group_volume`. The same configured safety cap still applies, but the target is the active synced group instead of one room.
+
+### Mute or unmute a group
+
+> "Mute the whole Office group."
+> "Unmute the group that includes Patio."
+
+Claude calls `group_mute` or `group_unmute`.
+
 ---
 
 ## Agent and automation workflows
@@ -230,27 +286,32 @@ The key rule is that the automation uses the same tool surface as a direct AI cl
 
 ### Home Assistant style flow
 
-> "Check that SoniqMCP is reachable, list the rooms, and start my Kitchen Morning Mix favourite."
+> "Check that SoniqMCP is reachable, inspect the rooms, group the Living Room and Kitchen, switch the Living Room to TV, and then set that group volume to 30."
 
 Expected tool flow:
 
 1. `ping`
-2. `list_rooms`
-3. `list_favourites`
-4. `play_favourite`
+2. `server_info`
+3. `list_rooms`
+4. `group_rooms`
+5. `switch_to_tv`
+6. `set_group_volume`
 
-This keeps room targeting explicit and verifies connectivity before playback.
+This verifies connectivity and room targeting before any mutation. The automation decides sequencing. SoniqMCP remains the execution layer only.
 
 ### `n8n` workflow example
 
-> "If the Living Room is not already grouped, join the Kitchen to it and start party mode for the evening routine."
+> "Verify the server, list rooms, group Kitchen and Dining together, then mute that group for a call."
 
 Expected tool flow:
 
-1. `get_group_topology`
-2. `join_group` or `party_mode`
+1. `ping`
+2. `server_info`
+3. `list_rooms`
+4. `group_rooms`
+5. `group_mute`
 
-The automation system decides the branch. SoniqMCP remains the execution layer only.
+The automation system decides any extra branching around `get_group_topology`, `group_rooms`, or `group_mute`. SoniqMCP remains the execution layer only.
 
 ### Safe volume automation
 

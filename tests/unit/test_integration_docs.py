@@ -55,6 +55,17 @@ class TestIntegrationGuides:
         assert "[docs/prompts/command-reference.md](docs/prompts/command-reference.md)" in readme
         assert "canonical command surface" in readme
 
+    def test_root_readme_surfaces_input_and_expanded_group_tools(self) -> None:
+        readme = _read(ROOT_README)
+        assert "`switch_to_line_in`" in readme
+        assert "`switch_to_tv`" in readme
+        assert "`get_group_volume`" in readme
+        assert "`set_group_volume`" in readme
+        assert "`adjust_group_volume`" in readme
+        assert "`group_mute`" in readme
+        assert "`group_unmute`" in readme
+        assert "`group_rooms`" in readme
+
     def test_root_readme_qualifies_remote_deployment_claims(self) -> None:
         readme = _read(ROOT_README)
         assert "Docker on Linux" in readme
@@ -80,6 +91,39 @@ class TestIntegrationGuides:
         assert "Streamable HTTP" in prompts
         assert "[command-reference.md](command-reference.md)" in prompts
         assert "[../setup/troubleshooting.md](../setup/troubleshooting.md)" in prompts
+
+    def test_prompts_explain_input_and_group_control_boundaries(self) -> None:
+        prompts = _read(PROMPTS_GUIDE)
+        assert "## Input switching" in prompts
+        assert "`switch_to_line_in`" in prompts
+        assert "`switch_to_tv`" in prompts
+        assert "`group_rooms`" in prompts
+        assert "`get_group_volume`" in prompts
+        assert "`set_group_volume`" in prompts
+        assert "`adjust_group_volume`" in prompts
+        assert "`group_mute`" in prompts
+        assert "`group_unmute`" in prompts
+        assert "room-level controls" in prompts
+        assert "group-level controls" in prompts
+        assert "input-specific controls" in prompts
+
+    def test_agent_guides_start_with_diagnostics_before_mutation(self) -> None:
+        home_assistant = _read(HOME_ASSISTANT_GUIDE)
+        n8n = _read(N8N_GUIDE)
+        for guide in (home_assistant, n8n):
+            assert "`ping`" in guide
+            assert "`server_info`" in guide
+            assert "`list_rooms`" in guide
+
+    def test_agent_guides_reference_current_group_and_input_flows(self) -> None:
+        home_assistant = _read(HOME_ASSISTANT_GUIDE)
+        n8n = _read(N8N_GUIDE)
+        assert "`switch_to_tv`" in home_assistant or "`switch_to_line_in`" in home_assistant
+        assert "`get_group_volume`" in home_assistant or "`set_group_volume`" in home_assistant
+        assert "`group_rooms`" in n8n
+        assert "`get_group_volume`" in n8n or "`set_group_volume`" in n8n
+        assert "execution layer only" in home_assistant
+        assert "execution layer only" in n8n
 
     def test_command_reference_surfaces_supported_command_paths(self) -> None:
         command_reference = _read(COMMAND_REFERENCE)

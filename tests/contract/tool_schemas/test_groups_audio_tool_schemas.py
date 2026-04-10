@@ -6,10 +6,13 @@ stable. These tests act as a breaking-change guard for MCP clients.
 
 from __future__ import annotations
 
+import json
+
 import pytest
 from mcp.server.fastmcp import FastMCP
 
 from soniq_mcp.config import SoniqConfig
+from soniq_mcp.domain.exceptions import GroupValidationError, SonosDiscoveryError, VolumeCapExceeded
 from soniq_mcp.domain.models import GroupAudioState
 from soniq_mcp.tools.groups import register
 
@@ -83,11 +86,11 @@ class TestGetGroupVolumeContract:
         assert annotations is not None
         assert annotations.readOnlyHint is True
         assert annotations.destructiveHint is False
+        assert annotations.idempotentHint is True
+        assert annotations.openWorldHint is False
 
     @pytest.mark.anyio
     async def test_response_shape(self, registered_app):
-        import json
-
         result = await registered_app.call_tool("get_group_volume", {"room": "Living Room"})
         data = json.loads(result[0].text)
         assert "room_name" in data
@@ -116,6 +119,36 @@ class TestSetGroupVolumeContract:
         annotations = get_tools(registered_app)["set_group_volume"].annotations
         assert annotations is not None
         assert annotations.readOnlyHint is False
+        assert annotations.idempotentHint is False
+        assert annotations.openWorldHint is False
+
+    @pytest.mark.anyio
+    async def test_validation_error_shape_is_stable(self):
+        class _ValidationService(_StubGroupService):
+            def set_group_volume(self, room_name, volume):
+                raise GroupValidationError("Requested room is not in a synced group.")
+
+        app = FastMCP("contract-test")
+        register(app, SoniqConfig(), _ValidationService())
+
+        result = await app.call_tool("set_group_volume", {"room": "Living Room", "volume": 55})
+        data = json.loads(result[0].text)
+        assert data["category"] == "validation"
+        assert data["field"] == "group"
+
+    @pytest.mark.anyio
+    async def test_volume_cap_error_shape_is_stable(self):
+        class _ValidationService(_StubGroupService):
+            def set_group_volume(self, room_name, volume):
+                raise VolumeCapExceeded(requested=volume, cap=80)
+
+        app = FastMCP("contract-test")
+        register(app, SoniqConfig(), _ValidationService())
+
+        result = await app.call_tool("set_group_volume", {"room": "Living Room", "volume": 90})
+        data = json.loads(result[0].text)
+        assert data["category"] == "validation"
+        assert data["field"] == "volume"
 
 
 class TestAdjustGroupVolumeContract:
@@ -137,6 +170,8 @@ class TestAdjustGroupVolumeContract:
         annotations = get_tools(registered_app)["adjust_group_volume"].annotations
         assert annotations is not None
         assert annotations.readOnlyHint is False
+        assert annotations.idempotentHint is False
+        assert annotations.openWorldHint is False
 
 
 class TestGroupMuteContract:
@@ -157,15 +192,30 @@ class TestGroupMuteContract:
         assert annotations is not None
         assert annotations.readOnlyHint is False
         assert annotations.destructiveHint is False
+        assert annotations.idempotentHint is False
+        assert annotations.openWorldHint is False
 
     @pytest.mark.anyio
     async def test_response_shape(self, registered_app):
-        import json
-
         result = await registered_app.call_tool("group_mute", {"room": "Living Room"})
         data = json.loads(result[0].text)
         assert "is_muted" in data
         assert data["is_muted"] is True
+
+    @pytest.mark.anyio
+    async def test_discovery_error_shape_is_stable(self):
+        class _DiscoveryService(_StubGroupService):
+            def group_mute(self, room_name):
+                raise SonosDiscoveryError("Discovery failed for 192.168.1.20")
+
+        app = FastMCP("contract-test")
+        register(app, SoniqConfig(), _DiscoveryService())
+
+        result = await app.call_tool("group_mute", {"room": "Living Room"})
+        data = json.loads(result[0].text)
+        assert data["category"] == "connectivity"
+        assert data["field"] == "sonos_network"
+        assert "<redacted-host>" in data["error"]
 
 
 class TestGroupUnmuteContract:
@@ -185,11 +235,11 @@ class TestGroupUnmuteContract:
         annotations = get_tools(registered_app)["group_unmute"].annotations
         assert annotations is not None
         assert annotations.readOnlyHint is False
+        assert annotations.idempotentHint is False
+        assert annotations.openWorldHint is False
 
     @pytest.mark.anyio
     async def test_response_shape(self, registered_app):
-        import json
-
         result = await registered_app.call_tool("group_unmute", {"room": "Living Room"})
         data = json.loads(result[0].text)
         assert "is_muted" in data

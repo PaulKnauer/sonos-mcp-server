@@ -12,10 +12,14 @@ SoniqMCP is an [MCP](https://modelcontextprotocol.io/) server that exposes your 
 |---|---|
 | System | `list_rooms`, `get_system_topology` |
 | Playback | `play`, `pause`, `stop`, `next_track`, `previous_track`, `get_playback_state`, `get_track_info` |
+| Playback Modes | `get_play_mode`, `set_play_mode`, `seek`, `get_sleep_timer`, `set_sleep_timer` |
 | Volume | `get_volume`, `set_volume`, `adjust_volume`, `mute`, `unmute`, `get_mute` |
+| Room Audio | `get_eq_settings`, `set_bass`, `set_treble`, `set_loudness` |
 | Queue | `get_queue`, `add_to_queue`, `remove_from_queue`, `clear_queue`, `play_from_queue` |
-| Favourites | `list_favourites`, `play_favourite` |
-| Groups | `get_group_topology`, `join_group`, `unjoin_room`, `party_mode` |
+| Favourites and Playlists | `list_favourites`, `play_favourite`, `list_playlists`, `play_playlist` |
+| Groups | `get_group_topology`, `join_group`, `unjoin_room`, `party_mode`, `group_rooms` |
+| Group Audio | `get_group_volume`, `set_group_volume`, `adjust_group_volume`, `group_mute`, `group_unmute` |
+| Inputs | `switch_to_line_in`, `switch_to_tv` |
 | Setup | `ping`, `server_info` |
 
 ## Quick start

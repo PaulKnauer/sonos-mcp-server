@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 from mcp.server.fastmcp import FastMCP
 
 from soniq_mcp.config import SoniqConfig
+from soniq_mcp.domain.exceptions import GroupValidationError, SonosDiscoveryError
 from soniq_mcp.domain.models import Room
 from soniq_mcp.tools.groups import register
 
@@ -84,13 +87,42 @@ class TestGroupRoomsContract:
         assert annotations is not None
         assert annotations.readOnlyHint is False
         assert annotations.destructiveHint is False
+        assert annotations.idempotentHint is False
+        assert annotations.openWorldHint is False
 
     @pytest.mark.anyio
     async def test_response_has_group_topology_shape(self, registered_app):
-        import json
-
         result = await registered_app.call_tool("group_rooms", {"rooms": ["Room A", "Room B"]})
         data = json.loads(result[0].text)
         assert "groups" in data
         assert "total_groups" in data
         assert "total_rooms" in data
+
+    @pytest.mark.anyio
+    async def test_validation_error_shape_is_stable(self):
+        class _ValidationService(_StubGroupService):
+            def group_rooms(self, room_names, coordinator_name=None):
+                raise GroupValidationError("At least two distinct rooms are required.")
+
+        app = FastMCP("contract-test")
+        register(app, SoniqConfig(), _ValidationService())
+
+        result = await app.call_tool("group_rooms", {"rooms": ["Room A"]})
+        data = json.loads(result[0].text)
+        assert data["category"] == "validation"
+        assert data["field"] == "group"
+
+    @pytest.mark.anyio
+    async def test_discovery_error_shape_is_stable(self):
+        class _DiscoveryService(_StubGroupService):
+            def group_rooms(self, room_names, coordinator_name=None):
+                raise SonosDiscoveryError("Discovery failed for 192.168.1.20")
+
+        app = FastMCP("contract-test")
+        register(app, SoniqConfig(), _DiscoveryService())
+
+        result = await app.call_tool("group_rooms", {"rooms": ["Room A", "Room B"]})
+        data = json.loads(result[0].text)
+        assert data["category"] == "connectivity"
+        assert data["field"] == "sonos_network"
+        assert "<redacted-host>" in data["error"]

@@ -83,6 +83,18 @@ No Home Assistant-specific implementation path is required inside SoniqMCP.
 - A home routine checks `get_group_topology` before calling `join_group` for evening whole-home playback.
 - A voice or automation flow checks `list_rooms` and `server_info` before issuing playback commands to verify the server is reachable and the environment is correct.
 
+### Representative Epic 2 flow
+
+Use diagnostics first, then mutate:
+
+1. Call `ping`.
+2. Call `server_info`.
+3. Call `list_rooms`.
+4. Call `switch_to_tv` or `switch_to_line_in` when the automation is changing the active source for a supported room.
+5. Call `get_group_volume` or `set_group_volume` when the automation is targeting the active synced group instead of one room.
+
+Home Assistant decides when to branch or retry. SoniqMCP remains the execution layer only.
+
 ---
 
 ## Troubleshooting checklist
