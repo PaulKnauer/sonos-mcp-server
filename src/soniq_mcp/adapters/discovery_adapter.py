@@ -13,27 +13,31 @@ from soniq_mcp.domain.models import Room, Speaker
 
 log = logging.getLogger(__name__)
 
-_TV_MODELS: frozenset[str] = frozenset({
-    "arc",
-    "arc sl",
-    "arc ultra",
-    "beam",
-    "playbase",
-    "playbar",
-    "ray",
-    "sonos amp",
-})
+_TV_MODELS: frozenset[str] = frozenset(
+    {
+        "arc",
+        "arc sl",
+        "arc ultra",
+        "beam",
+        "playbase",
+        "playbar",
+        "ray",
+        "sonos amp",
+    }
+)
 
-_LINE_IN_MODELS: frozenset[str] = frozenset({
-    "sonos amp",
-    "port",
-    "connect",
-    "connect:amp",
-    "five",
-    "play:5",
-    "era 100",
-    "era 300",
-})
+_LINE_IN_MODELS: frozenset[str] = frozenset(
+    {
+        "sonos amp",
+        "port",
+        "connect",
+        "connect:amp",
+        "five",
+        "play:5",
+        "era 100",
+        "era 300",
+    }
+)
 
 
 class DiscoveryAdapter:

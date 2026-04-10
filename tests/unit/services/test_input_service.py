@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from soniq_mcp.domain.exceptions import InputError, InputValidationError, RoomNotFoundError, SonosDiscoveryError
+from soniq_mcp.domain.exceptions import (
+    InputError,
+    InputValidationError,
+    RoomNotFoundError,
+    SonosDiscoveryError,
+)
 from soniq_mcp.domain.models import InputState, Room, Speaker
 from soniq_mcp.services.input_service import InputService
 

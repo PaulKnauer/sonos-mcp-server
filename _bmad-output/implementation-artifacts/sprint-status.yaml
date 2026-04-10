@@ -1,5 +1,5 @@
 # generated: 2026-04-07
-# last_updated: 2026-04-09
+# last_updated: 2026-04-10
 # project: sonos-mcp-server
 # project_key: NOKEY
 # tracking_system: file-system
@@ -44,7 +44,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-07
-last_updated: 2026-04-09
+last_updated: 2026-04-10
 project: sonos-mcp-server
 project_key: NOKEY
 tracking_system: file-system
@@ -68,7 +68,7 @@ development_status:
   # Epic 2: Input and Group Audio Expansion
   epic-2: in-progress
   2-1-support-capability-aware-input-switching: done
-  2-2-control-core-playback-in-a-target-room: backlog
+  2-2-control-core-playback-in-a-target-room: ready-for-dev
   2-3-control-volume-and-mute-safely: backlog
   2-4-apply-reliable-sonos-service-and-adapter-boundaries: backlog
   epic-2-retrospective: optional

@@ -115,3 +115,6 @@ phases:
       - story_key: "2-1"
         canonical_id: "phase-2/2-1-support-capability-aware-input-switching"
         file: "_bmad-output/implementation-artifacts/phase-2/2-1-support-capability-aware-input-switching.md"
+      - story_key: "2-2"
+        canonical_id: "phase-2/2-2-add-group-level-volume-and-mute-controls"
+        file: "_bmad-output/implementation-artifacts/phase-2/2-2-add-group-level-volume-and-mute-controls.md"

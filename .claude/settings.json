@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git commit*)",
+            "command": "make format && git add -u && make lint",
+            "timeout": 60,
+            "statusMessage": "Auto-formatting before commit..."
+          }
+        ]
+      }
+    ]
+  }
+}
