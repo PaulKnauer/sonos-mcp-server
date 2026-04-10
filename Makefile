@@ -2,8 +2,10 @@ UV ?= $(shell command -v uv 2>/dev/null || printf '%s' "$(HOME)/.local/bin/uv")
 PACKAGE ?= soniq_mcp
 IMAGE ?= soniq-mcp
 TAG ?= local
+K3S_REGISTRY ?= 192.168.2.201:32000
+K3S_IMAGE ?= $(K3S_REGISTRY)/$(IMAGE)
 
-.PHONY: ensure-uv install run run-stdio test check tree lint format type-check coverage audit build-check ci docker-build docker-run docker-compose-up docker-compose-down helm-lint helm-template helm-install release-version release-bump-major release-bump-minor release-bump-patch release-tag release-gh
+.PHONY: ensure-uv install run run-stdio test check tree lint format type-check coverage audit build-check ci docker-build docker-run docker-compose-up docker-compose-down docker-build-k3s docker-push-k3s helm-lint helm-template helm-install release-version release-bump-major release-bump-minor release-bump-patch release-tag release-gh
 
 ensure-uv:
 	@command -v uv >/dev/null 2>&1 || test -x "$(UV)" || { \
@@ -62,6 +64,12 @@ docker-run:
 		-e SONIQ_MCP_HTTP_PORT=8000 \
 		-e SONIQ_MCP_EXPOSURE=home-network \
 		$(IMAGE):$(TAG)
+
+docker-build-k3s:
+	docker buildx build --platform linux/arm64 -t $(K3S_IMAGE):latest .
+
+docker-push-k3s: docker-build-k3s
+	docker push $(K3S_IMAGE):latest
 
 docker-compose-up:
 	docker compose up --build -d
