@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from soniq_mcp.domain.models import (
     AudioSettingsState,
     Favourite,
+    GroupAudioState,
     InputState,
     PlaybackState,
     PlayModeState,
@@ -323,6 +324,26 @@ class InputStateResponse(BaseModel):
             room_name=state.room_name,
             input_source=state.input_source,
             coordinator_room_name=state.coordinator_room_name,
+        )
+
+
+class GroupAudioStateResponse(BaseModel):
+    """Response for group-level volume and mute tools."""
+
+    room_name: str
+    coordinator_room_name: str
+    member_room_names: list[str]
+    volume: int
+    is_muted: bool
+
+    @classmethod
+    def from_domain(cls, state: GroupAudioState) -> GroupAudioStateResponse:
+        return cls(
+            room_name=state.room_name,
+            coordinator_room_name=state.coordinator_room_name,
+            member_room_names=list(state.member_room_names),
+            volume=state.volume,
+            is_muted=state.is_muted,
         )
 
 

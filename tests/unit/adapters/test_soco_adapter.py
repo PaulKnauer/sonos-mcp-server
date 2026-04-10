@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from soniq_mcp.adapters.soco_adapter import SoCoAdapter
-from soniq_mcp.domain.exceptions import PlaybackError, VolumeError
+from soniq_mcp.domain.exceptions import GroupError, PlaybackError, VolumeError
 from soniq_mcp.domain.models import PlaybackState, TrackInfo
 
 
@@ -92,6 +92,78 @@ class TestSoCoAdapterVolume:
         with _patch_soco(zone):
             with pytest.raises(VolumeError, match="boom"):
                 adapter.get_volume("192.168.1.10")
+
+
+class TestSoCoAdapterGroupAudio:
+    def _make_zone_with_group(self, group_volume: int = 40, group_muted: bool = False) -> MagicMock:
+        zone = make_fake_zone()
+        group = MagicMock()
+        group.volume = group_volume
+        group.mute = group_muted
+        zone.group = group
+        return zone
+
+    def test_get_group_volume_returns_group_volume(self) -> None:
+        adapter = SoCoAdapter()
+        zone = self._make_zone_with_group(group_volume=42)
+        with _patch_soco(zone):
+            vol = adapter.get_group_volume("192.168.1.10")
+        assert vol == 42
+
+    def test_set_group_volume_assigns_to_group_volume(self) -> None:
+        adapter = SoCoAdapter()
+        zone = self._make_zone_with_group()
+        with _patch_soco(zone):
+            adapter.set_group_volume("192.168.1.10", 60)
+        assert zone.group.volume == 60
+
+    def test_adjust_group_volume_calls_set_relative_volume(self) -> None:
+        adapter = SoCoAdapter()
+        zone = self._make_zone_with_group(group_volume=40)
+        with _patch_soco(zone):
+            adapter.adjust_group_volume("192.168.1.10", 5)
+        zone.group.set_relative_volume.assert_called_once_with(5)
+
+    def test_adjust_group_volume_returns_new_volume(self) -> None:
+        adapter = SoCoAdapter()
+        zone = self._make_zone_with_group(group_volume=45)
+        with _patch_soco(zone):
+            result = adapter.adjust_group_volume("192.168.1.10", 5)
+        assert result == 45  # returns zone.group.volume after set_relative_volume
+
+    def test_get_group_mute_returns_bool(self) -> None:
+        adapter = SoCoAdapter()
+        zone = self._make_zone_with_group(group_muted=True)
+        with _patch_soco(zone):
+            muted = adapter.get_group_mute("192.168.1.10")
+        assert muted is True
+
+    def test_set_group_mute_assigns_to_group_mute(self) -> None:
+        adapter = SoCoAdapter()
+        zone = self._make_zone_with_group(group_muted=False)
+        with _patch_soco(zone):
+            adapter.set_group_mute("192.168.1.10", True)
+        assert zone.group.mute is True
+
+    def test_get_group_volume_wraps_errors_as_group_error(self) -> None:
+        adapter = SoCoAdapter()
+        zone = make_fake_zone()
+        zone.group = MagicMock()
+        type(zone.group).volume = property(
+            lambda self: (_ for _ in ()).throw(RuntimeError("network error"))
+        )
+        with _patch_soco(zone):
+            with pytest.raises(GroupError):
+                adapter.get_group_volume("192.168.1.10")
+
+    def test_set_group_mute_wraps_errors_as_group_error(self) -> None:
+        adapter = SoCoAdapter()
+        zone = make_fake_zone()
+        # Trigger the error at the group access level
+        type(zone).group = property(lambda self: (_ for _ in ()).throw(RuntimeError("mute err")))
+        with _patch_soco(zone):
+            with pytest.raises(GroupError):
+                adapter.set_group_mute("192.168.1.10", True)
 
 
 def _patch_soco(zone: MagicMock):

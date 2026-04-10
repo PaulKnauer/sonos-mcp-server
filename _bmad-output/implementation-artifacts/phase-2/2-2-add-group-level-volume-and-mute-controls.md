@@ -1,6 +1,6 @@
 # Story 2.2: Add group-level volume and mute controls
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -18,68 +18,68 @@ so that I can manage multi-room listening without changing rooms one by one.
 
 ## Tasks / Subtasks
 
-- [ ] Add group-audio domain and schema primitives (AC: 1, 2, 3)
-  - [ ] Add `GroupValidationError(GroupError)` to `src/soniq_mcp/domain/exceptions.py` for non-grouped, coordinator-resolution, and invalid-target validation paths
-  - [ ] Add `GroupAudioState` frozen dataclass to `src/soniq_mcp/domain/models.py` with fields:
-    - [ ] `room_name: str`
-    - [ ] `coordinator_room_name: str`
-    - [ ] `member_room_names: tuple[str, ...]`
-    - [ ] `volume: int`
-    - [ ] `is_muted: bool`
-  - [ ] Add `GroupAudioStateResponse` to `src/soniq_mcp/schemas/responses.py`
-  - [ ] Extend response-schema tests to lock the serialized field set and `snake_case` naming
+- [x] Add group-audio domain and schema primitives (AC: 1, 2, 3)
+  - [x] Add `GroupValidationError(GroupError)` to `src/soniq_mcp/domain/exceptions.py` for non-grouped, coordinator-resolution, and invalid-target validation paths
+  - [x] Add `GroupAudioState` frozen dataclass to `src/soniq_mcp/domain/models.py` with fields:
+    - [x] `room_name: str`
+    - [x] `coordinator_room_name: str`
+    - [x] `member_room_names: tuple[str, ...]`
+    - [x] `volume: int`
+    - [x] `is_muted: bool`
+  - [x] Add `GroupAudioStateResponse` to `src/soniq_mcp/schemas/responses.py`
+  - [x] Extend response-schema tests to lock the serialized field set and `snake_case` naming
 
-- [ ] Extend `SoCoAdapter` with group-audio operations (AC: 1, 2, 3)
-  - [ ] Add `get_group_volume(ip_address: str) -> int`
-  - [ ] Add `set_group_volume(ip_address: str, volume: int) -> None`
-  - [ ] Add `adjust_group_volume(ip_address: str, delta: int) -> int`
-  - [ ] Add `get_group_mute(ip_address: str) -> bool`
-  - [ ] Add `set_group_mute(ip_address: str, muted: bool) -> None`
-  - [ ] Implement the adapter methods via `zone.group.volume`, `zone.group.mute`, and `zone.group.set_relative_volume(delta)`
-  - [ ] Keep all `soco` imports inside `src/soniq_mcp/adapters/soco_adapter.py`
-  - [ ] Wrap all SoCo failures in `GroupError`
+- [x] Extend `SoCoAdapter` with group-audio operations (AC: 1, 2, 3)
+  - [x] Add `get_group_volume(ip_address: str) -> int`
+  - [x] Add `set_group_volume(ip_address: str, volume: int) -> None`
+  - [x] Add `adjust_group_volume(ip_address: str, delta: int) -> int`
+  - [x] Add `get_group_mute(ip_address: str) -> bool`
+  - [x] Add `set_group_mute(ip_address: str, muted: bool) -> None`
+  - [x] Implement the adapter methods via `zone.group.volume`, `zone.group.mute`, and `zone.group.set_relative_volume(delta)`
+  - [x] Keep all `soco` imports inside `src/soniq_mcp/adapters/soco_adapter.py`
+  - [x] Wrap all SoCo failures in `GroupError`
 
-- [ ] Extend `GroupService` to own group-audio orchestration (AC: 1, 2, 3)
-  - [ ] Update `GroupService` to accept runtime config so it can enforce `max_volume_pct`
-  - [ ] Add `get_group_audio_state(room_name: str) -> GroupAudioState`
-  - [ ] Add `set_group_volume(room_name: str, volume: int) -> GroupAudioState`
-  - [ ] Add `adjust_group_volume(room_name: str, delta: int) -> GroupAudioState`
-  - [ ] Add `group_mute(room_name: str) -> GroupAudioState`
-  - [ ] Add `group_unmute(room_name: str) -> GroupAudioState`
-  - [ ] Reuse a single room/topology snapshot per operation to resolve:
-    - [ ] the requested room
-    - [ ] the active coordinator
-    - [ ] the current member room names
-  - [ ] Reject non-grouped targets with `GroupValidationError` instead of silently treating a single room as a group-audio success path
-  - [ ] Enforce `config.max_volume_pct` for absolute and relative group-volume operations before adapter writes
-  - [ ] Normalize all successful results into `GroupAudioState`
+- [x] Extend `GroupService` to own group-audio orchestration (AC: 1, 2, 3)
+  - [x] Update `GroupService` to accept runtime config so it can enforce `max_volume_pct`
+  - [x] Add `get_group_audio_state(room_name: str) -> GroupAudioState`
+  - [x] Add `set_group_volume(room_name: str, volume: int) -> GroupAudioState`
+  - [x] Add `adjust_group_volume(room_name: str, delta: int) -> GroupAudioState`
+  - [x] Add `group_mute(room_name: str) -> GroupAudioState`
+  - [x] Add `group_unmute(room_name: str) -> GroupAudioState`
+  - [x] Reuse a single room/topology snapshot per operation to resolve:
+    - [x] the requested room
+    - [x] the active coordinator
+    - [x] the current member room names
+  - [x] Reject non-grouped targets with `GroupValidationError` instead of silently treating a single room as a group-audio success path
+  - [x] Enforce `config.max_volume_pct` for absolute and relative group-volume operations before adapter writes
+  - [x] Normalize all successful results into `GroupAudioState`
 
-- [ ] Extend MCP grouping tools with group-audio endpoints (AC: 1, 2, 3)
-  - [ ] Add tools to `src/soniq_mcp/tools/groups.py`:
-    - [ ] `get_group_volume(room: str)`
-    - [ ] `set_group_volume(room: str, volume: int)`
-    - [ ] `adjust_group_volume(room: str, delta: int)`
-    - [ ] `group_mute(room: str)`
-    - [ ] `group_unmute(room: str)`
-  - [ ] Use existing `_READ_ONLY_TOOL_HINTS` and `_CONTROL_TOOL_HINTS`
-  - [ ] Keep tool handlers thin: permission guard first, service call second, schema/error translation only
-  - [ ] Return `GroupAudioStateResponse.model_dump()` for state-returning operations
-  - [ ] Catch `RoomNotFoundError`, `GroupError`, and `SonosDiscoveryError` and map them through `ErrorResponse`
-  - [ ] Catch `VolumeCapExceeded` for volume-changing operations and map it through `ErrorResponse.from_volume_cap(...)`
+- [x] Extend MCP grouping tools with group-audio endpoints (AC: 1, 2, 3)
+  - [x] Add tools to `src/soniq_mcp/tools/groups.py`:
+    - [x] `get_group_volume(room: str)`
+    - [x] `set_group_volume(room: str, volume: int)`
+    - [x] `adjust_group_volume(room: str, delta: int)`
+    - [x] `group_mute(room: str)`
+    - [x] `group_unmute(room: str)`
+  - [x] Use existing `_READ_ONLY_TOOL_HINTS` and `_CONTROL_TOOL_HINTS`
+  - [x] Keep tool handlers thin: permission guard first, service call second, schema/error translation only
+  - [x] Return `GroupAudioStateResponse.model_dump()` for state-returning operations
+  - [x] Catch `RoomNotFoundError`, `GroupError`, and `SonosDiscoveryError` and map them through `ErrorResponse`
+  - [x] Catch `VolumeCapExceeded` for volume-changing operations and map it through `ErrorResponse.from_volume_cap(...)`
 
-- [ ] Wire the expanded grouping capability into config and registration (AC: 2, 3)
-  - [ ] Update `src/soniq_mcp/tools/__init__.py` so `GroupService` receives config
-  - [ ] Add the new tool names to `KNOWN_TOOL_NAMES` in `src/soniq_mcp/config/models.py`
-  - [ ] Preserve stable registration order and transport parity across `stdio` and HTTP bootstraps
+- [x] Wire the expanded grouping capability into config and registration (AC: 2, 3)
+  - [x] Update `src/soniq_mcp/tools/__init__.py` so `GroupService` receives config
+  - [x] Add the new tool names to `KNOWN_TOOL_NAMES` in `src/soniq_mcp/config/models.py`
+  - [x] Preserve stable registration order and transport parity across `stdio` and HTTP bootstraps
 
-- [ ] Add automated regression coverage for group audio (AC: 1, 2, 3)
-  - [ ] Extend `tests/unit/adapters/test_soco_adapter.py` or add focused adapter tests for `zone.group` volume/mute operations
-  - [ ] Extend `tests/unit/services/test_group_service.py` with grouped, ungrouped, cap, room-not-found, and adapter-failure coverage
-  - [ ] Extend `tests/unit/tools/test_groups.py` with new tool registration, success payloads, and typed error mapping
-  - [ ] Extend `tests/contract/tool_schemas/test_groups_tool_schemas.py` to lock the new tool names, parameters, and annotations
-  - [ ] Extend `tests/unit/schemas/test_responses.py` for `GroupAudioStateResponse`
-  - [ ] Update transport/bootstrap coverage so the new group-audio tools remain exposed consistently
-  - [ ] Run `make test` and confirm the full suite still passes
+- [x] Add automated regression coverage for group audio (AC: 1, 2, 3)
+  - [x] Extend `tests/unit/adapters/test_soco_adapter.py` or add focused adapter tests for `zone.group` volume/mute operations
+  - [x] Extend `tests/unit/services/test_group_service.py` with grouped, ungrouped, cap, room-not-found, and adapter-failure coverage
+  - [x] Extend `tests/unit/tools/test_groups.py` with new tool registration, success payloads, and typed error mapping
+  - [x] Extend `tests/contract/tool_schemas/test_groups_tool_schemas.py` to lock the new tool names, parameters, and annotations
+  - [x] Extend `tests/unit/schemas/test_responses.py` for `GroupAudioStateResponse`
+  - [x] Update transport/bootstrap coverage so the new group-audio tools remain exposed consistently
+  - [x] Run `make test` and confirm the full suite still passes
 
 ## Dev Notes
 
@@ -290,14 +290,52 @@ tests/integration/transports/test_http_bootstrap.py
 
 ### Agent Model Used
 
-GPT-5 Codex
+claude-sonnet-4-6
 
 ### Debug Log References
 
+- `uv run pytest tests/unit/services/test_group_service_audio.py -q` -> `24 passed`
+- `uv run pytest tests/unit/tools/test_groups_audio.py tests/contract/tool_schemas/test_groups_audio_tool_schemas.py tests/integration/transports/test_http_bootstrap.py -q` -> `68 passed`
+- `make test` -> `1064 passed, 3 skipped`
+
 ### Completion Notes List
 
-- Ultimate context engine analysis completed - comprehensive developer guide created
+- All 6 tasks completed. `make test` passes with 1061 tests passing, 3 skipped (up from ~269 before this story).
+- `GroupValidationError(GroupError)` added to `domain/exceptions.py` for typed non-grouped-target rejections.
+- `GroupAudioState` frozen dataclass added to `domain/models.py` with room_name, coordinator_room_name, member_room_names (tuple), volume, and is_muted fields.
+- `GroupAudioStateResponse` added to `schemas/responses.py` with `from_domain()` factory; tuple fields converted to list in serialization.
+- `SoCoAdapter` extended with 5 group-audio methods: `get_group_volume`, `set_group_volume`, `adjust_group_volume` (uses `set_relative_volume`), `get_group_mute`, `set_group_mute`. All wrapped in `GroupError`.
+- `GroupService` updated to accept optional `config` parameter; `_resolve_group_snapshot()` loads one topology snapshot per call; single-room coordinators rejected with `GroupValidationError`.
+- 5 new MCP tools added to `tools/groups.py`: `get_group_volume` (read-only), `set_group_volume`, `adjust_group_volume`, `group_mute`, `group_unmute` (all control).
+- `KNOWN_TOOL_NAMES` updated with 5 new tool names (46 total).
+- `tools/__init__.py` passes config to `GroupService`.
+- Follow-up fix: restored case-insensitive room lookup for group-audio operations so they match the existing room-service contract.
+- Follow-up fix: negative absolute and relative group-volume targets are now rejected before any adapter call, preserving safe deterministic validation behavior.
+- Follow-up verification: full regression suite now passes at `1064 passed, 3 skipped`.
+- HTTP bootstrap test updated to expect 46 tools.
 
 ### File List
 
-- _bmad-output/implementation-artifacts/phase-2/2-2-add-group-level-volume-and-mute-controls.md
+**New files:**
+- `tests/unit/services/test_group_service_audio.py`
+- `tests/unit/tools/test_groups_audio.py`
+- `tests/contract/tool_schemas/test_groups_audio_tool_schemas.py`
+
+**Modified files:**
+- `src/soniq_mcp/domain/exceptions.py` — added `GroupValidationError`
+- `src/soniq_mcp/domain/models.py` — added `GroupAudioState`
+- `src/soniq_mcp/schemas/responses.py` — added `GroupAudioStateResponse`
+- `src/soniq_mcp/adapters/soco_adapter.py` — added 5 group-audio methods
+- `src/soniq_mcp/services/group_service.py` — added config param and 5 group-audio methods
+- `src/soniq_mcp/tools/groups.py` — added 5 group-audio tool registrations
+- `src/soniq_mcp/config/models.py` — added 5 tool names to `KNOWN_TOOL_NAMES`
+- `src/soniq_mcp/tools/__init__.py` — passed config to `GroupService`
+- `tests/unit/adapters/test_soco_adapter.py` — extended with group-audio adapter tests
+- `tests/unit/schemas/test_responses.py` — extended with `GroupAudioStateResponse` tests
+- `tests/integration/transports/test_http_bootstrap.py` — updated `EXPECTED_TOOL_NAMES` and tool count
+- `_bmad-output/implementation-artifacts/phase-2/2-2-add-group-level-volume-and-mute-controls.md` — updated story status and Dev Agent Record
+
+### Change Log
+
+- 2026-04-10: Implemented Story 2.2 — group-level volume and mute controls. Added `GroupValidationError`, `GroupAudioState`, `GroupAudioStateResponse`, 5 SoCoAdapter methods, GroupService group-audio orchestration with cap enforcement, 5 new MCP tools, and full test coverage (1061 tests passing).
+- 2026-04-10: Fixed post-review findings in `GroupService` for case-insensitive room resolution and negative group-volume validation.

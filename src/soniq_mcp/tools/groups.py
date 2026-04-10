@@ -12,10 +12,16 @@ from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
 from soniq_mcp.config import SoniqConfig
-from soniq_mcp.domain.exceptions import GroupError, RoomNotFoundError, SonosDiscoveryError
+from soniq_mcp.domain.exceptions import (
+    GroupError,
+    GroupValidationError,
+    RoomNotFoundError,
+    SonosDiscoveryError,
+    VolumeCapExceeded,
+)
 from soniq_mcp.domain.safety import assert_tool_permitted
 from soniq_mcp.schemas.errors import ErrorResponse
-from soniq_mcp.schemas.responses import GroupTopologyResponse
+from soniq_mcp.schemas.responses import GroupAudioStateResponse, GroupTopologyResponse
 
 log = logging.getLogger(__name__)
 
@@ -115,4 +121,123 @@ def register(app: FastMCP, config: SoniqConfig, group_service: object) -> None:
                 return ErrorResponse.from_group_error(exc).model_dump()
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in party_mode: %s", exc)
+                return ErrorResponse.from_discovery_error(exc).model_dump()
+
+    if "get_group_volume" not in config.tools_disabled:
+
+        @app.tool(
+            title="Get Group Volume",
+            annotations=_READ_ONLY_TOOL_HINTS,
+        )
+        def get_group_volume(room: str) -> dict:
+            """Return the current group volume and mute state for the active group."""
+            assert_tool_permitted("get_group_volume", config)
+            try:
+                state = group_service.get_group_audio_state(room)
+                return GroupAudioStateResponse.from_domain(state).model_dump()
+            except RoomNotFoundError:
+                return ErrorResponse.from_room_not_found(room).model_dump()
+            except GroupValidationError as exc:
+                return ErrorResponse.from_group_error(exc).model_dump()
+            except GroupError as exc:
+                log.warning("Group error in get_group_volume: %s", exc)
+                return ErrorResponse.from_group_error(exc).model_dump()
+            except SonosDiscoveryError as exc:
+                log.warning("Discovery error in get_group_volume: %s", exc)
+                return ErrorResponse.from_discovery_error(exc).model_dump()
+
+    if "set_group_volume" not in config.tools_disabled:
+
+        @app.tool(
+            title="Set Group Volume",
+            annotations=_CONTROL_TOOL_HINTS,
+        )
+        def set_group_volume(room: str, volume: int) -> dict:
+            """Set the group volume to an absolute level for the active group."""
+            assert_tool_permitted("set_group_volume", config)
+            try:
+                state = group_service.set_group_volume(room, volume)
+                return GroupAudioStateResponse.from_domain(state).model_dump()
+            except RoomNotFoundError:
+                return ErrorResponse.from_room_not_found(room).model_dump()
+            except VolumeCapExceeded as exc:
+                return ErrorResponse.from_volume_cap(exc.requested, exc.cap).model_dump()
+            except GroupValidationError as exc:
+                return ErrorResponse.from_group_error(exc).model_dump()
+            except GroupError as exc:
+                log.warning("Group error in set_group_volume: %s", exc)
+                return ErrorResponse.from_group_error(exc).model_dump()
+            except SonosDiscoveryError as exc:
+                log.warning("Discovery error in set_group_volume: %s", exc)
+                return ErrorResponse.from_discovery_error(exc).model_dump()
+
+    if "adjust_group_volume" not in config.tools_disabled:
+
+        @app.tool(
+            title="Adjust Group Volume",
+            annotations=_CONTROL_TOOL_HINTS,
+        )
+        def adjust_group_volume(room: str, delta: int) -> dict:
+            """Adjust the group volume by a relative amount for the active group."""
+            assert_tool_permitted("adjust_group_volume", config)
+            try:
+                state = group_service.adjust_group_volume(room, delta)
+                return GroupAudioStateResponse.from_domain(state).model_dump()
+            except RoomNotFoundError:
+                return ErrorResponse.from_room_not_found(room).model_dump()
+            except VolumeCapExceeded as exc:
+                return ErrorResponse.from_volume_cap(exc.requested, exc.cap).model_dump()
+            except GroupValidationError as exc:
+                return ErrorResponse.from_group_error(exc).model_dump()
+            except GroupError as exc:
+                log.warning("Group error in adjust_group_volume: %s", exc)
+                return ErrorResponse.from_group_error(exc).model_dump()
+            except SonosDiscoveryError as exc:
+                log.warning("Discovery error in adjust_group_volume: %s", exc)
+                return ErrorResponse.from_discovery_error(exc).model_dump()
+
+    if "group_mute" not in config.tools_disabled:
+
+        @app.tool(
+            title="Group Mute",
+            annotations=_CONTROL_TOOL_HINTS,
+        )
+        def group_mute(room: str) -> dict:
+            """Mute the active Sonos group that contains the specified room."""
+            assert_tool_permitted("group_mute", config)
+            try:
+                state = group_service.group_mute(room)
+                return GroupAudioStateResponse.from_domain(state).model_dump()
+            except RoomNotFoundError:
+                return ErrorResponse.from_room_not_found(room).model_dump()
+            except GroupValidationError as exc:
+                return ErrorResponse.from_group_error(exc).model_dump()
+            except GroupError as exc:
+                log.warning("Group error in group_mute: %s", exc)
+                return ErrorResponse.from_group_error(exc).model_dump()
+            except SonosDiscoveryError as exc:
+                log.warning("Discovery error in group_mute: %s", exc)
+                return ErrorResponse.from_discovery_error(exc).model_dump()
+
+    if "group_unmute" not in config.tools_disabled:
+
+        @app.tool(
+            title="Group Unmute",
+            annotations=_CONTROL_TOOL_HINTS,
+        )
+        def group_unmute(room: str) -> dict:
+            """Unmute the active Sonos group that contains the specified room."""
+            assert_tool_permitted("group_unmute", config)
+            try:
+                state = group_service.group_unmute(room)
+                return GroupAudioStateResponse.from_domain(state).model_dump()
+            except RoomNotFoundError:
+                return ErrorResponse.from_room_not_found(room).model_dump()
+            except GroupValidationError as exc:
+                return ErrorResponse.from_group_error(exc).model_dump()
+            except GroupError as exc:
+                log.warning("Group error in group_unmute: %s", exc)
+                return ErrorResponse.from_group_error(exc).model_dump()
+            except SonosDiscoveryError as exc:
+                log.warning("Discovery error in group_unmute: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()

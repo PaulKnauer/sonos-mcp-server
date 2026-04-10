@@ -57,7 +57,7 @@ def register_all(app: FastMCP, config: SoniqConfig) -> None:
     queue_service = QueueService(room_service, SoCoAdapter())
     register_queue(app, config, queue_service)
 
-    group_service = GroupService(room_service, SoCoAdapter())
+    group_service = GroupService(room_service, SoCoAdapter(), config)
     register_groups(app, config, group_service)
 
     play_mode_service = PlayModeService(room_service, SoCoAdapter(), config)

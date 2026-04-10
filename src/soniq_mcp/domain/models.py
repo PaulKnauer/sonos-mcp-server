@@ -248,3 +248,22 @@ class InputState:
     room_name: str
     input_source: Literal["line_in", "tv"]
     coordinator_room_name: str | None = field(default=None)
+
+
+@dataclass(frozen=True)
+class GroupAudioState:
+    """Current group-level volume and mute state for an active Sonos group.
+
+    Attributes:
+        room_name: The requested target room name.
+        coordinator_room_name: The active group coordinator room name.
+        member_room_names: All room names in the group (including coordinator).
+        volume: Current group volume level (0-100).
+        is_muted: True if the group is currently muted.
+    """
+
+    room_name: str
+    coordinator_room_name: str
+    member_room_names: tuple[str, ...]
+    volume: int
+    is_muted: bool

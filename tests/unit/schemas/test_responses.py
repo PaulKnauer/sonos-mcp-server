@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from soniq_mcp.domain.models import (
     AudioSettingsState,
+    GroupAudioState,
     InputState,
     PlaybackState,
     Room,
@@ -15,6 +16,7 @@ from soniq_mcp.domain.models import (
 )
 from soniq_mcp.schemas.responses import (
     AudioSettingsResponse,
+    GroupAudioStateResponse,
     InputStateResponse,
     PlaybackStateResponse,
     RoomListResponse,
@@ -299,3 +301,55 @@ class TestVolumeStateResponse:
         assert d["room_name"] == "Office"
         assert d["volume"] == 30
         assert d["is_muted"] is False
+
+
+class TestGroupAudioStateResponse:
+    def _make_state(
+        self,
+        room_name: str = "Living Room",
+        coordinator: str = "Living Room",
+        members: tuple = ("Living Room", "Kitchen"),
+        volume: int = 35,
+        is_muted: bool = False,
+    ) -> GroupAudioState:
+        return GroupAudioState(
+            room_name=room_name,
+            coordinator_room_name=coordinator,
+            member_room_names=members,
+            volume=volume,
+            is_muted=is_muted,
+        )
+
+    def test_from_domain(self) -> None:
+        state = self._make_state()
+        resp = GroupAudioStateResponse.from_domain(state)
+        assert resp.room_name == "Living Room"
+        assert resp.coordinator_room_name == "Living Room"
+        assert resp.member_room_names == ["Living Room", "Kitchen"]
+        assert resp.volume == 35
+        assert resp.is_muted is False
+
+    def test_from_domain_muted(self) -> None:
+        state = self._make_state(is_muted=True, volume=0)
+        resp = GroupAudioStateResponse.from_domain(state)
+        assert resp.is_muted is True
+        assert resp.volume == 0
+
+    def test_model_dump_snake_case(self) -> None:
+        d = GroupAudioStateResponse.from_domain(self._make_state()).model_dump()
+        assert "room_name" in d
+        assert "coordinator_room_name" in d
+        assert "member_room_names" in d
+        assert "volume" in d
+        assert "is_muted" in d
+
+    def test_model_dump_member_room_names_is_list(self) -> None:
+        d = GroupAudioStateResponse.from_domain(self._make_state()).model_dump()
+        assert isinstance(d["member_room_names"], list)
+        assert "Living Room" in d["member_room_names"]
+        assert "Kitchen" in d["member_room_names"]
+
+    def test_from_domain_single_member_tuple_converts_to_list(self) -> None:
+        state = self._make_state(members=("Living Room",))
+        d = GroupAudioStateResponse.from_domain(state).model_dump()
+        assert isinstance(d["member_room_names"], list)

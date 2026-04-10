@@ -261,6 +261,96 @@ class SoCoAdapter:
         except Exception as exc:
             raise QueueError(f"Failed to play from queue on {ip_address}: {exc}") from exc
 
+    def get_group_volume(self, ip_address: str) -> int:
+        """Return the current group volume for the zone's group.
+
+        Args:
+            ip_address: LAN IP of any zone in the group.
+
+        Returns:
+            Group volume level (0-100).
+
+        Raises:
+            GroupError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            return int(zone.group.volume)
+        except Exception as exc:
+            raise GroupError(f"Failed to get group volume from {ip_address}: {exc}") from exc
+
+    def set_group_volume(self, ip_address: str, volume: int) -> None:
+        """Set the group volume for the zone's group.
+
+        Args:
+            ip_address: LAN IP of any zone in the group.
+            volume: Target volume level (0-100).
+
+        Raises:
+            GroupError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            zone.group.volume = volume
+        except Exception as exc:
+            raise GroupError(f"Failed to set group volume on {ip_address}: {exc}") from exc
+
+    def adjust_group_volume(self, ip_address: str, delta: int) -> int:
+        """Adjust the group volume by a relative delta and return the new level.
+
+        Uses ``set_relative_volume`` to avoid an extra read-modify-write cycle.
+
+        Args:
+            ip_address: LAN IP of any zone in the group.
+            delta: Volume change amount (can be negative).
+
+        Returns:
+            New group volume level after adjustment.
+
+        Raises:
+            GroupError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            zone.group.set_relative_volume(delta)
+            return int(zone.group.volume)
+        except Exception as exc:
+            raise GroupError(f"Failed to adjust group volume on {ip_address}: {exc}") from exc
+
+    def get_group_mute(self, ip_address: str) -> bool:
+        """Return the current group mute state.
+
+        Args:
+            ip_address: LAN IP of any zone in the group.
+
+        Returns:
+            True if the group is muted.
+
+        Raises:
+            GroupError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            return bool(zone.group.mute)
+        except Exception as exc:
+            raise GroupError(f"Failed to get group mute state from {ip_address}: {exc}") from exc
+
+    def set_group_mute(self, ip_address: str, muted: bool) -> None:
+        """Set the group mute state.
+
+        Args:
+            ip_address: LAN IP of any zone in the group.
+            muted: True to mute, False to unmute.
+
+        Raises:
+            GroupError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            zone.group.mute = muted
+        except Exception as exc:
+            raise GroupError(f"Failed to set group mute on {ip_address}: {exc}") from exc
+
     def join_group(self, ip_address: str, coordinator_ip: str) -> None:
         try:
             zone = self._make_zone(ip_address)

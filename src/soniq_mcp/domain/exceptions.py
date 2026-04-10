@@ -160,6 +160,16 @@ class GroupError(SoniqDomainError):
         super().__init__(message)
 
 
+class GroupValidationError(GroupError):
+    """Raised when a group-audio request fails local validation.
+
+    Covers non-grouped targets, coordinator-resolution failures, and
+    invalid-target paths.
+    """
+
+    error_category = ErrorCategory.VALIDATION
+
+
 class AudioSettingsError(SoniqDomainError):
     """Raised when a Sonos audio EQ operation fails.
 

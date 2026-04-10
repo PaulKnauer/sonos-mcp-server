@@ -16,14 +16,18 @@ from soniq_mcp.transports.streamable_http import streamable_http_transport_name
 EXPECTED_TOOL_NAMES = {
     "add_to_queue",
     "adjust_volume",
+    "adjust_group_volume",
     "clear_queue",
     "get_group_topology",
+    "get_group_volume",
     "get_mute",
     "get_playback_state",
     "get_queue",
     "get_system_topology",
     "get_track_info",
     "get_volume",
+    "group_mute",
+    "group_unmute",
     "join_group",
     "list_favourites",
     "list_playlists",
@@ -40,6 +44,7 @@ EXPECTED_TOOL_NAMES = {
     "previous_track",
     "remove_from_queue",
     "server_info",
+    "set_group_volume",
     "set_volume",
     "set_play_mode",
     "get_play_mode",
@@ -124,7 +129,7 @@ class TestHttpToolSurfaceParity:
         tool_names = {t.name for t in app._tool_manager.list_tools()}
         assert "ping" in tool_names
 
-    def test_http_server_exposes_all_41_tools(self) -> None:
+    def test_http_server_exposes_all_46_tools(self) -> None:
         """Verify tool-surface parity for Story 4.1 and the current phase-2 surface."""
         cfg = SoniqConfig(transport=TransportMode.HTTP)
         app = create_server(config=cfg)
