@@ -64,6 +64,10 @@ KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
         "set_loudness",
         "switch_to_line_in",
         "switch_to_tv",
+        "list_alarms",
+        "create_alarm",
+        "update_alarm",
+        "delete_alarm",
     }
 )
 

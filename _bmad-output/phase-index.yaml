@@ -10,8 +10,8 @@ active_phase:
   label: "Phase 2 (Tier 1 Expansion)"
   sprint_status_file: "_bmad-output/implementation-artifacts/sprint-status.yaml"
   canonical_namespace: "phase-2"
-  current_completed_story: "phase-2/1-4-harden-advanced-playback-contracts-and-regression-coverage"
-  next_story_hint: "phase-2/2-1-support-capability-aware-input-switching"
+  current_completed_story: "phase-2/2-4-document-and-test-expanded-group-and-input-behavior"
+  next_story_hint: "phase-2/3-2-introduce-sonos-playlist-crud-operations"
 
 collisions:
   - story_key: "1-1"
@@ -26,6 +26,9 @@ collisions:
   - story_key: "1-4"
     phase_1: "_bmad-output/implementation-artifacts/1-4-enforce-safe-defaults-and-tool-exposure-controls.md"
     phase_2: "_bmad-output/implementation-artifacts/1-4-harden-advanced-playback-contracts-and-regression-coverage.md"
+  - story_key: "3-1"
+    phase_1: "_bmad-output/implementation-artifacts/3-1-manage-the-sonos-queue.md"
+    phase_2: "_bmad-output/implementation-artifacts/phase-2/3-1-add-alarm-discovery-and-lifecycle-operations.md"
 
 phases:
   phase-1:
@@ -124,3 +127,6 @@ phases:
       - story_key: "2-4"
         canonical_id: "phase-2/2-4-document-and-test-expanded-group-and-input-behavior"
         file: "_bmad-output/implementation-artifacts/phase-2/2-4-document-and-test-expanded-group-and-input-behavior.md"
+      - story_key: "3-1"
+        canonical_id: "phase-2/3-1-add-alarm-discovery-and-lifecycle-operations"
+        file: "_bmad-output/implementation-artifacts/phase-2/3-1-add-alarm-discovery-and-lifecycle-operations.md"

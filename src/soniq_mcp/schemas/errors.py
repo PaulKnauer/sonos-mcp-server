@@ -173,6 +173,18 @@ class ErrorResponse(BaseModel):
             ),
         )
 
+    @classmethod
+    def from_alarm_error(cls, exc: Exception) -> ErrorResponse:
+        return cls._from_domain_error(
+            exc,
+            field="alarm",
+            suggestion=(
+                "Check alarm parameters: start_time must be HH:MM:SS, recurrence must be valid, "
+                "volume must be 0-100, and alarm_id must exist. "
+                "Use 'list_alarms' to see current alarms."
+            ),
+        )
+
 
 def _sanitize_text(text: str) -> str:
     """Redact sensitive transport and filesystem details from user-facing text."""

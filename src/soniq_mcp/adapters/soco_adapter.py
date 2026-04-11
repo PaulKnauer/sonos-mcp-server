@@ -7,10 +7,12 @@ playback and volume capability layers. Higher layers must not import
 
 from __future__ import annotations
 
+import datetime
 from collections.abc import Callable
 from typing import Any, Literal
 
 from soniq_mcp.domain.exceptions import (
+    AlarmError,
     AudioSettingsError,
     FavouritesError,
     GroupError,
@@ -20,6 +22,7 @@ from soniq_mcp.domain.exceptions import (
     VolumeError,
 )
 from soniq_mcp.domain.models import (
+    AlarmRecord,
     AudioSettingsState,
     Favourite,
     PlaybackState,
@@ -624,6 +627,188 @@ class SoCoAdapter:
             zone.loudness = enabled
         except Exception as exc:
             raise AudioSettingsError(f"Failed to set loudness on {ip_address}: {exc}") from exc
+
+    def get_alarms(self, ip_address: str) -> list[AlarmRecord]:
+        """Return all Sonos alarms in the household.
+
+        Args:
+            ip_address: LAN IP of any zone in the household.
+
+        Returns:
+            List of normalized ``AlarmRecord`` instances.
+
+        Raises:
+            AlarmError: If SoCo raises any exception.
+        """
+        try:
+            import soco.alarms  # noqa: PLC0415
+
+            zone = self._make_zone(ip_address)
+            alarms = soco.alarms.get_alarms(zone=zone)
+            return [self._normalize_alarm(a) for a in alarms]
+        except AlarmError:
+            raise
+        except Exception as exc:
+            raise AlarmError(f"Failed to get alarms: {exc}") from exc
+
+    def is_valid_recurrence(self, recurrence: str) -> bool:
+        """Return True when the recurrence string is accepted by SoCo."""
+        try:
+            import soco.alarms  # noqa: PLC0415
+
+            return bool(soco.alarms.is_valid_recurrence(recurrence))
+        except Exception as exc:
+            raise AlarmError(f"Failed to validate recurrence: {exc}") from exc
+
+    def create_alarm(
+        self,
+        ip_address: str,
+        start_time: datetime.time,
+        recurrence: str,
+        enabled: bool,
+        volume: int | None,
+        include_linked_zones: bool,
+    ) -> AlarmRecord:
+        """Create a new Sonos alarm and return the resulting record.
+
+        Args:
+            ip_address: LAN IP of the target zone.
+            start_time: Alarm start time as a ``datetime.time`` object.
+            recurrence: Recurrence rule string (e.g. "DAILY", "WEEKDAYS").
+            enabled: True to activate the alarm immediately.
+            volume: Alarm volume (0-100), or None to use zone default.
+            include_linked_zones: True to play on all grouped rooms.
+
+        Returns:
+            Normalized ``AlarmRecord`` for the newly created alarm.
+
+        Raises:
+            AlarmError: If SoCo raises any exception.
+        """
+        try:
+            import soco.alarms  # noqa: PLC0415
+
+            zone = self._make_zone(ip_address)
+            kwargs: dict[str, Any] = {
+                "zone": zone,
+                "start_time": start_time,
+                "recurrence": recurrence,
+                "enabled": enabled,
+                "include_linked_zones": include_linked_zones,
+            }
+            if volume is not None:
+                kwargs["volume"] = volume
+            alarm = soco.alarms.Alarm(**kwargs)
+            alarm.save()
+            # Reload the alarm list to get the server-assigned alarm_id
+            alarms = soco.alarms.get_alarms(zone=zone)
+            for saved in alarms:
+                if saved.alarm_id == alarm.alarm_id:
+                    return self._normalize_alarm(saved)
+            # Fallback: normalize the alarm object directly
+            return self._normalize_alarm(alarm)
+        except AlarmError:
+            raise
+        except Exception as exc:
+            raise AlarmError(f"Failed to create alarm: {exc}") from exc
+
+    def update_alarm(
+        self,
+        ip_address: str,
+        alarm_id: str,
+        start_time: datetime.time,
+        recurrence: str,
+        enabled: bool,
+        volume: int | None,
+        include_linked_zones: bool,
+    ) -> AlarmRecord:
+        """Update an existing Sonos alarm and return the resulting record.
+
+        Args:
+            ip_address: LAN IP of any zone in the household.
+            alarm_id: ID of the alarm to update.
+            start_time: New alarm start time.
+            recurrence: New recurrence rule string.
+            enabled: New enabled state.
+            volume: New alarm volume (0-100), or None.
+            include_linked_zones: New linked-zones setting.
+
+        Returns:
+            Normalized ``AlarmRecord`` reflecting the updated alarm.
+
+        Raises:
+            AlarmError: If the alarm is not found or SoCo raises any exception.
+        """
+        try:
+            import soco.alarms  # noqa: PLC0415
+
+            zone = self._make_zone(ip_address)
+            alarms = soco.alarms.get_alarms(zone=zone)
+            target = next((a for a in alarms if a.alarm_id == alarm_id), None)
+            if target is None:
+                raise AlarmError(
+                    f"Alarm '{alarm_id}' not found. Use 'list_alarms' to see available alarm IDs."
+                )
+            target.start_time = start_time
+            target.recurrence = recurrence
+            target.enabled = enabled
+            target.volume = volume
+            target.include_linked_zones = include_linked_zones
+            target.save()
+            return self._normalize_alarm(target)
+        except AlarmError:
+            raise
+        except Exception as exc:
+            raise AlarmError(f"Failed to update alarm: {exc}") from exc
+
+    def delete_alarm(self, ip_address: str, alarm_id: str) -> None:
+        """Delete a Sonos alarm by ID.
+
+        Args:
+            ip_address: LAN IP of any zone in the household.
+            alarm_id: ID of the alarm to delete.
+
+        Raises:
+            AlarmError: If the alarm is not found or SoCo raises any exception.
+        """
+        try:
+            import soco.alarms  # noqa: PLC0415
+
+            zone = self._make_zone(ip_address)
+            alarms = soco.alarms.get_alarms(zone=zone)
+            target = next((a for a in alarms if a.alarm_id == alarm_id), None)
+            if target is None:
+                raise AlarmError(
+                    f"Alarm '{alarm_id}' not found. Use 'list_alarms' to see available alarm IDs."
+                )
+            target.remove()
+        except AlarmError:
+            raise
+        except Exception as exc:
+            raise AlarmError(f"Failed to delete alarm: {exc}") from exc
+
+    @staticmethod
+    def _normalize_alarm(alarm: Any) -> AlarmRecord:
+        """Convert a SoCo Alarm object to a domain AlarmRecord.
+
+        Never leaks raw SoCo Alarm objects outside the adapter boundary.
+        """
+        alarm_id = str(alarm.alarm_id)
+        room_name = str(alarm.zone.player_name)
+        start = alarm.start_time
+        start_time_str = (
+            start.strftime("%H:%M:%S") if isinstance(start, datetime.time) else str(start)
+        )
+        volume = alarm.volume if alarm.volume is not None else None
+        return AlarmRecord(
+            alarm_id=alarm_id,
+            room_name=room_name,
+            start_time=start_time_str,
+            recurrence=str(alarm.recurrence),
+            enabled=bool(alarm.enabled),
+            volume=int(volume) if volume is not None else None,
+            include_linked_zones=bool(alarm.include_linked_zones),
+        )
 
     def _call_playback(self, ip_address: str, action: Callable[[Any], object]) -> None:
         try:

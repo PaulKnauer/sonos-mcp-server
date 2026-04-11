@@ -75,3 +75,27 @@ class TestErrorResponseSchema:
         assert "<redacted-path>" in err.error
         assert "192.168.1.20" not in err.error
         assert "/Users/paul/.config/secret.env" not in err.error
+
+    def test_alarm_error_uses_operation_category(self) -> None:
+        from soniq_mcp.domain.exceptions import AlarmError
+
+        err = ErrorResponse.from_alarm_error(AlarmError("SoCo alarm failed"))
+        assert err.category == ErrorCategory.OPERATION
+        assert err.field == "alarm"
+        assert err.suggestion is not None
+
+    def test_alarm_validation_error_uses_validation_category(self) -> None:
+        from soniq_mcp.domain.exceptions import AlarmValidationError
+
+        err = ErrorResponse.from_alarm_error(AlarmValidationError("Invalid recurrence 'MONTHLY'"))
+        assert err.category == ErrorCategory.VALIDATION
+        assert err.field == "alarm"
+
+    def test_alarm_error_redacts_sensitive_data(self) -> None:
+        from soniq_mcp.domain.exceptions import AlarmError
+
+        err = ErrorResponse.from_alarm_error(
+            AlarmError("Alarm failed at http://192.168.1.20:1400/alarms")
+        )
+        assert "192.168.1.20" not in err.error
+        assert "<redacted" in err.error

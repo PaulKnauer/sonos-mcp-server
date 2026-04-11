@@ -61,6 +61,10 @@ EXPECTED_TOOL_NAMES = {
     "stop",
     "unjoin_room",
     "unmute",
+    "list_alarms",
+    "create_alarm",
+    "update_alarm",
+    "delete_alarm",
 }
 
 REPRESENTATIVE_TOOL_NAMES = (
@@ -130,7 +134,7 @@ class TestHttpToolSurfaceParity:
         tool_names = {t.name for t in app._tool_manager.list_tools()}
         assert "ping" in tool_names
 
-    def test_http_server_exposes_all_47_tools(self) -> None:
+    def test_http_server_exposes_all_51_tools(self) -> None:
         """Verify tool-surface parity for Story 4.1 and the current phase-2 surface."""
         cfg = SoniqConfig(transport=TransportMode.HTTP)
         app = create_server(config=cfg)

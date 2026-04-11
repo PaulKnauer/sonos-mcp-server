@@ -251,6 +251,29 @@ class InputState:
 
 
 @dataclass(frozen=True)
+class AlarmRecord:
+    """A normalized Sonos alarm record.
+
+    Attributes:
+        alarm_id: Unique alarm identifier (assigned by Sonos).
+        room_name: Human-readable name of the target room.
+        start_time: Alarm start time as ``"HH:MM:SS"`` string.
+        recurrence: Recurrence rule (e.g. "DAILY", "WEEKDAYS", "WEEKENDS", "ON_0_1_2_3_4_5_6").
+        enabled: True if the alarm is active.
+        volume: Alarm volume level (0-100), or None if not explicitly set.
+        include_linked_zones: True if the alarm plays on all grouped rooms.
+    """
+
+    alarm_id: str
+    room_name: str
+    start_time: str
+    recurrence: str
+    enabled: bool
+    volume: int | None
+    include_linked_zones: bool
+
+
+@dataclass(frozen=True)
 class GroupAudioState:
     """Current group-level volume and mute state for an active Sonos group.
 

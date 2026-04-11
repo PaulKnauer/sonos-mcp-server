@@ -204,3 +204,29 @@ class InputValidationError(InputError):
     """Raised when an input-switching request fails local validation."""
 
     error_category = ErrorCategory.VALIDATION
+
+
+class AlarmError(SoniqDomainError):
+    """Raised when a Sonos alarm operation fails.
+
+    Wraps SoCo alarm errors and other alarm-level failures so they never
+    leak past the adapter layer.
+
+    Args:
+        message: Human-readable description of the failure.
+    """
+
+    error_category = ErrorCategory.OPERATION
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+class AlarmValidationError(AlarmError):
+    """Raised when an alarm request fails local validation.
+
+    Covers malformed alarm payloads, unsupported room targeting, and
+    missing alarm-id paths.
+    """
+
+    error_category = ErrorCategory.VALIDATION

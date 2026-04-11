@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from soniq_mcp.domain.models import (
+    AlarmRecord,
     AudioSettingsState,
     GroupAudioState,
     InputState,
@@ -15,6 +16,9 @@ from soniq_mcp.domain.models import (
     VolumeState,
 )
 from soniq_mcp.schemas.responses import (
+    AlarmDeleteResponse,
+    AlarmResponse,
+    AlarmsListResponse,
     AudioSettingsResponse,
     GroupAudioStateResponse,
     InputStateResponse,
@@ -382,3 +386,103 @@ class TestGroupAudioStateResponse:
         state = self._make_state(members=("Living Room",))
         d = GroupAudioStateResponse.from_domain(state).model_dump()
         assert isinstance(d["member_room_names"], list)
+
+
+def make_alarm_record(
+    alarm_id: str = "101",
+    room_name: str = "Living Room",
+    start_time: str = "07:00:00",
+    recurrence: str = "DAILY",
+    enabled: bool = True,
+    volume: int | None = 30,
+    include_linked_zones: bool = False,
+) -> AlarmRecord:
+    return AlarmRecord(
+        alarm_id=alarm_id,
+        room_name=room_name,
+        start_time=start_time,
+        recurrence=recurrence,
+        enabled=enabled,
+        volume=volume,
+        include_linked_zones=include_linked_zones,
+    )
+
+
+class TestAlarmResponse:
+    def test_from_domain(self) -> None:
+        record = make_alarm_record()
+        resp = AlarmResponse.from_domain(record)
+        assert resp.alarm_id == "101"
+        assert resp.room_name == "Living Room"
+        assert resp.start_time == "07:00:00"
+        assert resp.recurrence == "DAILY"
+        assert resp.enabled is True
+        assert resp.volume == 30
+        assert resp.include_linked_zones is False
+
+    def test_from_domain_no_volume(self) -> None:
+        record = make_alarm_record(volume=None)
+        resp = AlarmResponse.from_domain(record)
+        assert resp.volume is None
+
+    def test_from_domain_disabled_with_linked_zones(self) -> None:
+        record = make_alarm_record(enabled=False, include_linked_zones=True)
+        resp = AlarmResponse.from_domain(record)
+        assert resp.enabled is False
+        assert resp.include_linked_zones is True
+
+    def test_model_dump_is_snake_case(self) -> None:
+        d = AlarmResponse.from_domain(make_alarm_record()).model_dump()
+        assert "alarm_id" in d
+        assert "room_name" in d
+        assert "start_time" in d
+        assert "recurrence" in d
+        assert "enabled" in d
+        assert "volume" in d
+        assert "include_linked_zones" in d
+
+    def test_model_dump_serialisable(self) -> None:
+        d = AlarmResponse.from_domain(make_alarm_record()).model_dump()
+        assert isinstance(d, dict)
+        assert d["alarm_id"] == "101"
+
+
+class TestAlarmsListResponse:
+    def test_empty(self) -> None:
+        resp = AlarmsListResponse.from_domain([])
+        assert resp.alarms == []
+        assert resp.count == 0
+
+    def test_with_single_item(self) -> None:
+        resp = AlarmsListResponse.from_domain([make_alarm_record()])
+        assert resp.count == 1
+        assert resp.alarms[0].alarm_id == "101"
+
+    def test_with_multiple_items(self) -> None:
+        records = [
+            make_alarm_record(alarm_id="1", room_name="Living Room"),
+            make_alarm_record(alarm_id="2", room_name="Bedroom", recurrence="WEEKDAYS"),
+        ]
+        resp = AlarmsListResponse.from_domain(records)
+        assert resp.count == 2
+        assert resp.alarms[0].alarm_id == "1"
+        assert resp.alarms[1].alarm_id == "2"
+        assert resp.alarms[1].recurrence == "WEEKDAYS"
+
+    def test_model_dump_serialisable(self) -> None:
+        d = AlarmsListResponse.from_domain([make_alarm_record()]).model_dump()
+        assert isinstance(d, dict)
+        assert d["count"] == 1
+        assert isinstance(d["alarms"], list)
+
+
+class TestAlarmDeleteResponse:
+    def test_fields(self) -> None:
+        resp = AlarmDeleteResponse(alarm_id="123", status="deleted")
+        assert resp.alarm_id == "123"
+        assert resp.status == "deleted"
+
+    def test_model_dump_serialisable(self) -> None:
+        d = AlarmDeleteResponse(alarm_id="999", status="deleted").model_dump()
+        assert d["alarm_id"] == "999"
+        assert d["status"] == "deleted"

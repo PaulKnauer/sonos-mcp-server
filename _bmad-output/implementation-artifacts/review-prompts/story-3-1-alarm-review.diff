@@ -1,0 +1,2132 @@
+diff --git a/src/soniq_mcp/adapters/soco_adapter.py b/src/soniq_mcp/adapters/soco_adapter.py
+index a956187..551b3e8 100644
+--- a/src/soniq_mcp/adapters/soco_adapter.py
++++ b/src/soniq_mcp/adapters/soco_adapter.py
+@@ -7,10 +7,12 @@ playback and volume capability layers. Higher layers must not import
+ 
+ from __future__ import annotations
+ 
++import datetime
+ from collections.abc import Callable
+ from typing import Any, Literal
+ 
+ from soniq_mcp.domain.exceptions import (
++    AlarmError,
+     AudioSettingsError,
+     FavouritesError,
+     GroupError,
+@@ -20,6 +22,7 @@ from soniq_mcp.domain.exceptions import (
+     VolumeError,
+ )
+ from soniq_mcp.domain.models import (
++    AlarmRecord,
+     AudioSettingsState,
+     Favourite,
+     PlaybackState,
+@@ -625,6 +628,179 @@ class SoCoAdapter:
+         except Exception as exc:
+             raise AudioSettingsError(f"Failed to set loudness on {ip_address}: {exc}") from exc
+ 
++    def get_alarms(self, ip_address: str) -> list[AlarmRecord]:
++        """Return all Sonos alarms in the household.
++
++        Args:
++            ip_address: LAN IP of any zone in the household.
++
++        Returns:
++            List of normalized ``AlarmRecord`` instances.
++
++        Raises:
++            AlarmError: If SoCo raises any exception.
++        """
++        try:
++            import soco.alarms  # noqa: PLC0415
++
++            zone = self._make_zone(ip_address)
++            alarms = soco.alarms.get_alarms(zone=zone)
++            return [self._normalize_alarm(a) for a in alarms]
++        except AlarmError:
++            raise
++        except Exception as exc:
++            raise AlarmError(f"Failed to get alarms: {exc}") from exc
++
++    def create_alarm(
++        self,
++        ip_address: str,
++        start_time: datetime.time,
++        recurrence: str,
++        enabled: bool,
++        volume: int | None,
++        include_linked_zones: bool,
++    ) -> AlarmRecord:
++        """Create a new Sonos alarm and return the resulting record.
++
++        Args:
++            ip_address: LAN IP of the target zone.
++            start_time: Alarm start time as a ``datetime.time`` object.
++            recurrence: Recurrence rule string (e.g. "DAILY", "WEEKDAYS").
++            enabled: True to activate the alarm immediately.
++            volume: Alarm volume (0-100), or None to use zone default.
++            include_linked_zones: True to play on all grouped rooms.
++
++        Returns:
++            Normalized ``AlarmRecord`` for the newly created alarm.
++
++        Raises:
++            AlarmError: If SoCo raises any exception.
++        """
++        try:
++            import soco.alarms  # noqa: PLC0415
++
++            zone = self._make_zone(ip_address)
++            kwargs: dict[str, Any] = {
++                "zone": zone,
++                "start_time": start_time,
++                "recurrence": recurrence,
++                "enabled": enabled,
++                "include_linked_zones": include_linked_zones,
++            }
++            if volume is not None:
++                kwargs["volume"] = volume
++            alarm = soco.alarms.Alarm(**kwargs)
++            alarm.save()
++            # Reload the alarm list to get the server-assigned alarm_id
++            alarms = soco.alarms.get_alarms(zone=zone)
++            for saved in alarms:
++                if saved.alarm_id == alarm.alarm_id:
++                    return self._normalize_alarm(saved)
++            # Fallback: normalize the alarm object directly
++            return self._normalize_alarm(alarm)
++        except AlarmError:
++            raise
++        except Exception as exc:
++            raise AlarmError(f"Failed to create alarm: {exc}") from exc
++
++    def update_alarm(
++        self,
++        ip_address: str,
++        alarm_id: str,
++        start_time: datetime.time,
++        recurrence: str,
++        enabled: bool,
++        volume: int | None,
++        include_linked_zones: bool,
++    ) -> AlarmRecord:
++        """Update an existing Sonos alarm and return the resulting record.
++
++        Args:
++            ip_address: LAN IP of any zone in the household.
++            alarm_id: ID of the alarm to update.
++            start_time: New alarm start time.
++            recurrence: New recurrence rule string.
++            enabled: New enabled state.
++            volume: New alarm volume (0-100), or None.
++            include_linked_zones: New linked-zones setting.
++
++        Returns:
++            Normalized ``AlarmRecord`` reflecting the updated alarm.
++
++        Raises:
++            AlarmError: If the alarm is not found or SoCo raises any exception.
++        """
++        try:
++            import soco.alarms  # noqa: PLC0415
++
++            zone = self._make_zone(ip_address)
++            alarms = soco.alarms.get_alarms(zone=zone)
++            target = next((a for a in alarms if a.alarm_id == alarm_id), None)
++            if target is None:
++                raise AlarmError(
++                    f"Alarm '{alarm_id}' not found. Use 'list_alarms' to see available alarm IDs."
++                )
++            target.start_time = start_time
++            target.recurrence = recurrence
++            target.enabled = enabled
++            target.volume = volume
++            target.include_linked_zones = include_linked_zones
++            target.save()
++            return self._normalize_alarm(target)
++        except AlarmError:
++            raise
++        except Exception as exc:
++            raise AlarmError(f"Failed to update alarm: {exc}") from exc
++
++    def delete_alarm(self, ip_address: str, alarm_id: str) -> None:
++        """Delete a Sonos alarm by ID.
++
++        Args:
++            ip_address: LAN IP of any zone in the household.
++            alarm_id: ID of the alarm to delete.
++
++        Raises:
++            AlarmError: If the alarm is not found or SoCo raises any exception.
++        """
++        try:
++            import soco.alarms  # noqa: PLC0415
++
++            zone = self._make_zone(ip_address)
++            alarms = soco.alarms.get_alarms(zone=zone)
++            target = next((a for a in alarms if a.alarm_id == alarm_id), None)
++            if target is None:
++                raise AlarmError(
++                    f"Alarm '{alarm_id}' not found. Use 'list_alarms' to see available alarm IDs."
++                )
++            target.remove()
++        except AlarmError:
++            raise
++        except Exception as exc:
++            raise AlarmError(f"Failed to delete alarm: {exc}") from exc
++
++    @staticmethod
++    def _normalize_alarm(alarm: Any) -> AlarmRecord:
++        """Convert a SoCo Alarm object to a domain AlarmRecord.
++
++        Never leaks raw SoCo Alarm objects outside the adapter boundary.
++        """
++        alarm_id = str(alarm.alarm_id)
++        room_name = str(alarm.zone.player_name)
++        start = alarm.start_time
++        start_time_str = (
++            start.strftime("%H:%M:%S") if isinstance(start, datetime.time) else str(start)
++        )
++        volume = alarm.volume if alarm.volume is not None else None
++        return AlarmRecord(
++            alarm_id=alarm_id,
++            room_name=room_name,
++            start_time=start_time_str,
++            recurrence=str(alarm.recurrence),
++            enabled=bool(alarm.enabled),
++            volume=int(volume) if volume is not None else None,
++            include_linked_zones=bool(alarm.include_linked_zones),
++        )
++
+     def _call_playback(self, ip_address: str, action: Callable[[Any], object]) -> None:
+         try:
+             zone = self._make_zone(ip_address)
+diff --git a/src/soniq_mcp/config/models.py b/src/soniq_mcp/config/models.py
+index 5bccb67..b168188 100644
+--- a/src/soniq_mcp/config/models.py
++++ b/src/soniq_mcp/config/models.py
+@@ -64,6 +64,10 @@ KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
+         "set_loudness",
+         "switch_to_line_in",
+         "switch_to_tv",
++        "list_alarms",
++        "create_alarm",
++        "update_alarm",
++        "delete_alarm",
+     }
+ )
+ 
+diff --git a/src/soniq_mcp/domain/exceptions.py b/src/soniq_mcp/domain/exceptions.py
+index c1ad814..810317e 100644
+--- a/src/soniq_mcp/domain/exceptions.py
++++ b/src/soniq_mcp/domain/exceptions.py
+@@ -204,3 +204,29 @@ class InputValidationError(InputError):
+     """Raised when an input-switching request fails local validation."""
+ 
+     error_category = ErrorCategory.VALIDATION
++
++
++class AlarmError(SoniqDomainError):
++    """Raised when a Sonos alarm operation fails.
++
++    Wraps SoCo alarm errors and other alarm-level failures so they never
++    leak past the adapter layer.
++
++    Args:
++        message: Human-readable description of the failure.
++    """
++
++    error_category = ErrorCategory.OPERATION
++
++    def __init__(self, message: str) -> None:
++        super().__init__(message)
++
++
++class AlarmValidationError(AlarmError):
++    """Raised when an alarm request fails local validation.
++
++    Covers malformed alarm payloads, unsupported room targeting, and
++    missing alarm-id paths.
++    """
++
++    error_category = ErrorCategory.VALIDATION
+diff --git a/src/soniq_mcp/domain/models.py b/src/soniq_mcp/domain/models.py
+index 28d2e26..4c219cd 100644
+--- a/src/soniq_mcp/domain/models.py
++++ b/src/soniq_mcp/domain/models.py
+@@ -250,6 +250,29 @@ class InputState:
+     coordinator_room_name: str | None = field(default=None)
+ 
+ 
++@dataclass(frozen=True)
++class AlarmRecord:
++    """A normalized Sonos alarm record.
++
++    Attributes:
++        alarm_id: Unique alarm identifier (assigned by Sonos).
++        room_name: Human-readable name of the target room.
++        start_time: Alarm start time as ``"HH:MM:SS"`` string.
++        recurrence: Recurrence rule (e.g. "DAILY", "WEEKDAYS", "WEEKENDS", "ON_0_1_2_3_4_5_6").
++        enabled: True if the alarm is active.
++        volume: Alarm volume level (0-100), or None if not explicitly set.
++        include_linked_zones: True if the alarm plays on all grouped rooms.
++    """
++
++    alarm_id: str
++    room_name: str
++    start_time: str
++    recurrence: str
++    enabled: bool
++    volume: int | None
++    include_linked_zones: bool
++
++
+ @dataclass(frozen=True)
+ class GroupAudioState:
+     """Current group-level volume and mute state for an active Sonos group.
+diff --git a/src/soniq_mcp/schemas/errors.py b/src/soniq_mcp/schemas/errors.py
+index 8299365..0ec4585 100644
+--- a/src/soniq_mcp/schemas/errors.py
++++ b/src/soniq_mcp/schemas/errors.py
+@@ -173,6 +173,18 @@ class ErrorResponse(BaseModel):
+             ),
+         )
+ 
++    @classmethod
++    def from_alarm_error(cls, exc: Exception) -> ErrorResponse:
++        return cls._from_domain_error(
++            exc,
++            field="alarm",
++            suggestion=(
++                "Check alarm parameters: start_time must be HH:MM:SS, recurrence must be valid, "
++                "volume must be 0-100, and alarm_id must exist. "
++                "Use 'list_alarms' to see current alarms."
++            ),
++        )
++
+ 
+ def _sanitize_text(text: str) -> str:
+     """Redact sensitive transport and filesystem details from user-facing text."""
+diff --git a/src/soniq_mcp/schemas/responses.py b/src/soniq_mcp/schemas/responses.py
+index 75343e5..4e6333b 100644
+--- a/src/soniq_mcp/schemas/responses.py
++++ b/src/soniq_mcp/schemas/responses.py
+@@ -13,6 +13,7 @@ from typing import Literal
+ from pydantic import BaseModel
+ 
+ from soniq_mcp.domain.models import (
++    AlarmRecord,
+     AudioSettingsState,
+     Favourite,
+     GroupAudioState,
+@@ -349,6 +350,51 @@ class GroupAudioStateResponse(BaseModel):
+         )
+ 
+ 
++class AlarmResponse(BaseModel):
++    """Serialisable representation of a single Sonos alarm."""
++
++    alarm_id: str
++    room_name: str
++    start_time: str
++    recurrence: str
++    enabled: bool
++    volume: int | None = None
++    include_linked_zones: bool
++
++    @classmethod
++    def from_domain(cls, record: AlarmRecord) -> AlarmResponse:
++        return cls(
++            alarm_id=record.alarm_id,
++            room_name=record.room_name,
++            start_time=record.start_time,
++            recurrence=record.recurrence,
++            enabled=record.enabled,
++            volume=record.volume,
++            include_linked_zones=record.include_linked_zones,
++        )
++
++
++class AlarmsListResponse(BaseModel):
++    """Response for the ``list_alarms`` tool."""
++
++    alarms: list[AlarmResponse]
++    count: int
++
++    @classmethod
++    def from_domain(cls, records: list[AlarmRecord]) -> AlarmsListResponse:
++        return cls(
++            alarms=[AlarmResponse.from_domain(r) for r in records],
++            count=len(records),
++        )
++
++
++class AlarmDeleteResponse(BaseModel):
++    """Response for the ``delete_alarm`` tool."""
++
++    alarm_id: str
++    status: str
++
++
+ class GroupTopologyResponse(BaseModel):
+     """Current grouping state of the Sonos household."""
+ 
+diff --git a/src/soniq_mcp/tools/__init__.py b/src/soniq_mcp/tools/__init__.py
+index f6b0e08..e69f846 100644
+--- a/src/soniq_mcp/tools/__init__.py
++++ b/src/soniq_mcp/tools/__init__.py
+@@ -26,6 +26,7 @@ def register_all(app: FastMCP, config: SoniqConfig) -> None:
+     from soniq_mcp.services.room_service import RoomService
+     from soniq_mcp.services.sonos_service import SonosService
+     from soniq_mcp.services.volume_service import VolumeService
++    from soniq_mcp.tools.alarms import register as register_alarms
+     from soniq_mcp.tools.audio import register as register_audio
+     from soniq_mcp.tools.favourites import register as register_favourites
+     from soniq_mcp.tools.groups import register as register_groups
+@@ -68,3 +69,8 @@ def register_all(app: FastMCP, config: SoniqConfig) -> None:
+ 
+     input_service = InputService(room_service, SoCoAdapter())
+     register_inputs(app, config, input_service)
++
++    from soniq_mcp.services.alarm_service import AlarmService
++
++    alarm_service = AlarmService(room_service, SoCoAdapter())
++    register_alarms(app, config, alarm_service)
+diff --git a/tests/contract/error_mapping/test_error_schemas.py b/tests/contract/error_mapping/test_error_schemas.py
+index b3145e4..7466110 100644
+--- a/tests/contract/error_mapping/test_error_schemas.py
++++ b/tests/contract/error_mapping/test_error_schemas.py
+@@ -75,3 +75,27 @@ class TestErrorResponseSchema:
+         assert "<redacted-path>" in err.error
+         assert "192.168.1.20" not in err.error
+         assert "/Users/paul/.config/secret.env" not in err.error
++
++    def test_alarm_error_uses_operation_category(self) -> None:
++        from soniq_mcp.domain.exceptions import AlarmError
++
++        err = ErrorResponse.from_alarm_error(AlarmError("SoCo alarm failed"))
++        assert err.category == ErrorCategory.OPERATION
++        assert err.field == "alarm"
++        assert err.suggestion is not None
++
++    def test_alarm_validation_error_uses_validation_category(self) -> None:
++        from soniq_mcp.domain.exceptions import AlarmValidationError
++
++        err = ErrorResponse.from_alarm_error(AlarmValidationError("Invalid recurrence 'MONTHLY'"))
++        assert err.category == ErrorCategory.VALIDATION
++        assert err.field == "alarm"
++
++    def test_alarm_error_redacts_sensitive_data(self) -> None:
++        from soniq_mcp.domain.exceptions import AlarmError
++
++        err = ErrorResponse.from_alarm_error(
++            AlarmError("Alarm failed at http://192.168.1.20:1400/alarms")
++        )
++        assert "192.168.1.20" not in err.error
++        assert "<redacted" in err.error
+diff --git a/tests/integration/transports/test_http_bootstrap.py b/tests/integration/transports/test_http_bootstrap.py
+index dd180ae..a6ccf0f 100644
+--- a/tests/integration/transports/test_http_bootstrap.py
++++ b/tests/integration/transports/test_http_bootstrap.py
+@@ -61,6 +61,10 @@ EXPECTED_TOOL_NAMES = {
+     "stop",
+     "unjoin_room",
+     "unmute",
++    "list_alarms",
++    "create_alarm",
++    "update_alarm",
++    "delete_alarm",
+ }
+ 
+ REPRESENTATIVE_TOOL_NAMES = (
+@@ -130,7 +134,7 @@ class TestHttpToolSurfaceParity:
+         tool_names = {t.name for t in app._tool_manager.list_tools()}
+         assert "ping" in tool_names
+ 
+-    def test_http_server_exposes_all_47_tools(self) -> None:
++    def test_http_server_exposes_all_51_tools(self) -> None:
+         """Verify tool-surface parity for Story 4.1 and the current phase-2 surface."""
+         cfg = SoniqConfig(transport=TransportMode.HTTP)
+         app = create_server(config=cfg)
+diff --git a/tests/unit/schemas/test_responses.py b/tests/unit/schemas/test_responses.py
+index 939a59d..be59d0a 100644
+--- a/tests/unit/schemas/test_responses.py
++++ b/tests/unit/schemas/test_responses.py
+@@ -3,6 +3,7 @@
+ from __future__ import annotations
+ 
+ from soniq_mcp.domain.models import (
++    AlarmRecord,
+     AudioSettingsState,
+     GroupAudioState,
+     InputState,
+@@ -15,6 +16,9 @@ from soniq_mcp.domain.models import (
+     VolumeState,
+ )
+ from soniq_mcp.schemas.responses import (
++    AlarmDeleteResponse,
++    AlarmResponse,
++    AlarmsListResponse,
+     AudioSettingsResponse,
+     GroupAudioStateResponse,
+     InputStateResponse,
+@@ -382,3 +386,103 @@ class TestGroupAudioStateResponse:
+         state = self._make_state(members=("Living Room",))
+         d = GroupAudioStateResponse.from_domain(state).model_dump()
+         assert isinstance(d["member_room_names"], list)
++
++
++def make_alarm_record(
++    alarm_id: str = "101",
++    room_name: str = "Living Room",
++    start_time: str = "07:00:00",
++    recurrence: str = "DAILY",
++    enabled: bool = True,
++    volume: int | None = 30,
++    include_linked_zones: bool = False,
++) -> AlarmRecord:
++    return AlarmRecord(
++        alarm_id=alarm_id,
++        room_name=room_name,
++        start_time=start_time,
++        recurrence=recurrence,
++        enabled=enabled,
++        volume=volume,
++        include_linked_zones=include_linked_zones,
++    )
++
++
++class TestAlarmResponse:
++    def test_from_domain(self) -> None:
++        record = make_alarm_record()
++        resp = AlarmResponse.from_domain(record)
++        assert resp.alarm_id == "101"
++        assert resp.room_name == "Living Room"
++        assert resp.start_time == "07:00:00"
++        assert resp.recurrence == "DAILY"
++        assert resp.enabled is True
++        assert resp.volume == 30
++        assert resp.include_linked_zones is False
++
++    def test_from_domain_no_volume(self) -> None:
++        record = make_alarm_record(volume=None)
++        resp = AlarmResponse.from_domain(record)
++        assert resp.volume is None
++
++    def test_from_domain_disabled_with_linked_zones(self) -> None:
++        record = make_alarm_record(enabled=False, include_linked_zones=True)
++        resp = AlarmResponse.from_domain(record)
++        assert resp.enabled is False
++        assert resp.include_linked_zones is True
++
++    def test_model_dump_is_snake_case(self) -> None:
++        d = AlarmResponse.from_domain(make_alarm_record()).model_dump()
++        assert "alarm_id" in d
++        assert "room_name" in d
++        assert "start_time" in d
++        assert "recurrence" in d
++        assert "enabled" in d
++        assert "volume" in d
++        assert "include_linked_zones" in d
++
++    def test_model_dump_serialisable(self) -> None:
++        d = AlarmResponse.from_domain(make_alarm_record()).model_dump()
++        assert isinstance(d, dict)
++        assert d["alarm_id"] == "101"
++
++
++class TestAlarmsListResponse:
++    def test_empty(self) -> None:
++        resp = AlarmsListResponse.from_domain([])
++        assert resp.alarms == []
++        assert resp.count == 0
++
++    def test_with_single_item(self) -> None:
++        resp = AlarmsListResponse.from_domain([make_alarm_record()])
++        assert resp.count == 1
++        assert resp.alarms[0].alarm_id == "101"
++
++    def test_with_multiple_items(self) -> None:
++        records = [
++            make_alarm_record(alarm_id="1", room_name="Living Room"),
++            make_alarm_record(alarm_id="2", room_name="Bedroom", recurrence="WEEKDAYS"),
++        ]
++        resp = AlarmsListResponse.from_domain(records)
++        assert resp.count == 2
++        assert resp.alarms[0].alarm_id == "1"
++        assert resp.alarms[1].alarm_id == "2"
++        assert resp.alarms[1].recurrence == "WEEKDAYS"
++
++    def test_model_dump_serialisable(self) -> None:
++        d = AlarmsListResponse.from_domain([make_alarm_record()]).model_dump()
++        assert isinstance(d, dict)
++        assert d["count"] == 1
++        assert isinstance(d["alarms"], list)
++
++
++class TestAlarmDeleteResponse:
++    def test_fields(self) -> None:
++        resp = AlarmDeleteResponse(alarm_id="123", status="deleted")
++        assert resp.alarm_id == "123"
++        assert resp.status == "deleted"
++
++    def test_model_dump_serialisable(self) -> None:
++        d = AlarmDeleteResponse(alarm_id="999", status="deleted").model_dump()
++        assert d["alarm_id"] == "999"
++        assert d["status"] == "deleted"
+diff --git a/src/soniq_mcp/services/alarm_service.py b/src/soniq_mcp/services/alarm_service.py
+new file mode 100644
+index 0000000..bdd41f5
+--- /dev/null
++++ b/src/soniq_mcp/services/alarm_service.py
+@@ -0,0 +1,201 @@
++"""Alarm management service for SoniqMCP."""
++
++from __future__ import annotations
++
++import datetime
++import re
++
++from soniq_mcp.domain.exceptions import AlarmValidationError
++from soniq_mcp.domain.models import AlarmRecord
++
++# Accepted recurrence formats (from SoCo alarm API):
++#   DAILY, WEEKDAYS, WEEKENDS
++#   ON_<day>[_<day>...] where day is 0 (Sun) through 6 (Sat)
++_RECURRENCE_NAMED = frozenset({"DAILY", "WEEKDAYS", "WEEKENDS"})
++_RECURRENCE_ON_PATTERN = re.compile(r"^ON_[0-6](_[0-6])*$")
++
++_TIME_FORMAT = "%H:%M:%S"
++
++
++def _parse_start_time(value: str) -> datetime.time:
++    """Parse and validate a start_time string in HH:MM:SS format.
++
++    Raises:
++        AlarmValidationError: If the format is invalid.
++    """
++    try:
++        return datetime.datetime.strptime(value.strip(), _TIME_FORMAT).time()
++    except (ValueError, AttributeError) as exc:
++        raise AlarmValidationError(
++            f"Invalid start_time {value!r}. Expected format: HH:MM:SS (e.g. '07:00:00')."
++        ) from exc
++
++
++def _validate_recurrence(value: str) -> None:
++    """Validate that the recurrence string is supported by Sonos.
++
++    Raises:
++        AlarmValidationError: If the recurrence string is not valid.
++    """
++    normalized = value.strip().upper()
++    if normalized in _RECURRENCE_NAMED:
++        return
++    if _RECURRENCE_ON_PATTERN.match(normalized):
++        return
++    raise AlarmValidationError(
++        f"Invalid recurrence {value!r}. "
++        "Accepted values: DAILY, WEEKDAYS, WEEKENDS, or ON_<day>[_<day>...] "
++        "where day is 0 (Sunday) through 6 (Saturday)."
++    )
++
++
++def _validate_volume(value: int | None) -> None:
++    """Validate that the volume is in the Sonos-safe range 0-100.
++
++    Raises:
++        AlarmValidationError: If the volume is out of range.
++    """
++    if value is None:
++        return
++    if not isinstance(value, int) or value < 0 or value > 100:
++        raise AlarmValidationError(
++            f"Invalid volume {value!r}. Alarm volume must be an integer in the range 0-100."
++        )
++
++
++class AlarmService:
++    """Service for Sonos alarm discovery and lifecycle operations.
++
++    Owns room resolution, recurrence validation, payload validation,
++    and normalization. All SoCo interaction is delegated to the adapter.
++    """
++
++    def __init__(self, room_service: object, adapter: object) -> None:
++        self._room_service = room_service
++        self._adapter = adapter
++
++    def list_alarms(self) -> list[AlarmRecord]:
++        """Return all alarms in the household.
++
++        Uses any available room for the discovery call. Does not filter
++        by room — returns all household alarms.
++
++        Returns:
++            List of normalized ``AlarmRecord`` instances.
++
++        Raises:
++            AlarmError: If the adapter call fails.
++            SonosDiscoveryError: If no rooms are reachable.
++        """
++        rooms = self._room_service.list_rooms()
++        if not rooms:
++            return []
++        ip_address = rooms[0].ip_address
++        return self._adapter.get_alarms(ip_address)
++
++    def create_alarm(
++        self,
++        room_name: str,
++        start_time: str,
++        recurrence: str,
++        enabled: bool,
++        volume: int | None,
++        include_linked_zones: bool,
++    ) -> AlarmRecord:
++        """Create a new Sonos alarm.
++
++        Validates all parameters before delegating to the adapter.
++
++        Args:
++            room_name: Target room name; resolved through room_service.
++            start_time: Start time as ``"HH:MM:SS"`` string.
++            recurrence: Recurrence rule (e.g. "DAILY", "WEEKDAYS").
++            enabled: True to activate the alarm immediately.
++            volume: Alarm volume (0-100), or None.
++            include_linked_zones: True to play on all grouped rooms.
++
++        Returns:
++            Normalized ``AlarmRecord`` for the newly created alarm.
++
++        Raises:
++            AlarmValidationError: If any parameter fails validation.
++            RoomNotFoundError: If the room cannot be resolved.
++            AlarmError: If the adapter call fails.
++        """
++        parsed_time = _parse_start_time(start_time)
++        _validate_recurrence(recurrence)
++        _validate_volume(volume)
++        room = self._room_service.get_room(room_name)
++        return self._adapter.create_alarm(
++            ip_address=room.ip_address,
++            start_time=parsed_time,
++            recurrence=recurrence.strip().upper(),
++            enabled=enabled,
++            volume=volume,
++            include_linked_zones=include_linked_zones,
++        )
++
++    def update_alarm(
++        self,
++        alarm_id: str,
++        room_name: str,
++        start_time: str,
++        recurrence: str,
++        enabled: bool,
++        volume: int | None,
++        include_linked_zones: bool,
++    ) -> AlarmRecord:
++        """Update an existing Sonos alarm.
++
++        Validates all parameters before delegating to the adapter.
++
++        Args:
++            alarm_id: ID of the alarm to update.
++            room_name: Room used for the Sonos discovery call.
++            start_time: New start time as ``"HH:MM:SS"`` string.
++            recurrence: New recurrence rule.
++            enabled: New enabled state.
++            volume: New alarm volume (0-100), or None.
++            include_linked_zones: New linked-zones setting.
++
++        Returns:
++            Normalized ``AlarmRecord`` reflecting the updated state.
++
++        Raises:
++            AlarmValidationError: If any parameter fails validation.
++            RoomNotFoundError: If the room cannot be resolved.
++            AlarmError: If the alarm is not found or the adapter call fails.
++        """
++        parsed_time = _parse_start_time(start_time)
++        _validate_recurrence(recurrence)
++        _validate_volume(volume)
++        room = self._room_service.get_room(room_name)
++        return self._adapter.update_alarm(
++            ip_address=room.ip_address,
++            alarm_id=alarm_id,
++            start_time=parsed_time,
++            recurrence=recurrence.strip().upper(),
++            enabled=enabled,
++            volume=volume,
++            include_linked_zones=include_linked_zones,
++        )
++
++    def delete_alarm(self, alarm_id: str) -> dict:
++        """Delete a Sonos alarm by ID.
++
++        Uses any available room for the discovery call.
++
++        Args:
++            alarm_id: ID of the alarm to delete.
++
++        Returns:
++            Structured confirmation dict with ``alarm_id`` and ``status``.
++
++        Raises:
++            AlarmError: If the alarm is not found or the adapter call fails.
++            SonosDiscoveryError: If no rooms are reachable.
++        """
++        rooms = self._room_service.list_rooms()
++        ip_address = rooms[0].ip_address if rooms else ""
++        self._adapter.delete_alarm(ip_address=ip_address, alarm_id=alarm_id)
++        return {"alarm_id": alarm_id, "status": "deleted"}
+diff --git a/src/soniq_mcp/tools/alarms.py b/src/soniq_mcp/tools/alarms.py
+new file mode 100644
+index 0000000..aa3fa05
+--- /dev/null
++++ b/src/soniq_mcp/tools/alarms.py
+@@ -0,0 +1,159 @@
++"""Alarm management MCP tools for SoniqMCP."""
++
++from __future__ import annotations
++
++import logging
++
++from mcp.server.fastmcp import FastMCP
++from mcp.types import ToolAnnotations
++
++from soniq_mcp.config import SoniqConfig
++from soniq_mcp.domain.exceptions import (
++    AlarmError,
++    RoomNotFoundError,
++    SonosDiscoveryError,
++)
++from soniq_mcp.domain.safety import assert_tool_permitted
++from soniq_mcp.schemas.errors import ErrorResponse
++from soniq_mcp.schemas.responses import AlarmDeleteResponse, AlarmResponse, AlarmsListResponse
++
++log = logging.getLogger(__name__)
++
++_READ_ONLY_TOOL_HINTS = ToolAnnotations(
++    readOnlyHint=True,
++    destructiveHint=False,
++    idempotentHint=True,
++    openWorldHint=False,
++)
++
++_CONTROL_TOOL_HINTS = ToolAnnotations(
++    readOnlyHint=False,
++    destructiveHint=False,
++    idempotentHint=False,
++    openWorldHint=False,
++)
++
++
++def register(app: FastMCP, config: SoniqConfig, alarm_service: object) -> None:
++    """Register alarm lifecycle tools onto the FastMCP application."""
++
++    if "list_alarms" not in config.tools_disabled:
++
++        @app.tool(title="List Alarms", annotations=_READ_ONLY_TOOL_HINTS)
++        def list_alarms() -> dict:
++            """List all Sonos alarms in the household."""
++            assert_tool_permitted("list_alarms", config)
++            try:
++                records = alarm_service.list_alarms()
++                return AlarmsListResponse.from_domain(records).model_dump()
++            except AlarmError as exc:
++                return ErrorResponse.from_alarm_error(exc).model_dump()
++            except SonosDiscoveryError as exc:
++                log.warning("Discovery failed in list_alarms: %s", exc)
++                return ErrorResponse.from_discovery_error(exc).model_dump()
++
++    if "create_alarm" not in config.tools_disabled:
++
++        @app.tool(title="Create Alarm", annotations=_CONTROL_TOOL_HINTS)
++        def create_alarm(
++            room: str,
++            start_time: str,
++            recurrence: str,
++            enabled: bool = True,
++            volume: int | None = None,
++            include_linked_zones: bool = False,
++        ) -> dict:
++            """Create a new Sonos alarm.
++
++            Args:
++                room: Target room name.
++                start_time: Alarm start time in HH:MM:SS format (e.g. "07:00:00").
++                recurrence: Recurrence rule — DAILY, WEEKDAYS, WEEKENDS, or ON_<day>[_<day>...]
++                    where day is 0 (Sunday) through 6 (Saturday).
++                enabled: True to activate immediately (default: True).
++                volume: Alarm volume 0-100, or omit to use the zone default.
++                include_linked_zones: True to play on all grouped rooms (default: False).
++            """
++            assert_tool_permitted("create_alarm", config)
++            try:
++                record = alarm_service.create_alarm(
++                    room_name=room,
++                    start_time=start_time,
++                    recurrence=recurrence,
++                    enabled=enabled,
++                    volume=volume,
++                    include_linked_zones=include_linked_zones,
++                )
++                return AlarmResponse.from_domain(record).model_dump()
++            except RoomNotFoundError:
++                return ErrorResponse.from_room_not_found(room).model_dump()
++            except AlarmError as exc:
++                return ErrorResponse.from_alarm_error(exc).model_dump()
++            except SonosDiscoveryError as exc:
++                log.warning("Discovery failed in create_alarm: %s", exc)
++                return ErrorResponse.from_discovery_error(exc).model_dump()
++
++    if "update_alarm" not in config.tools_disabled:
++
++        @app.tool(title="Update Alarm", annotations=_CONTROL_TOOL_HINTS)
++        def update_alarm(
++            alarm_id: str,
++            room: str,
++            start_time: str,
++            recurrence: str,
++            enabled: bool,
++            include_linked_zones: bool = False,
++            volume: int | None = None,
++        ) -> dict:
++            """Update an existing Sonos alarm.
++
++            Args:
++                alarm_id: ID of the alarm to update (from list_alarms).
++                room: Room name used for Sonos discovery.
++                start_time: New start time in HH:MM:SS format.
++                recurrence: New recurrence rule (DAILY, WEEKDAYS, WEEKENDS, or ON_<day>[_<day>...]).
++                enabled: True to keep the alarm active, False to disable.
++                include_linked_zones: True to play on all grouped rooms (default: False).
++                volume: New alarm volume 0-100, or omit to use the zone default.
++            """
++            assert_tool_permitted("update_alarm", config)
++            try:
++                record = alarm_service.update_alarm(
++                    alarm_id=alarm_id,
++                    room_name=room,
++                    start_time=start_time,
++                    recurrence=recurrence,
++                    enabled=enabled,
++                    volume=volume,
++                    include_linked_zones=include_linked_zones,
++                )
++                return AlarmResponse.from_domain(record).model_dump()
++            except RoomNotFoundError:
++                return ErrorResponse.from_room_not_found(room).model_dump()
++            except AlarmError as exc:
++                return ErrorResponse.from_alarm_error(exc).model_dump()
++            except SonosDiscoveryError as exc:
++                log.warning("Discovery failed in update_alarm: %s", exc)
++                return ErrorResponse.from_discovery_error(exc).model_dump()
++
++    if "delete_alarm" not in config.tools_disabled:
++
++        @app.tool(title="Delete Alarm", annotations=_CONTROL_TOOL_HINTS)
++        def delete_alarm(alarm_id: str) -> dict:
++            """Delete a Sonos alarm by ID.
++
++            Args:
++                alarm_id: ID of the alarm to delete (from list_alarms).
++            """
++            assert_tool_permitted("delete_alarm", config)
++            try:
++                result = alarm_service.delete_alarm(alarm_id=alarm_id)
++                return AlarmDeleteResponse(
++                    alarm_id=result["alarm_id"],
++                    status=result["status"],
++                ).model_dump()
++            except AlarmError as exc:
++                return ErrorResponse.from_alarm_error(exc).model_dump()
++            except SonosDiscoveryError as exc:
++                log.warning("Discovery failed in delete_alarm: %s", exc)
++                return ErrorResponse.from_discovery_error(exc).model_dump()
+diff --git a/tests/contract/tool_schemas/test_alarms_tool_schemas.py b/tests/contract/tool_schemas/test_alarms_tool_schemas.py
+new file mode 100644
+index 0000000..25002df
+--- /dev/null
++++ b/tests/contract/tool_schemas/test_alarms_tool_schemas.py
+@@ -0,0 +1,143 @@
++"""Contract tests for alarm tool schemas.
++
++Validates that tool names, descriptions, parameter schemas, and annotations
++remain stable. These tests act as a breaking-change guard for MCP clients
++that depend on the alarm tool surface.
++"""
++
++from __future__ import annotations
++
++import pytest
++from mcp.server.fastmcp import FastMCP
++
++from soniq_mcp.config import SoniqConfig
++from soniq_mcp.domain.models import AlarmRecord
++from soniq_mcp.tools.alarms import register
++
++
++def make_alarm_record(alarm_id: str = "101") -> AlarmRecord:
++    return AlarmRecord(
++        alarm_id=alarm_id,
++        room_name="Living Room",
++        start_time="07:00:00",
++        recurrence="DAILY",
++        enabled=True,
++        volume=30,
++        include_linked_zones=False,
++    )
++
++
++class FakeAlarmService:
++    def list_alarms(self) -> list[AlarmRecord]:
++        return []
++
++    def create_alarm(self, **kwargs) -> AlarmRecord:
++        return make_alarm_record()
++
++    def update_alarm(self, **kwargs) -> AlarmRecord:
++        return make_alarm_record()
++
++    def delete_alarm(self, alarm_id: str) -> dict:
++        return {"alarm_id": alarm_id, "status": "deleted"}
++
++
++@pytest.fixture()
++def registered_app() -> FastMCP:
++    app = FastMCP("contract-test")
++    config = SoniqConfig()
++    register(app, config, FakeAlarmService())
++    return app
++
++
++def get_tools(app: FastMCP) -> dict:
++    return {t.name: t for t in app._tool_manager.list_tools()}
++
++
++class TestListAlarmsContract:
++    def test_tool_name_is_stable(self, registered_app: FastMCP) -> None:
++        assert "list_alarms" in get_tools(registered_app)
++
++    def test_tool_description_is_present(self, registered_app: FastMCP) -> None:
++        desc = get_tools(registered_app)["list_alarms"].description
++        assert desc and len(desc) > 0
++
++    def test_has_no_required_parameters(self, registered_app: FastMCP) -> None:
++        schema = get_tools(registered_app)["list_alarms"].parameters
++        assert schema.get("required", []) == []
++
++    def test_is_read_only(self, registered_app: FastMCP) -> None:
++        ann = get_tools(registered_app)["list_alarms"].annotations
++        assert ann.readOnlyHint is True
++        assert ann.destructiveHint is False
++
++
++class TestCreateAlarmContract:
++    def test_tool_name_is_stable(self, registered_app: FastMCP) -> None:
++        assert "create_alarm" in get_tools(registered_app)
++
++    def test_tool_description_is_present(self, registered_app: FastMCP) -> None:
++        desc = get_tools(registered_app)["create_alarm"].description
++        assert desc and len(desc) > 0
++
++    def test_requires_room_start_time_and_recurrence(self, registered_app: FastMCP) -> None:
++        schema = get_tools(registered_app)["create_alarm"].parameters
++        required = set(schema.get("required", []))
++        assert "room" in required
++        assert "start_time" in required
++        assert "recurrence" in required
++
++    def test_has_optional_volume_and_flags(self, registered_app: FastMCP) -> None:
++        schema = get_tools(registered_app)["create_alarm"].parameters
++        props = schema["properties"]
++        assert "volume" in props
++        assert "enabled" in props
++        assert "include_linked_zones" in props
++
++    def test_is_control_tool(self, registered_app: FastMCP) -> None:
++        ann = get_tools(registered_app)["create_alarm"].annotations
++        assert ann.readOnlyHint is False
++        assert ann.destructiveHint is False
++
++
++class TestUpdateAlarmContract:
++    def test_tool_name_is_stable(self, registered_app: FastMCP) -> None:
++        assert "update_alarm" in get_tools(registered_app)
++
++    def test_tool_description_is_present(self, registered_app: FastMCP) -> None:
++        desc = get_tools(registered_app)["update_alarm"].description
++        assert desc and len(desc) > 0
++
++    def test_requires_alarm_id_room_start_time_recurrence_and_enabled(
++        self, registered_app: FastMCP
++    ) -> None:
++        schema = get_tools(registered_app)["update_alarm"].parameters
++        required = set(schema.get("required", []))
++        assert "alarm_id" in required
++        assert "room" in required
++        assert "start_time" in required
++        assert "recurrence" in required
++        assert "enabled" in required
++
++    def test_is_control_tool(self, registered_app: FastMCP) -> None:
++        ann = get_tools(registered_app)["update_alarm"].annotations
++        assert ann.readOnlyHint is False
++        assert ann.destructiveHint is False
++
++
++class TestDeleteAlarmContract:
++    def test_tool_name_is_stable(self, registered_app: FastMCP) -> None:
++        assert "delete_alarm" in get_tools(registered_app)
++
++    def test_tool_description_is_present(self, registered_app: FastMCP) -> None:
++        desc = get_tools(registered_app)["delete_alarm"].description
++        assert desc and len(desc) > 0
++
++    def test_requires_alarm_id(self, registered_app: FastMCP) -> None:
++        schema = get_tools(registered_app)["delete_alarm"].parameters
++        required = set(schema.get("required", []))
++        assert "alarm_id" in required
++
++    def test_is_control_tool(self, registered_app: FastMCP) -> None:
++        ann = get_tools(registered_app)["delete_alarm"].annotations
++        assert ann.readOnlyHint is False
++        assert ann.destructiveHint is False
+diff --git a/tests/unit/adapters/test_soco_adapter_alarms.py b/tests/unit/adapters/test_soco_adapter_alarms.py
+new file mode 100644
+index 0000000..a8bb990
+--- /dev/null
++++ b/tests/unit/adapters/test_soco_adapter_alarms.py
+@@ -0,0 +1,220 @@
++"""Unit tests for SoCoAdapter alarm methods."""
++
++from __future__ import annotations
++
++import datetime
++from unittest.mock import MagicMock, patch
++
++import pytest
++
++from soniq_mcp.adapters.soco_adapter import SoCoAdapter
++from soniq_mcp.domain.exceptions import AlarmError
++from soniq_mcp.domain.models import AlarmRecord
++
++IP = "192.168.1.10"
++
++
++def _make_fake_alarm(
++    alarm_id: str = "101",
++    player_name: str = "Living Room",
++    start_time: datetime.time = datetime.time(7, 0, 0),
++    recurrence: str = "DAILY",
++    enabled: bool = True,
++    volume: int = 30,
++    include_linked_zones: bool = False,
++) -> MagicMock:
++    alarm = MagicMock()
++    alarm.alarm_id = alarm_id
++    alarm.zone.player_name = player_name
++    alarm.start_time = start_time
++    alarm.recurrence = recurrence
++    alarm.enabled = enabled
++    alarm.volume = volume
++    alarm.include_linked_zones = include_linked_zones
++    return alarm
++
++
++def _patch_zone():
++    return patch("soco.SoCo", return_value=MagicMock())
++
++
++class TestGetAlarms:
++    def test_returns_empty_list_when_no_alarms(self) -> None:
++        adapter = SoCoAdapter()
++        with _patch_zone():
++            with patch("soco.alarms.get_alarms", return_value=set()):
++                result = adapter.get_alarms(IP)
++        assert result == []
++
++    def test_returns_normalized_alarm_records(self) -> None:
++        adapter = SoCoAdapter()
++        fake = _make_fake_alarm()
++        with _patch_zone():
++            with patch("soco.alarms.get_alarms", return_value={fake}):
++                result = adapter.get_alarms(IP)
++        assert len(result) == 1
++        record = result[0]
++        assert isinstance(record, AlarmRecord)
++        assert record.alarm_id == "101"
++        assert record.room_name == "Living Room"
++        assert record.start_time == "07:00:00"
++        assert record.recurrence == "DAILY"
++        assert record.enabled is True
++        assert record.volume == 30
++        assert record.include_linked_zones is False
++
++    def test_returns_multiple_alarms(self) -> None:
++        adapter = SoCoAdapter()
++        alarms = {
++            _make_fake_alarm(alarm_id="1"),
++            _make_fake_alarm(alarm_id="2", player_name="Bedroom"),
++        }
++        with _patch_zone():
++            with patch("soco.alarms.get_alarms", return_value=alarms):
++                result = adapter.get_alarms(IP)
++        assert len(result) == 2
++        ids = {r.alarm_id for r in result}
++        assert ids == {"1", "2"}
++
++    def test_wraps_soco_failure_in_alarm_error(self) -> None:
++        adapter = SoCoAdapter()
++        with _patch_zone():
++            with patch("soco.alarms.get_alarms", side_effect=RuntimeError("network failure")):
++                with pytest.raises(AlarmError, match="Failed to get alarms"):
++                    adapter.get_alarms(IP)
++
++    def test_time_formatted_correctly_with_minutes_and_seconds(self) -> None:
++        adapter = SoCoAdapter()
++        fake = _make_fake_alarm(start_time=datetime.time(8, 30, 15))
++        with _patch_zone():
++            with patch("soco.alarms.get_alarms", return_value={fake}):
++                result = adapter.get_alarms(IP)
++        assert result[0].start_time == "08:30:15"
++
++    def test_none_volume_preserved(self) -> None:
++        adapter = SoCoAdapter()
++        fake = _make_fake_alarm(volume=None)
++        fake.volume = None
++        with _patch_zone():
++            with patch("soco.alarms.get_alarms", return_value={fake}):
++                result = adapter.get_alarms(IP)
++        assert result[0].volume is None
++
++
++class TestCreateAlarm:
++    def test_creates_and_saves_alarm(self) -> None:
++        adapter = SoCoAdapter()
++        fake_zone = MagicMock()
++        fake_alarm = _make_fake_alarm(alarm_id="999")
++        fake_alarm.save = MagicMock()
++
++        with patch("soco.SoCo", return_value=fake_zone):
++            with patch("soco.alarms.Alarm", return_value=fake_alarm):
++                with patch("soco.alarms.get_alarms", return_value={fake_alarm}):
++                    result = adapter.create_alarm(
++                        ip_address=IP,
++                        start_time=datetime.time(7, 0, 0),
++                        recurrence="DAILY",
++                        enabled=True,
++                        volume=30,
++                        include_linked_zones=False,
++                    )
++
++        fake_alarm.save.assert_called_once()
++        assert isinstance(result, AlarmRecord)
++        assert result.alarm_id == "999"
++
++    def test_wraps_soco_failure_in_alarm_error(self) -> None:
++        adapter = SoCoAdapter()
++        with patch("soco.SoCo", return_value=MagicMock()):
++            with patch("soco.alarms.Alarm", side_effect=RuntimeError("create failed")):
++                with pytest.raises(AlarmError, match="Failed to create alarm"):
++                    adapter.create_alarm(
++                        ip_address=IP,
++                        start_time=datetime.time(7, 0, 0),
++                        recurrence="DAILY",
++                        enabled=True,
++                        volume=30,
++                        include_linked_zones=False,
++                    )
++
++
++class TestUpdateAlarm:
++    def test_updates_existing_alarm_and_saves(self) -> None:
++        adapter = SoCoAdapter()
++        fake_alarm = _make_fake_alarm(alarm_id="101")
++        fake_alarm.save = MagicMock()
++
++        with _patch_zone():
++            with patch("soco.alarms.get_alarms", return_value={fake_alarm}):
++                adapter.update_alarm(
++                    ip_address=IP,
++                    alarm_id="101",
++                    start_time=datetime.time(8, 0, 0),
++                    recurrence="WEEKDAYS",
++                    enabled=False,
++                    volume=50,
++                    include_linked_zones=True,
++                )
++
++        fake_alarm.save.assert_called_once()
++        assert fake_alarm.start_time == datetime.time(8, 0, 0)
++        assert fake_alarm.recurrence == "WEEKDAYS"
++        assert fake_alarm.enabled is False
++        assert fake_alarm.volume == 50
++        assert fake_alarm.include_linked_zones is True
++
++    def test_raises_alarm_error_when_id_not_found(self) -> None:
++        adapter = SoCoAdapter()
++        with _patch_zone():
++            with patch("soco.alarms.get_alarms", return_value=set()):
++                with pytest.raises(AlarmError, match="Alarm.*not found"):
++                    adapter.update_alarm(
++                        ip_address=IP,
++                        alarm_id="missing",
++                        start_time=datetime.time(8, 0, 0),
++                        recurrence="DAILY",
++                        enabled=True,
++                        volume=30,
++                        include_linked_zones=False,
++                    )
++
++    def test_wraps_soco_failure_in_alarm_error(self) -> None:
++        adapter = SoCoAdapter()
++        with patch("soco.SoCo", side_effect=RuntimeError("boom")):
++            with pytest.raises(AlarmError, match="Failed to update alarm"):
++                adapter.update_alarm(
++                    ip_address=IP,
++                    alarm_id="101",
++                    start_time=datetime.time(8, 0, 0),
++                    recurrence="DAILY",
++                    enabled=True,
++                    volume=30,
++                    include_linked_zones=False,
++                )
++
++
++class TestDeleteAlarm:
++    def test_deletes_alarm_by_id(self) -> None:
++        adapter = SoCoAdapter()
++        fake_alarm = _make_fake_alarm(alarm_id="101")
++        fake_alarm.remove = MagicMock()
++
++        with _patch_zone():
++            with patch("soco.alarms.get_alarms", return_value={fake_alarm}):
++                adapter.delete_alarm(ip_address=IP, alarm_id="101")
++
++        fake_alarm.remove.assert_called_once()
++
++    def test_raises_alarm_error_when_id_not_found(self) -> None:
++        adapter = SoCoAdapter()
++        with _patch_zone():
++            with patch("soco.alarms.get_alarms", return_value=set()):
++                with pytest.raises(AlarmError, match="Alarm.*not found"):
++                    adapter.delete_alarm(ip_address=IP, alarm_id="missing")
++
++    def test_wraps_soco_failure_in_alarm_error(self) -> None:
++        adapter = SoCoAdapter()
++        with patch("soco.SoCo", side_effect=RuntimeError("bang")):
++            with pytest.raises(AlarmError, match="Failed to delete alarm"):
++                adapter.delete_alarm(ip_address=IP, alarm_id="101")
+diff --git a/tests/unit/services/test_alarm_service.py b/tests/unit/services/test_alarm_service.py
+new file mode 100644
+index 0000000..194a431
+--- /dev/null
++++ b/tests/unit/services/test_alarm_service.py
+@@ -0,0 +1,396 @@
++"""Unit tests for AlarmService."""
++
++from __future__ import annotations
++
++import datetime
++
++import pytest
++
++from soniq_mcp.domain.exceptions import (
++    AlarmError,
++    AlarmValidationError,
++    RoomNotFoundError,
++    SonosDiscoveryError,
++)
++from soniq_mcp.domain.models import AlarmRecord, Room
++from soniq_mcp.services.alarm_service import AlarmService
++
++IP = "192.168.1.10"
++
++
++def make_room(
++    name: str = "Living Room",
++    uid: str = "RINCON_001",
++    ip_address: str = IP,
++    is_coordinator: bool = True,
++) -> Room:
++    return Room(name=name, uid=uid, ip_address=ip_address, is_coordinator=is_coordinator)
++
++
++def make_alarm_record(
++    alarm_id: str = "101",
++    room_name: str = "Living Room",
++    start_time: str = "07:00:00",
++    recurrence: str = "DAILY",
++    enabled: bool = True,
++    volume: int | None = 30,
++    include_linked_zones: bool = False,
++) -> AlarmRecord:
++    return AlarmRecord(
++        alarm_id=alarm_id,
++        room_name=room_name,
++        start_time=start_time,
++        recurrence=recurrence,
++        enabled=enabled,
++        volume=volume,
++        include_linked_zones=include_linked_zones,
++    )
++
++
++class FakeRoomService:
++    def __init__(
++        self,
++        rooms: list[Room] | None = None,
++        *,
++        raise_discovery: bool = False,
++    ) -> None:
++        self._rooms = rooms or [make_room()]
++        self._raise_discovery = raise_discovery
++
++    def get_room(self, room_name: str) -> Room:
++        if self._raise_discovery:
++            raise SonosDiscoveryError("network unreachable")
++        for room in self._rooms:
++            if room.name == room_name:
++                return room
++        raise RoomNotFoundError(room_name)
++
++    def list_rooms(self) -> list[Room]:
++        if self._raise_discovery:
++            raise SonosDiscoveryError("network unreachable")
++        return list(self._rooms)
++
++
++class FakeAdapter:
++    def __init__(
++        self,
++        alarms: list[AlarmRecord] | None = None,
++        *,
++        raise_alarm_error: bool = False,
++        created_alarm: AlarmRecord | None = None,
++    ) -> None:
++        self._alarms = alarms or []
++        self._raise_alarm_error = raise_alarm_error
++        self._created_alarm = created_alarm
++        self.create_calls: list[dict] = []
++        self.update_calls: list[dict] = []
++        self.delete_calls: list[dict] = []
++
++    def get_alarms(self, ip_address: str) -> list[AlarmRecord]:
++        if self._raise_alarm_error:
++            raise AlarmError("adapter failure")
++        return list(self._alarms)
++
++    def create_alarm(
++        self,
++        ip_address: str,
++        start_time: datetime.time,
++        recurrence: str,
++        enabled: bool,
++        volume: int | None,
++        include_linked_zones: bool,
++    ) -> AlarmRecord:
++        if self._raise_alarm_error:
++            raise AlarmError("create failed")
++        self.create_calls.append(
++            {
++                "ip_address": ip_address,
++                "start_time": start_time,
++                "recurrence": recurrence,
++                "enabled": enabled,
++                "volume": volume,
++                "include_linked_zones": include_linked_zones,
++            }
++        )
++        return self._created_alarm or make_alarm_record()
++
++    def update_alarm(
++        self,
++        ip_address: str,
++        alarm_id: str,
++        start_time: datetime.time,
++        recurrence: str,
++        enabled: bool,
++        volume: int | None,
++        include_linked_zones: bool,
++    ) -> AlarmRecord:
++        if self._raise_alarm_error:
++            raise AlarmError(f"Alarm '{alarm_id}' not found.")
++        self.update_calls.append(
++            {
++                "ip_address": ip_address,
++                "alarm_id": alarm_id,
++                "start_time": start_time,
++                "recurrence": recurrence,
++                "enabled": enabled,
++                "volume": volume,
++                "include_linked_zones": include_linked_zones,
++            }
++        )
++        return make_alarm_record(alarm_id=alarm_id)
++
++    def delete_alarm(self, ip_address: str, alarm_id: str) -> None:
++        if self._raise_alarm_error:
++            raise AlarmError(f"Alarm '{alarm_id}' not found.")
++        self.delete_calls.append({"ip_address": ip_address, "alarm_id": alarm_id})
++
++
++class TestListAlarms:
++    def test_returns_empty_list_when_no_alarms(self) -> None:
++        service = AlarmService(FakeRoomService(), FakeAdapter())
++        result = service.list_alarms()
++        assert result == []
++
++    def test_returns_all_alarm_records(self) -> None:
++        alarms = [make_alarm_record("1"), make_alarm_record("2")]
++        service = AlarmService(FakeRoomService(), FakeAdapter(alarms=alarms))
++        result = service.list_alarms()
++        assert len(result) == 2
++
++    def test_propagates_alarm_error(self) -> None:
++        service = AlarmService(FakeRoomService(), FakeAdapter(raise_alarm_error=True))
++        with pytest.raises(AlarmError):
++            service.list_alarms()
++
++    def test_uses_any_available_room_for_discovery(self) -> None:
++        rooms = [make_room("Living Room", ip_address="192.168.1.10")]
++        service = AlarmService(FakeRoomService(rooms=rooms), FakeAdapter())
++        # Should not raise — simply uses first available room
++        service.list_alarms()
++
++
++class TestCreateAlarm:
++    def test_valid_create_returns_record(self) -> None:
++        expected = make_alarm_record(alarm_id="new-1")
++        service = AlarmService(FakeRoomService(), FakeAdapter(created_alarm=expected))
++        result = service.create_alarm(
++            room_name="Living Room",
++            start_time="07:00:00",
++            recurrence="DAILY",
++            enabled=True,
++            volume=30,
++            include_linked_zones=False,
++        )
++        assert result.alarm_id == "new-1"
++
++    def test_delegates_parsed_time_to_adapter(self) -> None:
++        adapter = FakeAdapter(created_alarm=make_alarm_record())
++        service = AlarmService(FakeRoomService(), adapter)
++        service.create_alarm(
++            room_name="Living Room",
++            start_time="08:30:00",
++            recurrence="DAILY",
++            enabled=True,
++            volume=30,
++            include_linked_zones=False,
++        )
++        assert adapter.create_calls[0]["start_time"] == datetime.time(8, 30, 0)
++
++    def test_raises_validation_error_for_invalid_time_format(self) -> None:
++        service = AlarmService(FakeRoomService(), FakeAdapter())
++        with pytest.raises(AlarmValidationError, match="start_time"):
++            service.create_alarm(
++                room_name="Living Room",
++                start_time="7am",
++                recurrence="DAILY",
++                enabled=True,
++                volume=30,
++                include_linked_zones=False,
++            )
++
++    def test_raises_validation_error_for_invalid_recurrence(self) -> None:
++        service = AlarmService(FakeRoomService(), FakeAdapter())
++        with pytest.raises(AlarmValidationError, match="recurrence"):
++            service.create_alarm(
++                room_name="Living Room",
++                start_time="07:00:00",
++                recurrence="MONTHLY",
++                enabled=True,
++                volume=30,
++                include_linked_zones=False,
++            )
++
++    def test_raises_validation_error_for_volume_out_of_range(self) -> None:
++        service = AlarmService(FakeRoomService(), FakeAdapter())
++        with pytest.raises(AlarmValidationError, match="volume"):
++            service.create_alarm(
++                room_name="Living Room",
++                start_time="07:00:00",
++                recurrence="DAILY",
++                enabled=True,
++                volume=101,
++                include_linked_zones=False,
++            )
++
++    def test_raises_validation_error_for_negative_volume(self) -> None:
++        service = AlarmService(FakeRoomService(), FakeAdapter())
++        with pytest.raises(AlarmValidationError, match="volume"):
++            service.create_alarm(
++                room_name="Living Room",
++                start_time="07:00:00",
++                recurrence="DAILY",
++                enabled=True,
++                volume=-1,
++                include_linked_zones=False,
++            )
++
++    def test_none_volume_is_allowed(self) -> None:
++        adapter = FakeAdapter(created_alarm=make_alarm_record(volume=None))
++        service = AlarmService(FakeRoomService(), adapter)
++        result = service.create_alarm(
++            room_name="Living Room",
++            start_time="07:00:00",
++            recurrence="DAILY",
++            enabled=True,
++            volume=None,
++            include_linked_zones=False,
++        )
++        assert result.volume is None
++
++    def test_raises_room_not_found_for_unknown_room(self) -> None:
++        service = AlarmService(FakeRoomService(), FakeAdapter())
++        with pytest.raises(RoomNotFoundError):
++            service.create_alarm(
++                room_name="Nonexistent Room",
++                start_time="07:00:00",
++                recurrence="DAILY",
++                enabled=True,
++                volume=30,
++                include_linked_zones=False,
++            )
++
++    @pytest.mark.parametrize(
++        "recurrence",
++        [
++            "DAILY",
++            "WEEKDAYS",
++            "WEEKENDS",
++            "ON_0",
++            "ON_1",
++            "ON_0_1",
++            "ON_0_1_2_3_4_5_6",
++        ],
++    )
++    def test_valid_recurrence_values_are_accepted(self, recurrence: str) -> None:
++        adapter = FakeAdapter(created_alarm=make_alarm_record(recurrence=recurrence))
++        service = AlarmService(FakeRoomService(), adapter)
++        result = service.create_alarm(
++            room_name="Living Room",
++            start_time="07:00:00",
++            recurrence=recurrence,
++            enabled=True,
++            volume=30,
++            include_linked_zones=False,
++        )
++        assert result.recurrence == recurrence
++
++
++class TestUpdateAlarm:
++    def test_valid_update_returns_record(self) -> None:
++        service = AlarmService(FakeRoomService(), FakeAdapter())
++        result = service.update_alarm(
++            alarm_id="101",
++            room_name="Living Room",
++            start_time="09:00:00",
++            recurrence="WEEKDAYS",
++            enabled=False,
++            volume=50,
++            include_linked_zones=True,
++        )
++        assert result.alarm_id == "101"
++
++    def test_delegates_parsed_time_to_adapter(self) -> None:
++        adapter = FakeAdapter()
++        service = AlarmService(FakeRoomService(), adapter)
++        service.update_alarm(
++            alarm_id="101",
++            room_name="Living Room",
++            start_time="09:15:00",
++            recurrence="DAILY",
++            enabled=True,
++            volume=30,
++            include_linked_zones=False,
++        )
++        assert adapter.update_calls[0]["start_time"] == datetime.time(9, 15, 0)
++
++    def test_raises_validation_error_for_invalid_time(self) -> None:
++        service = AlarmService(FakeRoomService(), FakeAdapter())
++        with pytest.raises(AlarmValidationError, match="start_time"):
++            service.update_alarm(
++                alarm_id="101",
++                room_name="Living Room",
++                start_time="bad-time",
++                recurrence="DAILY",
++                enabled=True,
++                volume=30,
++                include_linked_zones=False,
++            )
++
++    def test_raises_validation_error_for_invalid_recurrence(self) -> None:
++        service = AlarmService(FakeRoomService(), FakeAdapter())
++        with pytest.raises(AlarmValidationError, match="recurrence"):
++            service.update_alarm(
++                alarm_id="101",
++                room_name="Living Room",
++                start_time="07:00:00",
++                recurrence="YEARLY",
++                enabled=True,
++                volume=30,
++                include_linked_zones=False,
++            )
++
++    def test_raises_alarm_error_when_adapter_cannot_find_id(self) -> None:
++        service = AlarmService(FakeRoomService(), FakeAdapter(raise_alarm_error=True))
++        with pytest.raises(AlarmError):
++            service.update_alarm(
++                alarm_id="missing",
++                room_name="Living Room",
++                start_time="07:00:00",
++                recurrence="DAILY",
++                enabled=True,
++                volume=30,
++                include_linked_zones=False,
++            )
++
++    def test_raises_room_not_found_for_unknown_room(self) -> None:
++        service = AlarmService(FakeRoomService(), FakeAdapter())
++        with pytest.raises(RoomNotFoundError):
++            service.update_alarm(
++                alarm_id="101",
++                room_name="Ghost Room",
++                start_time="07:00:00",
++                recurrence="DAILY",
++                enabled=True,
++                volume=30,
++                include_linked_zones=False,
++            )
++
++
++class TestDeleteAlarm:
++    def test_valid_delete_returns_confirmation(self) -> None:
++        service = AlarmService(FakeRoomService(), FakeAdapter())
++        result = service.delete_alarm(alarm_id="101")
++        assert result["alarm_id"] == "101"
++        assert result["status"] == "deleted"
++
++    def test_delegates_to_adapter(self) -> None:
++        adapter = FakeAdapter()
++        service = AlarmService(FakeRoomService(), adapter)
++        service.delete_alarm(alarm_id="101")
++        assert len(adapter.delete_calls) == 1
++        assert adapter.delete_calls[0]["alarm_id"] == "101"
++
++    def test_raises_alarm_error_when_not_found(self) -> None:
++        service = AlarmService(FakeRoomService(), FakeAdapter(raise_alarm_error=True))
++        with pytest.raises(AlarmError):
++            service.delete_alarm(alarm_id="missing")
+diff --git a/tests/unit/tools/test_alarms.py b/tests/unit/tools/test_alarms.py
+new file mode 100644
+index 0000000..5144d39
+--- /dev/null
++++ b/tests/unit/tools/test_alarms.py
+@@ -0,0 +1,399 @@
++"""Unit tests for alarm tool handlers."""
++
++from __future__ import annotations
++
++import json
++
++import pytest
++from mcp.server.fastmcp import FastMCP
++
++from soniq_mcp.config import SoniqConfig
++from soniq_mcp.domain.exceptions import (
++    AlarmError,
++    AlarmValidationError,
++    RoomNotFoundError,
++    SonosDiscoveryError,
++)
++from soniq_mcp.domain.models import AlarmRecord
++from soniq_mcp.tools.alarms import register
++
++
++def make_alarm_record(
++    alarm_id: str = "101",
++    room_name: str = "Living Room",
++    start_time: str = "07:00:00",
++    recurrence: str = "DAILY",
++    enabled: bool = True,
++    volume: int | None = 30,
++    include_linked_zones: bool = False,
++) -> AlarmRecord:
++    return AlarmRecord(
++        alarm_id=alarm_id,
++        room_name=room_name,
++        start_time=start_time,
++        recurrence=recurrence,
++        enabled=enabled,
++        volume=volume,
++        include_linked_zones=include_linked_zones,
++    )
++
++
++class FakeAlarmService:
++    def __init__(
++        self,
++        alarms: list[AlarmRecord] | None = None,
++        *,
++        raise_alarm_error: bool = False,
++        raise_validation_error: bool = False,
++        raise_room_not_found: bool = False,
++        raise_discovery_error: bool = False,
++        created_alarm: AlarmRecord | None = None,
++        updated_alarm: AlarmRecord | None = None,
++    ) -> None:
++        self._alarms = alarms or []
++        self._raise_alarm_error = raise_alarm_error
++        self._raise_validation_error = raise_validation_error
++        self._raise_room_not_found = raise_room_not_found
++        self._raise_discovery_error = raise_discovery_error
++        self._created_alarm = created_alarm or make_alarm_record(alarm_id="new-1")
++        self._updated_alarm = updated_alarm or make_alarm_record(alarm_id="101")
++
++    def list_alarms(self) -> list[AlarmRecord]:
++        if self._raise_discovery_error:
++            raise SonosDiscoveryError("network unreachable")
++        if self._raise_alarm_error:
++            raise AlarmError("adapter failure")
++        return list(self._alarms)
++
++    def create_alarm(self, **kwargs) -> AlarmRecord:
++        if self._raise_discovery_error:
++            raise SonosDiscoveryError("network unreachable")
++        if self._raise_room_not_found:
++            raise RoomNotFoundError(kwargs.get("room_name", "unknown"))
++        if self._raise_validation_error:
++            raise AlarmValidationError("invalid recurrence")
++        if self._raise_alarm_error:
++            raise AlarmError("create failed")
++        return self._created_alarm
++
++    def update_alarm(self, **kwargs) -> AlarmRecord:
++        if self._raise_discovery_error:
++            raise SonosDiscoveryError("network unreachable")
++        if self._raise_room_not_found:
++            raise RoomNotFoundError(kwargs.get("room_name", "unknown"))
++        if self._raise_validation_error:
++            raise AlarmValidationError("invalid time format")
++        if self._raise_alarm_error:
++            raise AlarmError("not found")
++        return self._updated_alarm
++
++    def delete_alarm(self, alarm_id: str) -> dict:
++        if self._raise_alarm_error:
++            raise AlarmError(f"Alarm '{alarm_id}' not found.")
++        if self._raise_discovery_error:
++            raise SonosDiscoveryError("network unreachable")
++        return {"alarm_id": alarm_id, "status": "deleted"}
++
++
++def make_app(
++    service: FakeAlarmService | None = None,
++    tools_disabled: list[str] | None = None,
++) -> FastMCP:
++    app = FastMCP("test")
++    config = SoniqConfig(tools_disabled=tools_disabled or [])
++    register(app, config, service or FakeAlarmService())
++    return app
++
++
++def get_tool(app: FastMCP, name: str):
++    return {t.name: t for t in app._tool_manager.list_tools()}.get(name)
++
++
++def parse(result) -> dict:
++    return json.loads(result[0].text)
++
++
++class TestListAlarmsTool:
++    def test_tool_is_registered(self) -> None:
++        app = make_app()
++        assert get_tool(app, "list_alarms") is not None
++
++    def test_is_read_only(self) -> None:
++        tool = get_tool(make_app(), "list_alarms")
++        assert tool.annotations.readOnlyHint is True
++        assert tool.annotations.destructiveHint is False
++
++    def test_disabled_tool_not_registered(self) -> None:
++        app = make_app(tools_disabled=["list_alarms"])
++        assert get_tool(app, "list_alarms") is None
++
++    @pytest.mark.anyio
++    async def test_returns_empty_list(self) -> None:
++        app = make_app(FakeAlarmService(alarms=[]))
++        result = await app.call_tool("list_alarms", {})
++        data = parse(result)
++        assert data["count"] == 0
++        assert data["alarms"] == []
++
++    @pytest.mark.anyio
++    async def test_returns_alarm_list(self) -> None:
++        alarms = [make_alarm_record("1"), make_alarm_record("2")]
++        app = make_app(FakeAlarmService(alarms=alarms))
++        result = await app.call_tool("list_alarms", {})
++        data = parse(result)
++        assert data["count"] == 2
++        assert len(data["alarms"]) == 2
++
++    @pytest.mark.anyio
++    async def test_returns_error_on_alarm_error(self) -> None:
++        app = make_app(FakeAlarmService(raise_alarm_error=True))
++        result = await app.call_tool("list_alarms", {})
++        data = parse(result)
++        assert "error" in data
++        assert data["field"] == "alarm"
++
++    @pytest.mark.anyio
++    async def test_returns_error_on_discovery_error(self) -> None:
++        app = make_app(FakeAlarmService(raise_discovery_error=True))
++        result = await app.call_tool("list_alarms", {})
++        data = parse(result)
++        assert "error" in data
++        assert data["field"] == "sonos_network"
++
++
++class TestCreateAlarmTool:
++    def test_tool_is_registered(self) -> None:
++        app = make_app()
++        assert get_tool(app, "create_alarm") is not None
++
++    def test_is_control_tool(self) -> None:
++        tool = get_tool(make_app(), "create_alarm")
++        assert tool.annotations.readOnlyHint is False
++
++    def test_disabled_tool_not_registered(self) -> None:
++        app = make_app(tools_disabled=["create_alarm"])
++        assert get_tool(app, "create_alarm") is None
++
++    @pytest.mark.anyio
++    async def test_successful_create_returns_alarm_record(self) -> None:
++        app = make_app(FakeAlarmService())
++        result = await app.call_tool(
++            "create_alarm",
++            {
++                "room": "Living Room",
++                "start_time": "07:00:00",
++                "recurrence": "DAILY",
++                "enabled": True,
++                "include_linked_zones": False,
++            },
++        )
++        data = parse(result)
++        assert "alarm_id" in data
++        assert data["room_name"] == "Living Room"
++
++    @pytest.mark.anyio
++    async def test_returns_validation_error(self) -> None:
++        app = make_app(FakeAlarmService(raise_validation_error=True))
++        result = await app.call_tool(
++            "create_alarm",
++            {
++                "room": "Living Room",
++                "start_time": "07:00:00",
++                "recurrence": "DAILY",
++                "enabled": True,
++                "include_linked_zones": False,
++            },
++        )
++        data = parse(result)
++        assert "error" in data
++        assert data["field"] == "alarm"
++
++    @pytest.mark.anyio
++    async def test_returns_room_not_found_error(self) -> None:
++        app = make_app(FakeAlarmService(raise_room_not_found=True))
++        result = await app.call_tool(
++            "create_alarm",
++            {
++                "room": "Ghost Room",
++                "start_time": "07:00:00",
++                "recurrence": "DAILY",
++                "enabled": True,
++                "include_linked_zones": False,
++            },
++        )
++        data = parse(result)
++        assert "error" in data
++        assert data["field"] == "room"
++
++    @pytest.mark.anyio
++    async def test_returns_alarm_error(self) -> None:
++        app = make_app(FakeAlarmService(raise_alarm_error=True))
++        result = await app.call_tool(
++            "create_alarm",
++            {
++                "room": "Living Room",
++                "start_time": "07:00:00",
++                "recurrence": "DAILY",
++                "enabled": True,
++                "include_linked_zones": False,
++            },
++        )
++        data = parse(result)
++        assert "error" in data
++
++    @pytest.mark.anyio
++    async def test_returns_discovery_error(self) -> None:
++        app = make_app(FakeAlarmService(raise_discovery_error=True))
++        result = await app.call_tool(
++            "create_alarm",
++            {
++                "room": "Living Room",
++                "start_time": "07:00:00",
++                "recurrence": "DAILY",
++                "enabled": True,
++                "include_linked_zones": False,
++            },
++        )
++        data = parse(result)
++        assert "error" in data
++        assert data["field"] == "sonos_network"
++
++
++class TestUpdateAlarmTool:
++    def test_tool_is_registered(self) -> None:
++        app = make_app()
++        assert get_tool(app, "update_alarm") is not None
++
++    def test_is_control_tool(self) -> None:
++        tool = get_tool(make_app(), "update_alarm")
++        assert tool.annotations.readOnlyHint is False
++
++    def test_disabled_tool_not_registered(self) -> None:
++        app = make_app(tools_disabled=["update_alarm"])
++        assert get_tool(app, "update_alarm") is None
++
++    @pytest.mark.anyio
++    async def test_successful_update_returns_alarm_record(self) -> None:
++        app = make_app(FakeAlarmService())
++        result = await app.call_tool(
++            "update_alarm",
++            {
++                "alarm_id": "101",
++                "room": "Living Room",
++                "start_time": "09:00:00",
++                "recurrence": "WEEKDAYS",
++                "enabled": False,
++                "include_linked_zones": True,
++            },
++        )
++        data = parse(result)
++        assert "alarm_id" in data
++
++    @pytest.mark.anyio
++    async def test_returns_validation_error(self) -> None:
++        app = make_app(FakeAlarmService(raise_validation_error=True))
++        result = await app.call_tool(
++            "update_alarm",
++            {
++                "alarm_id": "101",
++                "room": "Living Room",
++                "start_time": "bad",
++                "recurrence": "DAILY",
++                "enabled": True,
++                "include_linked_zones": False,
++            },
++        )
++        data = parse(result)
++        assert "error" in data
++
++    @pytest.mark.anyio
++    async def test_returns_room_not_found_error(self) -> None:
++        app = make_app(FakeAlarmService(raise_room_not_found=True))
++        result = await app.call_tool(
++            "update_alarm",
++            {
++                "alarm_id": "101",
++                "room": "Ghost Room",
++                "start_time": "09:00:00",
++                "recurrence": "DAILY",
++                "enabled": True,
++                "include_linked_zones": False,
++            },
++        )
++        data = parse(result)
++        assert "error" in data
++        assert data["field"] == "room"
++
++    @pytest.mark.anyio
++    async def test_returns_alarm_error(self) -> None:
++        app = make_app(FakeAlarmService(raise_alarm_error=True))
++        result = await app.call_tool(
++            "update_alarm",
++            {
++                "alarm_id": "missing",
++                "room": "Living Room",
++                "start_time": "09:00:00",
++                "recurrence": "DAILY",
++                "enabled": True,
++                "include_linked_zones": False,
++            },
++        )
++        data = parse(result)
++        assert "error" in data
++        assert data["field"] == "alarm"
++
++    @pytest.mark.anyio
++    async def test_returns_discovery_error(self) -> None:
++        app = make_app(FakeAlarmService(raise_discovery_error=True))
++        result = await app.call_tool(
++            "update_alarm",
++            {
++                "alarm_id": "101",
++                "room": "Living Room",
++                "start_time": "09:00:00",
++                "recurrence": "DAILY",
++                "enabled": True,
++                "include_linked_zones": False,
++            },
++        )
++        data = parse(result)
++        assert "error" in data
++        assert data["field"] == "sonos_network"
++
++
++class TestDeleteAlarmTool:
++    def test_tool_is_registered(self) -> None:
++        app = make_app()
++        assert get_tool(app, "delete_alarm") is not None
++
++    def test_is_control_tool(self) -> None:
++        tool = get_tool(make_app(), "delete_alarm")
++        assert tool.annotations.readOnlyHint is False
++
++    def test_disabled_tool_not_registered(self) -> None:
++        app = make_app(tools_disabled=["delete_alarm"])
++        assert get_tool(app, "delete_alarm") is None
++
++    @pytest.mark.anyio
++    async def test_successful_delete_returns_confirmation(self) -> None:
++        app = make_app(FakeAlarmService())
++        result = await app.call_tool("delete_alarm", {"alarm_id": "101"})
++        data = parse(result)
++        assert data["alarm_id"] == "101"
++        assert data["status"] == "deleted"
++
++    @pytest.mark.anyio
++    async def test_returns_alarm_error_when_not_found(self) -> None:
++        app = make_app(FakeAlarmService(raise_alarm_error=True))
++        result = await app.call_tool("delete_alarm", {"alarm_id": "missing"})
++        data = parse(result)
++        assert "error" in data
++        assert data["field"] == "alarm"
++
++    @pytest.mark.anyio
++    async def test_returns_discovery_error(self) -> None:
++        app = make_app(FakeAlarmService(raise_discovery_error=True))
++        result = await app.call_tool("delete_alarm", {"alarm_id": "101"})
++        data = parse(result)
++        assert "error" in data
++        assert data["field"] == "sonos_network"

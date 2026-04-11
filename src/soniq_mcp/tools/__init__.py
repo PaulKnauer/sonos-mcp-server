@@ -26,6 +26,7 @@ def register_all(app: FastMCP, config: SoniqConfig) -> None:
     from soniq_mcp.services.room_service import RoomService
     from soniq_mcp.services.sonos_service import SonosService
     from soniq_mcp.services.volume_service import VolumeService
+    from soniq_mcp.tools.alarms import register as register_alarms
     from soniq_mcp.tools.audio import register as register_audio
     from soniq_mcp.tools.favourites import register as register_favourites
     from soniq_mcp.tools.groups import register as register_groups
@@ -68,3 +69,8 @@ def register_all(app: FastMCP, config: SoniqConfig) -> None:
 
     input_service = InputService(room_service, SoCoAdapter())
     register_inputs(app, config, input_service)
+
+    from soniq_mcp.services.alarm_service import AlarmService
+
+    alarm_service = AlarmService(room_service, SoCoAdapter())
+    register_alarms(app, config, alarm_service)

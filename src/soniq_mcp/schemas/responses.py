@@ -13,6 +13,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 from soniq_mcp.domain.models import (
+    AlarmRecord,
     AudioSettingsState,
     Favourite,
     GroupAudioState,
@@ -347,6 +348,51 @@ class GroupAudioStateResponse(BaseModel):
             volume=state.volume,
             is_muted=state.is_muted,
         )
+
+
+class AlarmResponse(BaseModel):
+    """Serialisable representation of a single Sonos alarm."""
+
+    alarm_id: str
+    room_name: str
+    start_time: str
+    recurrence: str
+    enabled: bool
+    volume: int | None = None
+    include_linked_zones: bool
+
+    @classmethod
+    def from_domain(cls, record: AlarmRecord) -> AlarmResponse:
+        return cls(
+            alarm_id=record.alarm_id,
+            room_name=record.room_name,
+            start_time=record.start_time,
+            recurrence=record.recurrence,
+            enabled=record.enabled,
+            volume=record.volume,
+            include_linked_zones=record.include_linked_zones,
+        )
+
+
+class AlarmsListResponse(BaseModel):
+    """Response for the ``list_alarms`` tool."""
+
+    alarms: list[AlarmResponse]
+    count: int
+
+    @classmethod
+    def from_domain(cls, records: list[AlarmRecord]) -> AlarmsListResponse:
+        return cls(
+            alarms=[AlarmResponse.from_domain(r) for r in records],
+            count=len(records),
+        )
+
+
+class AlarmDeleteResponse(BaseModel):
+    """Response for the ``delete_alarm`` tool."""
+
+    alarm_id: str
+    status: str
 
 
 class GroupTopologyResponse(BaseModel):
