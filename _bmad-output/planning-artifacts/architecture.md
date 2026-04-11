@@ -822,6 +822,22 @@ Phase 2 introduces new conflict points around capability-family expansion, servi
 - Input switching, coordinator-only play modes, alarm operations, and group-level controls should use explicit guard methods or validation paths in services
 - Guard failures should map to consistent typed domain errors, not ad hoc free-form messages
 
+**Tool Parameter Validation Convention:**
+- FastMCP silently coerces tool parameter types before handlers run (e.g. `"5"` → `5`, `True` → `1`). This masks service-layer validation failures.
+- For any control tool whose parameters require service-layer validation (integer ranges, enum values, boolean checks), use the following pattern to preserve raw inputs while keeping an explicit MCP-visible schema type:
+
+  ```python
+  from typing import Annotated
+  from pydantic import Field
+
+  def set_bass(room: str, level: Annotated[object, Field(json_schema_extra={"type": "integer"})]) -> dict:
+      ...
+  ```
+
+- This ensures the generated MCP schema exposes `"type": "integer"` to clients while raw inputs (including invalid ones) still reach the service layer unchanged.
+- **Read-only tools and tools whose parameters FastMCP can safely coerce are exempt.**
+- Contract tests for setter tools MUST assert the MCP-visible schema type for each parameter (e.g. `assert schema["properties"]["level"]["type"] == "integer"`). This is the enforcement mechanism — schema drift will be caught in CI, not review.
+
 ### Process Patterns
 
 **Error Handling Patterns:**

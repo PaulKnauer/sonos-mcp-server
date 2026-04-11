@@ -157,6 +157,7 @@ You will systematically re-do the entire story creation process, but with a crit
 - **Test failures:** Missing test requirements that could allow bugs to reach production
 - **UX violations:** Missing user experience requirements that could ruin the product
 - **Learning failures:** Missing previous story context that could repeat same mistakes
+- **FastMCP schema drift:** If this story adds any setter/control tools with integer, boolean, or enum parameters, the testing requirements MUST include a contract test that asserts the MCP-visible schema type for each such parameter. See `architecture.md#Tool-Parameter-Validation-Convention` for the required `Annotated[object, Field(json_schema_extra=...)]` pattern. Missing this guard allows FastMCP coercion to silently bypass service-layer validation.
 
 #### **3.5 Implementation DISASTERS**
 

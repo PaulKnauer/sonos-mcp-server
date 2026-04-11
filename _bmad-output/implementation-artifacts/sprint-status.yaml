@@ -71,7 +71,7 @@ development_status:
   2-2-control-core-playback-in-a-target-room: done
   2-3-control-volume-and-mute-safely: done
   2-4-apply-reliable-sonos-service-and-adapter-boundaries: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   # Epic 3: Alarm and Playlist Lifecycle Management
   epic-3: in-progress
