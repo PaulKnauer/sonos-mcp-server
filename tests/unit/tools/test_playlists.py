@@ -199,6 +199,53 @@ class TestPlayPlaylist:
         assert data["field"] == "sonos_network"
 
 
+class TestPlayPlaylistLifecycleInteroperability:
+    """Verify play_playlist accepts URIs produced by lifecycle tools."""
+
+    @pytest.mark.anyio
+    async def test_plays_uri_from_create_playlist_output(self) -> None:
+        """A URI from create_playlist tool output is valid input for play_playlist."""
+        created = SonosPlaylist(title="Road Trip", uri="x-rincon-playlist://rt", item_id="SQ:7")
+        svc = FakePlaylistService(playlists=[created], created_playlist=created)
+        app = make_app(svc)
+        create_result = await app.call_tool("create_playlist", {"title": "Road Trip"})
+        created_data = parse(create_result)
+        result = await app.call_tool(
+            "play_playlist", {"room": "Living Room", "uri": created_data["uri"]}
+        )
+        data = parse(result)
+        assert data["status"] == "ok"
+        assert data["uri"] == "x-rincon-playlist://rt"
+        assert svc.play_calls == [("Living Room", "x-rincon-playlist://rt")]
+
+    @pytest.mark.anyio
+    async def test_plays_uri_from_update_playlist_output(self) -> None:
+        """A URI from update_playlist tool output is valid input for play_playlist."""
+        updated = SonosPlaylist(
+            title="Party Mix", uri="x-rincon-playlist://updated", item_id="SQ:1"
+        )
+        svc = FakePlaylistService(playlists=[PLAYLIST], updated_playlist=updated)
+        app = make_app(svc)
+        update_result = await app.call_tool(
+            "update_playlist", {"playlist_id": "SQ:1", "room": "Living Room"}
+        )
+        updated_data = parse(update_result)
+        result = await app.call_tool(
+            "play_playlist", {"room": "Living Room", "uri": updated_data["uri"]}
+        )
+        data = parse(result)
+        assert data["status"] == "ok"
+        assert data["uri"] == "x-rincon-playlist://updated"
+
+    @pytest.mark.anyio
+    async def test_uri_param_passed_to_service_unchanged(self) -> None:
+        """The uri argument is forwarded to the service without any modification."""
+        svc = FakePlaylistService(playlists=[PLAYLIST])
+        app = make_app(svc)
+        await app.call_tool("play_playlist", {"room": "Office", "uri": PLAYLIST.uri})
+        assert svc.play_calls == [("Office", PLAYLIST.uri)]
+
+
 class TestCreatePlaylist:
     def test_tool_is_registered(self) -> None:
         app = make_app(FakePlaylistService())

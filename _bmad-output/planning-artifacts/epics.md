@@ -408,7 +408,7 @@ So that I can automate repeatable listening behavior through the MCP server.
 ### Story 3.2: Introduce Sonos playlist CRUD operations
 
 As a Sonos user,
-I want to create, rename, update, and delete Sonos playlists,
+I want to view, create, update, and delete Sonos playlists,
 So that I can manage reusable listening collections from the same control surface.
 
 **Acceptance Criteria:**
@@ -418,11 +418,11 @@ So that I can manage reusable listening collections from the same control surfac
 **Then** the service returns normalized playlist metadata for the household.
 
 **Given** a valid playlist lifecycle request
-**When** the client creates, renames, updates, or deletes a playlist
+**When** the client creates, updates, or deletes a playlist
 **Then** the service performs the requested operation through the playlist-service boundary
-**And** returns the resulting normalized playlist state.
+**And** returns the resulting normalized playlist state or structured delete confirmation.
 
-**Given** an invalid playlist identifier or unsupported mutation
+**Given** an invalid playlist identifier or an unsupported household playlist mutation
 **When** the client invokes the playlist lifecycle tool
 **Then** the service returns a typed validation or unsupported-operation error.
 
@@ -457,6 +457,23 @@ So that phase-2 automation workflows remain safe to evolve.
 **Given** the new lifecycle tools are documented
 **When** integrators review examples
 **Then** they can distinguish playlist playback from playlist management and understand the supported alarm workflows.
+
+### Story 3.5: Investigate supported Sonos playlist rename capability
+
+As a maintainer,
+I want to verify whether a newer supported SoCo release or alternate Sonos integration path can provide playlist rename cleanly,
+So that future playlist lifecycle expansion does not rely on unsupported workarounds.
+
+**Acceptance Criteria:**
+
+**Given** the current playlist lifecycle implementation excludes rename
+**When** the maintainer evaluates newer supported `SoCo` releases and relevant Sonos API surfaces
+**Then** the research identifies whether a supported rename path exists without violating the current architecture.
+
+**Given** the rename investigation is complete
+**When** the findings are documented
+**Then** the outcome explicitly recommends `implement`, `defer`, or `reject`
+**And** identifies the architecture and contract implications of that choice.
 
 ## Epic 4: Local Music Library Access and Selection
 

@@ -7,14 +7,14 @@ Status: done
 ## Story
 
 As a Sonos user,
-I want to create, rename, update, and delete Sonos playlists,
+I want to view, create, update, and delete Sonos playlists,
 so that I can manage reusable listening collections from the same control surface.
 
 ## Acceptance Criteria
 
 1. Given a reachable household with playlist support, when the client requests playlist inventory, then the service returns normalized playlist metadata for the household.
-2. Given a valid playlist lifecycle request, when the client creates, renames, updates, or deletes a playlist, then the service performs the requested operation through the playlist-service boundary and returns the resulting normalized playlist state.
-3. Given an invalid playlist identifier or unsupported mutation, when the client invokes the playlist lifecycle tool, then the service returns a typed validation or unsupported-operation error.
+2. Given a valid supported playlist lifecycle request, when the client creates, updates, or deletes a playlist, then the service performs the requested operation through the playlist-service boundary and returns the resulting normalized playlist state or structured delete confirmation.
+3. Given an invalid playlist identifier or an unsupported household playlist mutation, when the client invokes the playlist lifecycle tool, then the service returns a typed validation or unsupported-operation error.
 
 ## Tasks / Subtasks
 
@@ -30,7 +30,7 @@ so that I can manage reusable listening collections from the same control surfac
   - [x] Add `PlaylistUnsupportedOperationError(PlaylistError)` for households or library paths that cannot perform a requested lifecycle mutation
   - [x] Reuse `SonosPlaylist` in `src/soniq_mcp/domain/models.py` as the normalized playlist record and keep `item_id` populated for lifecycle targeting
   - [x] Extend `PlaylistResponse` / `PlaylistsListResponse` in `src/soniq_mcp/schemas/responses.py` so playlist inventory exposes `title`, `uri`, and `item_id`
-  - [x] Add structured success responses for create/rename/update and a structured delete confirmation response
+  - [x] Add structured success responses for create/update and a structured delete confirmation response
   - [x] Add `ErrorResponse.from_playlist_error(exc)` to `src/soniq_mcp/schemas/errors.py`
 
 - [x] Extend `SoCoAdapter` with Sonos playlist lifecycle methods using current SoCo APIs (AC: 1, 2, 3)
@@ -40,7 +40,6 @@ so that I can manage reusable listening collections from the same control surfac
     - [x] household playlist inventory lookup by IP address
     - [x] playlist lookup by `item_id` (and title only as a bounded fallback when needed)
     - [x] playlist creation
-    - [x] playlist rename
     - [x] playlist content replacement/update
     - [x] playlist deletion
   - [x] Use the documented SoCo playlist surface where applicable:
@@ -61,7 +60,6 @@ so that I can manage reusable listening collections from the same control surfac
     - [x] `list_playlists() -> list[SonosPlaylist]`
     - [x] `play_playlist(room_name: str, uri: str) -> None`
     - [x] `create_playlist(...) -> SonosPlaylist`
-    - [x] `rename_playlist(playlist_id: str, title: str) -> SonosPlaylist`
     - [x] `update_playlist(...) -> SonosPlaylist`
     - [x] `delete_playlist(playlist_id: str) -> str | dict`
   - [x] Resolve household reachability through `RoomService` instead of trusting client-supplied IPs
@@ -72,7 +70,7 @@ so that I can manage reusable listening collections from the same control surfac
     - [x] Prefer replacing playlist contents from an existing room queue rather than inventing an unbounded free-form track-editing payload in this story
     - [x] If queue-backed update is used, validate the source room and require a non-empty queue before mutation
   - [x] Return `PlaylistValidationError` for missing or unknown playlist ids
-  - [x] Return `PlaylistUnsupportedOperationError` for truly unsupported rename/update paths rather than generic operation errors
+  - [x] Return `PlaylistUnsupportedOperationError` for truly unsupported household mutations rather than generic operation errors
 
 - [x] Expand the public playlist MCP tool surface without breaking existing playback behavior (AC: 1, 2, 3)
   - [x] Update `src/soniq_mcp/tools/playlists.py` so it depends on `PlaylistService`, not `FavouritesService`
@@ -81,10 +79,9 @@ so that I can manage reusable listening collections from the same control surfac
     - [x] `play_playlist(room: str, uri: str)`
   - [x] Add stable lifecycle tool names:
     - [x] `create_playlist(...)`
-    - [x] `rename_playlist(playlist_id: str, title: str)`
     - [x] `update_playlist(...)`
     - [x] `delete_playlist(playlist_id: str)`
-  - [x] Use `_READ_ONLY_TOOL_HINTS` for listing and `_CONTROL_TOOL_HINTS` for create/rename/update
+  - [x] Use `_READ_ONLY_TOOL_HINTS` for listing and `_CONTROL_TOOL_HINTS` for create/update
   - [x] Mark `delete_playlist` as destructive in its tool annotations
   - [x] Keep tool handlers thin: permission checks, service call, response conversion, and error translation only
   - [x] Catch `PlaylistError`, `PlaylistValidationError`, `PlaylistUnsupportedOperationError`, `RoomNotFoundError`, and `SonosDiscoveryError` and map them through `ErrorResponse`
@@ -106,7 +103,6 @@ so that I can manage reusable listening collections from the same control surfac
     - [x] empty playlist inventory
     - [x] normalized playlist list output with `item_id`
     - [x] create flow
-    - [x] rename flow
     - [x] update flow
     - [x] delete flow
     - [x] blank playlist-id validation
@@ -115,6 +111,7 @@ so that I can manage reusable listening collections from the same control surfac
     - [x] preservation of existing `play_playlist` behavior
     - [x] SoCo failure wrapping without leaking library details
 - [x] Run the targeted playlist suites plus `make test` and `make lint`
+- [x] Defer public playlist rename support until a supported dependency or alternate Sonos integration path is verified
 
 ### Review Findings
 
@@ -132,6 +129,7 @@ so that I can manage reusable listening collections from the same control surfac
 - This story introduces the playlist lifecycle capability family that Epic 3 adds on top of the existing playlist playback surface.
 - Story 3.1 already established the Epic 3 pattern: a dedicated capability service, normalized domain objects, typed errors, thin tools, and adapter-only SoCo access. Story 3.2 should mirror that shape for playlists.
 - Story 3.3 will verify that legacy playlist playback remains stable after lifecycle support lands, so Story 3.2 must preserve that behavior rather than postponing compatibility work.
+- Playlist rename is intentionally out of committed Story 3.2 scope because the current supported `SoCo` stack does not expose a clean first-class rename capability. Future rename work should be handled as a separate investigation or follow-up story.
   [Source: `_bmad-output/planning-artifacts/epics.md#Story-32-Introduce-Sonos-playlist-CRUD-operations`]
   [Source: `_bmad-output/planning-artifacts/epics.md#Story-33-Preserve-existing-playlist-playback-alongside-playlist-lifecycle-support`]
   [Source: `_bmad-output/implementation-artifacts/phase-2/3-1-add-alarm-discovery-and-lifecycle-operations.md`]
@@ -208,7 +206,7 @@ so that I can manage reusable listening collections from the same control surfac
   - adapter-owned SoCo interaction
   - Pydantic response models returned via `.model_dump()`
 - Keep playlist lifecycle scope bounded:
-  - inventory, create, rename, update, delete are in scope
+  - inventory, create, update, and delete are in scope
   - broad local-library browsing and arbitrary free-form playlist editing are not
   - preserve current playlist playback behavior rather than redesigning it
 - If update semantics are queue-backed, document that clearly in tool descriptions and examples so the later docs story can explain the difference between queue control and playlist persistence.
@@ -314,4 +312,4 @@ claude-sonnet-4-6
 
 ## Change Log
 
-- 2026-04-11: Story implemented — introduced PlaylistService, playlist lifecycle tools (create/rename/update/delete), PlaylistError hierarchy, updated schemas, adapter, and all tests. 1312 tests pass, lint clean.
+- 2026-04-11: Story implemented — introduced PlaylistService, playlist lifecycle tools (view/create/update/delete plus preserved playback), PlaylistError hierarchy, updated schemas, adapter, and all tests. 1312 tests pass, lint clean.

@@ -106,6 +106,7 @@ class FakeAdapter:
         if self._raise_playlist_error:
             raise PlaylistError("adapter error")
         self.delete_playlist_calls.append((ip_address, item_id))
+        self._playlists = [playlist for playlist in self._playlists if playlist.item_id != item_id]
 
 
 class TestListPlaylists:
@@ -254,6 +255,59 @@ class TestUpdatePlaylist:
         svc = PlaylistService(FakeRoomService(), FakeAdapter(raise_playlist_error=True))
         with pytest.raises(PlaylistError):
             svc.update_playlist("SQ:1", ROOM_NAME)
+
+
+class TestPlaylistLifecycleInteroperability:
+    """Verify that lifecycle-created/updated playlists work through play_playlist."""
+
+    def test_created_playlist_uri_is_playable(self) -> None:
+        """A URI returned by create_playlist can be passed directly to play_playlist."""
+        new_pl = SonosPlaylist(title="Summer Jams", uri="x-rincon-playlist://new", item_id="SQ:5")
+        adapter = FakeAdapter(created_playlist=new_pl)
+        svc = PlaylistService(FakeRoomService(), adapter)
+        created = svc.create_playlist("Summer Jams")
+        svc.play_playlist(ROOM_NAME, created.uri)
+        assert adapter.play_playlist_calls == [(ROOM_IP, "x-rincon-playlist://new")]
+
+    def test_updated_playlist_uri_is_playable(self) -> None:
+        """A URI returned by update_playlist can be passed directly to play_playlist."""
+        updated = SonosPlaylist(
+            title="Party Mix", uri="x-rincon-playlist://updated", item_id="SQ:1"
+        )
+        adapter = FakeAdapter(playlists=[PLAYLIST], updated_playlist=updated)
+        svc = PlaylistService(FakeRoomService(), adapter)
+        result = svc.update_playlist("SQ:1", ROOM_NAME)
+        svc.play_playlist(ROOM_NAME, result.uri)
+        assert adapter.play_playlist_calls == [(ROOM_IP, "x-rincon-playlist://updated")]
+
+    def test_created_playlist_has_required_playback_fields(self) -> None:
+        """A SonosPlaylist from create_playlist always has title, uri, and item_id."""
+        new_pl = SonosPlaylist(title="Road Trip", uri="x-rincon-playlist://rt", item_id="SQ:7")
+        adapter = FakeAdapter(created_playlist=new_pl)
+        svc = PlaylistService(FakeRoomService(), adapter)
+        created = svc.create_playlist("Road Trip")
+        assert created.title == "Road Trip"
+        assert created.uri == "x-rincon-playlist://rt"
+        assert created.item_id == "SQ:7"
+
+    def test_updated_playlist_preserves_item_id_for_re_identification(self) -> None:
+        """update_playlist preserves item_id so the playlist can still be found."""
+        updated = SonosPlaylist(
+            title="Party Mix", uri="x-rincon-playlist://updated", item_id="SQ:1"
+        )
+        adapter = FakeAdapter(playlists=[PLAYLIST], updated_playlist=updated)
+        svc = PlaylistService(FakeRoomService(), adapter)
+        result = svc.update_playlist("SQ:1", ROOM_NAME)
+        assert result.item_id == "SQ:1"
+        assert result.uri is not None
+
+    def test_delete_removes_playlist_from_subsequent_list_results(self) -> None:
+        """After delete, the removed playlist no longer appears in list_playlists."""
+        adapter = FakeAdapter(playlists=[PLAYLIST])
+        svc = PlaylistService(FakeRoomService(), adapter)
+        svc.delete_playlist("SQ:1")
+        remaining = svc.list_playlists()
+        assert remaining == []
 
 
 class TestDeletePlaylist:

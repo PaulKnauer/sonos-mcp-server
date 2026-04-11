@@ -269,6 +269,61 @@ class TestUpdatePlaylist:
                 adapter.delete_playlist(IP, "SQ:1")
 
 
+class TestPlaylistDiscoveryPlaybackContinuity:
+    """Verify that URIs from lifecycle flows are usable in playback flows."""
+
+    def test_created_playlist_uri_is_usable_with_play_playlist(self) -> None:
+        """The uri on a SonosPlaylist returned by create_playlist is accepted by play_playlist."""
+        zone = MagicMock()
+        new_pl = make_fake_playlist(
+            title="Summer Jams", uri="x-rincon-playlist://summer", item_id="SQ:5"
+        )
+        zone.create_sonos_playlist.return_value = new_pl
+        adapter = SoCoAdapter()
+        with _patch_soco(zone):
+            created = adapter.create_playlist(IP, "Summer Jams")
+        # The created playlist's uri is now passed to play_playlist
+        with _patch_soco(zone):
+            adapter.play_playlist(IP, created.uri)
+        zone.add_uri_to_queue.assert_called_once_with("x-rincon-playlist://summer")
+        zone.play_from_queue.assert_called_once_with(0)
+
+    def test_get_playlists_returns_stable_uri_for_playback(self) -> None:
+        """Playlists returned by get_playlists have a uri field suitable for play_playlist."""
+        zone = MagicMock()
+        pl = make_fake_playlist(title="Party Mix", uri="x-rincon-playlist://party", item_id="SQ:1")
+        zone.music_library.get_music_library_information.return_value = [pl]
+        adapter = SoCoAdapter()
+        with _patch_soco(zone):
+            results = adapter.get_playlists(IP)
+        assert len(results) == 1
+        discovered_uri = results[0].uri
+        # The uri is a non-empty string — suitable input for play_playlist
+        assert isinstance(discovered_uri, str)
+        assert len(discovered_uri) > 0
+
+    def test_deleted_playlist_absent_when_get_playlists_rechecked(self) -> None:
+        """After delete_playlist, a fresh get_playlists call reflects the removal.
+
+        Side-effect sequence:
+          1. get_playlists() pre-delete       → [pl]
+          2. delete_playlist() internal lookup → [pl]  (adapter re-reads to locate the SoCo obj)
+          3. get_playlists() post-delete       → []
+        """
+        zone = MagicMock()
+        pl = make_fake_playlist(item_id="SQ:1")
+        zone.music_library.get_music_library_information.side_effect = [[pl], [pl], []]
+        adapter = SoCoAdapter()
+        with _patch_soco(zone):
+            before = adapter.get_playlists(IP)
+        assert any(p.item_id == "SQ:1" for p in before)
+        with _patch_soco(zone):
+            adapter.delete_playlist(IP, "SQ:1")
+        with _patch_soco(zone):
+            after = adapter.get_playlists(IP)
+        assert not any(p.item_id == "SQ:1" for p in after)
+
+
 class TestDeletePlaylist:
     def test_removes_playlist_by_item_id(self) -> None:
         zone = MagicMock()
