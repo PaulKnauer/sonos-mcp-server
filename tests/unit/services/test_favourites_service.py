@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from soniq_mcp.domain.exceptions import FavouritesError, RoomNotFoundError, SonosDiscoveryError
-from soniq_mcp.domain.models import Favourite, Room, SonosPlaylist
+from soniq_mcp.domain.models import Favourite, Room
 from soniq_mcp.services.favourites_service import FavouritesService
 
 IP = "192.168.1.10"
@@ -44,15 +44,12 @@ class FakeAdapter:
     def __init__(
         self,
         favourites: list[Favourite] | None = None,
-        playlists: list[SonosPlaylist] | None = None,
         raise_favourites_error: bool = False,
     ) -> None:
         self._favourites = favourites or []
-        self._playlists = playlists or []
         self._raise_favourites_error = raise_favourites_error
         self.get_favourites_calls: list[str] = []
         self.play_favourite_calls: list[tuple] = []
-        self.play_playlist_calls: list[tuple] = []
 
     def get_favourites(self, ip_address: str) -> list[Favourite]:
         if self._raise_favourites_error:
@@ -65,19 +62,8 @@ class FakeAdapter:
             raise FavouritesError("adapter error")
         self.play_favourite_calls.append((ip_address, uri, meta))
 
-    def get_playlists(self, ip_address: str) -> list[SonosPlaylist]:
-        if self._raise_favourites_error:
-            raise FavouritesError("adapter error")
-        return self._playlists
-
-    def play_playlist(self, ip_address: str, uri: str) -> None:
-        if self._raise_favourites_error:
-            raise FavouritesError("adapter error")
-        self.play_playlist_calls.append((ip_address, uri))
-
 
 FAV = Favourite(title="Radio", uri="x-sonosapi://radio", meta="<DIDL/>")
-PLAYLIST = SonosPlaylist(title="Party Mix", uri="x-rincon-playlist://pl1", item_id="SQ:1")
 
 
 class TestGetFavourites:
@@ -141,38 +127,3 @@ class TestPlayFavourite:
         svc = FavouritesService(FakeRoomService(), FakeAdapter(raise_favourites_error=True))
         with pytest.raises(FavouritesError):
             svc.play_favourite(ROOM_NAME, FAV.uri, None)
-
-
-class TestGetPlaylists:
-    def test_returns_playlists_from_adapter(self) -> None:
-        svc = FavouritesService(FakeRoomService(), FakeAdapter(playlists=[PLAYLIST]))
-        result = svc.get_playlists()
-        assert result == [PLAYLIST]
-
-    def test_raises_favourites_error_when_no_rooms(self) -> None:
-        svc = FavouritesService(FakeRoomService(rooms=[]), FakeAdapter())
-        with pytest.raises(FavouritesError, match="No Sonos rooms found"):
-            svc.get_playlists()
-
-    def test_propagates_favourites_error_from_adapter(self) -> None:
-        svc = FavouritesService(FakeRoomService(), FakeAdapter(raise_favourites_error=True))
-        with pytest.raises(FavouritesError):
-            svc.get_playlists()
-
-
-class TestPlayPlaylist:
-    def test_resolves_room_and_calls_adapter(self) -> None:
-        adapter = FakeAdapter()
-        svc = FavouritesService(FakeRoomService(), adapter)
-        svc.play_playlist(ROOM_NAME, PLAYLIST.uri)
-        assert adapter.play_playlist_calls == [(IP, PLAYLIST.uri)]
-
-    def test_propagates_room_not_found(self) -> None:
-        svc = FavouritesService(FakeRoomService(raise_not_found=True), FakeAdapter())
-        with pytest.raises(RoomNotFoundError):
-            svc.play_playlist("Unknown Room", PLAYLIST.uri)
-
-    def test_propagates_favourites_error_from_adapter(self) -> None:
-        svc = FavouritesService(FakeRoomService(), FakeAdapter(raise_favourites_error=True))
-        with pytest.raises(FavouritesError):
-            svc.play_playlist(ROOM_NAME, PLAYLIST.uri)

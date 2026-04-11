@@ -18,6 +18,9 @@ from soniq_mcp.domain.exceptions import (
     GroupError,
     InputError,
     PlaybackError,
+    PlaylistError,
+    PlaylistUnsupportedOperationError,
+    PlaylistValidationError,
     QueueError,
     VolumeError,
 )
@@ -182,7 +185,7 @@ class SoCoAdapter:
     def get_playlists(self, ip_address: str) -> list[SonosPlaylist]:
         try:
             zone = self._make_zone(ip_address)
-            results = zone.music_library.get_music_library_information("sonos_playlists")
+            results = self._list_raw_playlists(zone)
             return [
                 SonosPlaylist(
                     title=item.title,
@@ -191,8 +194,10 @@ class SoCoAdapter:
                 )
                 for item in results
             ]
+        except PlaylistError:
+            raise
         except Exception as exc:
-            raise FavouritesError(f"Failed to get playlists: {exc}") from exc
+            raise PlaylistError(f"Failed to get playlists: {exc}") from exc
 
     def play_playlist(self, ip_address: str, uri: str) -> None:
         try:
@@ -201,7 +206,217 @@ class SoCoAdapter:
             zone.add_uri_to_queue(uri)
             zone.play_from_queue(0)
         except Exception as exc:
-            raise FavouritesError(f"Failed to play playlist: {exc}") from exc
+            raise PlaylistError(f"Failed to play playlist: {exc}") from exc
+
+    def create_playlist(self, ip_address: str, title: str) -> SonosPlaylist:
+        """Create a new Sonos playlist with the given title.
+
+        Args:
+            ip_address: LAN IP of any zone in the household.
+            title: Title for the new playlist.
+
+        Returns:
+            Normalized ``SonosPlaylist`` for the newly created playlist.
+
+        Raises:
+            PlaylistError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            result = zone.create_sonos_playlist(title)
+            return SonosPlaylist(
+                title=result.title,
+                uri=result.uri,
+                item_id=getattr(result, "item_id", None),
+            )
+        except PlaylistError:
+            raise
+        except Exception as exc:
+            raise PlaylistError(f"Failed to create playlist: {exc}") from exc
+
+    def rename_playlist(self, ip_address: str, item_id: str, title: str) -> SonosPlaylist:
+        """Rename a Sonos playlist.
+
+        The current SoCo API (>=0.30.14) does not expose a stable rename
+        endpoint for Sonos playlists. This method raises
+        ``PlaylistUnsupportedOperationError`` unconditionally. If a future
+        SoCo release adds a clean rename path this is where to implement it.
+
+        Raises:
+            PlaylistUnsupportedOperationError: Always, for the current SoCo version.
+        """
+        raise PlaylistUnsupportedOperationError(
+            "Playlist rename is not supported by the current SoCo API version. "
+            "Delete the playlist and create a new one with the desired title."
+        )
+
+    def update_playlist(self, ip_address: str, item_id: str, source_ip: str) -> SonosPlaylist:
+        """Replace a playlist's contents with the current queue from the source zone.
+
+        Clears the target playlist and adds all tracks from the source zone's
+        active queue. The source queue must be non-empty.
+
+        Args:
+            ip_address: LAN IP of any zone (used for playlist operations).
+            item_id: ``item_id`` of the target playlist.
+            source_ip: LAN IP of the zone whose queue provides new content.
+
+        Returns:
+            Normalized ``SonosPlaylist`` reflecting the updated playlist.
+
+        Raises:
+            PlaylistValidationError: If the playlist or source queue is not found.
+            PlaylistError: If any SoCo operation fails.
+        """
+        zone = self._make_zone(ip_address)
+        playlist_obj = self._require_playlist(zone, item_id)
+        source_zone = self._make_zone(source_ip)
+        raw_queue = self._get_full_queue(source_zone)
+        if not raw_queue:
+            raise PlaylistValidationError(
+                "Source room queue is empty. Add tracks to the queue before updating a playlist."
+            )
+        original_items = self._browse_playlist_items(zone, playlist_obj)
+        try:
+            zone.clear_sonos_playlist(playlist_obj, update_id=0)
+            for item in raw_queue:
+                zone.add_item_to_sonos_playlist(item, playlist_obj)
+        except Exception as exc:
+            self._restore_playlist(zone, playlist_obj, original_items)
+            raise PlaylistError(f"Failed to update playlist: {exc}") from exc
+
+        updated = self._find_playlist(zone, item_id)
+        if updated is None:
+            raise PlaylistError(
+                "Failed to update playlist: updated playlist could not be reloaded."
+            )
+        return SonosPlaylist(
+            title=updated.title,
+            uri=updated.uri,
+            item_id=getattr(updated, "item_id", item_id),
+        )
+
+    def delete_playlist(self, ip_address: str, item_id: str) -> None:
+        """Delete a Sonos playlist by item_id.
+
+        Args:
+            ip_address: LAN IP of any zone in the household.
+            item_id: ``item_id`` of the playlist to delete.
+
+        Raises:
+            PlaylistValidationError: If the playlist is not found.
+            PlaylistError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            playlist_obj = self._require_playlist(zone, item_id)
+            zone.remove_sonos_playlist(playlist_obj)
+        except PlaylistError:
+            raise
+        except Exception as exc:
+            raise PlaylistError(f"Failed to delete playlist: {exc}") from exc
+
+    @staticmethod
+    def _matches_playlist_identifier(playlist: Any, identifier: str) -> bool:
+        item_id = getattr(playlist, "item_id", None)
+        if item_id == identifier:
+            return True
+        title = _coerce_str(getattr(playlist, "title", None))
+        return item_id is None and title == identifier
+
+    def _list_raw_playlists(self, zone: Any) -> list[Any]:
+        """Return the complete raw Sonos playlist inventory for a household."""
+        try:
+            return list(
+                zone.music_library.get_music_library_information(
+                    "sonos_playlists",
+                    complete_result=True,
+                )
+            )
+        except Exception as exc:
+            raise PlaylistError(f"Failed to get playlists: {exc}") from exc
+
+    def _find_playlist(self, zone: Any, identifier: str) -> Any | None:
+        """Look up a raw SoCo playlist object by item_id or bounded title fallback."""
+        playlists = self._list_raw_playlists(zone)
+        for playlist in playlists:
+            if getattr(playlist, "item_id", None) == identifier:
+                return playlist
+
+        title_matches = [
+            playlist
+            for playlist in playlists
+            if self._matches_playlist_identifier(playlist, identifier)
+        ]
+        if len(title_matches) > 1:
+            raise PlaylistValidationError(
+                f"Playlist '{identifier}' is ambiguous. "
+                "Use 'list_playlists' and retry with a stable item_id."
+            )
+        return title_matches[0] if title_matches else None
+
+    def _require_playlist(self, zone: Any, identifier: str) -> Any:
+        playlist = self._find_playlist(zone, identifier)
+        if playlist is not None:
+            return playlist
+        raise PlaylistValidationError(
+            f"Playlist '{identifier}' was not found. "
+            "Use 'list_playlists' to see available playlists and their IDs."
+        )
+
+    def _browse_playlist_items(
+        self, zone: Any, playlist_obj: Any, batch_size: int = 100
+    ) -> list[Any]:
+        """Return all queueable items currently stored in a Sonos playlist."""
+        items: list[Any] = []
+        start = 0
+        while True:
+            try:
+                batch = zone.music_library.browse(
+                    ml_item=playlist_obj,
+                    start=start,
+                    max_items=batch_size,
+                )
+            except Exception as exc:
+                raise PlaylistError(f"Failed to inspect existing playlist contents: {exc}") from exc
+            batch_items = list(batch)
+            if not batch_items:
+                return items
+            items.extend(batch_items)
+            total_matches = getattr(batch, "total_matches", None)
+            start += len(batch_items)
+            if (isinstance(total_matches, int) and start >= total_matches) or len(
+                batch_items
+            ) < batch_size:
+                return items
+
+    def _get_full_queue(self, zone: Any, batch_size: int = 100) -> list[Any]:
+        """Return the full active queue from a zone without silent truncation."""
+        try:
+            items: list[Any] = []
+            start = 0
+            expected_total = getattr(zone, "queue_size", None)
+            while True:
+                batch = list(zone.get_queue(start=start, max_items=batch_size))
+                if not batch:
+                    return items
+                items.extend(batch)
+                start += len(batch)
+                if (isinstance(expected_total, int) and start >= expected_total) or len(
+                    batch
+                ) < batch_size:
+                    return items
+        except Exception as exc:
+            raise PlaylistError(f"Failed to read source room queue: {exc}") from exc
+
+    def _restore_playlist(self, zone: Any, playlist_obj: Any, original_items: list[Any]) -> None:
+        """Best-effort rollback for playlist updates that fail after clearing."""
+        try:
+            zone.clear_sonos_playlist(playlist_obj, update_id=0)
+            for item in original_items:
+                zone.add_item_to_sonos_playlist(item, playlist_obj)
+        except Exception:
+            return
 
     def get_queue(self, ip_address: str) -> list[QueueItem]:
         try:

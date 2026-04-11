@@ -198,10 +198,11 @@ class PlaylistResponse(BaseModel):
 
     title: str
     uri: str
+    item_id: str | None = None
 
     @classmethod
     def from_domain(cls, pl: SonosPlaylist) -> PlaylistResponse:
-        return cls(title=pl.title, uri=pl.uri)
+        return cls(title=pl.title, uri=pl.uri, item_id=pl.item_id)
 
 
 class PlaylistsListResponse(BaseModel):
@@ -213,6 +214,13 @@ class PlaylistsListResponse(BaseModel):
     @classmethod
     def from_domain(cls, items: list[SonosPlaylist]) -> PlaylistsListResponse:
         return cls(items=[PlaylistResponse.from_domain(p) for p in items], count=len(items))
+
+
+class PlaylistDeleteResponse(BaseModel):
+    """Response for the ``delete_playlist`` tool."""
+
+    playlist_id: str
+    status: str
 
 
 class QueueItemResponse(BaseModel):

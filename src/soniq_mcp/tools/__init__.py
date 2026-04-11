@@ -53,7 +53,11 @@ def register_all(app: FastMCP, config: SoniqConfig) -> None:
 
     favourites_service = FavouritesService(room_service, SoCoAdapter())
     register_favourites(app, config, favourites_service)
-    register_playlists(app, config, favourites_service)
+
+    from soniq_mcp.services.playlist_service import PlaylistService
+
+    playlist_service = PlaylistService(room_service, SoCoAdapter())
+    register_playlists(app, config, playlist_service)
 
     queue_service = QueueService(room_service, SoCoAdapter())
     register_queue(app, config, queue_service)

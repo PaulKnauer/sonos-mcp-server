@@ -1,13 +1,15 @@
-"""FavouritesService — orchestrates favourites and playlists operations."""
+"""FavouritesService — orchestrates Sonos favourites operations."""
 
 from __future__ import annotations
 
 from soniq_mcp.domain.exceptions import FavouritesError
-from soniq_mcp.domain.models import Favourite, SonosPlaylist
+from soniq_mcp.domain.models import Favourite
 
 
 class FavouritesService:
-    """Orchestrates Sonos favourites and playlists operations.
+    """Orchestrates Sonos favourites operations.
+
+    Playlist inventory and playback are owned by ``PlaylistService``.
 
     Args:
         room_service: A ``RoomService`` instance for room/IP resolution.
@@ -21,7 +23,7 @@ class FavouritesService:
     def _get_any_ip(self) -> str:
         rooms = self._room_service.list_rooms()
         if not rooms:
-            raise FavouritesError("No Sonos rooms found — cannot fetch favourites/playlists")
+            raise FavouritesError("No Sonos rooms found — cannot fetch favourites")
         return rooms[0].ip_address
 
     def _lookup_favourite_meta(self, ip_address: str, uri: str) -> str | None:
@@ -58,28 +60,3 @@ class FavouritesService:
         if resolved_meta is None:
             resolved_meta = self._lookup_favourite_meta(room.ip_address, uri)
         self._adapter.play_favourite(room.ip_address, uri, resolved_meta)
-
-    def get_playlists(self) -> list[SonosPlaylist]:
-        """Return all saved Sonos playlists for the household.
-
-        Raises:
-            FavouritesError: If no rooms are reachable or the operation fails.
-            SonosDiscoveryError: If network discovery fails.
-        """
-        ip = self._get_any_ip()
-        return self._adapter.get_playlists(ip)
-
-    def play_playlist(self, room_name: str, uri: str) -> None:
-        """Play a playlist in the specified room.
-
-        Args:
-            room_name: Human-readable room name.
-            uri: Content URI of the playlist.
-
-        Raises:
-            RoomNotFoundError: If the room is not found.
-            FavouritesError: If the play operation fails.
-            SonosDiscoveryError: If network discovery fails.
-        """
-        room = self._room_service.get_room(room_name)
-        self._adapter.play_playlist(room.ip_address, uri)

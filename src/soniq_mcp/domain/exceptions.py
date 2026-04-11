@@ -230,3 +230,39 @@ class AlarmValidationError(AlarmError):
     """
 
     error_category = ErrorCategory.VALIDATION
+
+
+class PlaylistError(SoniqDomainError):
+    """Raised when a Sonos playlist operation fails.
+
+    Wraps SoCo playlist errors and other playlist-level failures so they
+    never leak past the adapter layer.
+
+    Args:
+        message: Human-readable description of the failure.
+    """
+
+    error_category = ErrorCategory.OPERATION
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+class PlaylistValidationError(PlaylistError):
+    """Raised when a playlist request fails local validation.
+
+    Covers malformed identifiers, blank or invalid titles, unknown
+    playlist IDs, and invalid update payloads.
+    """
+
+    error_category = ErrorCategory.VALIDATION
+
+
+class PlaylistUnsupportedOperationError(PlaylistError):
+    """Raised when a requested playlist mutation is not supported.
+
+    Covers households or SoCo API paths that cannot perform a requested
+    lifecycle mutation (e.g. rename via the current SoCo version).
+    """
+
+    error_category = ErrorCategory.OPERATION

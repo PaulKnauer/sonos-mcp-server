@@ -185,6 +185,17 @@ class ErrorResponse(BaseModel):
             ),
         )
 
+    @classmethod
+    def from_playlist_error(cls, exc: Exception) -> ErrorResponse:
+        return cls._from_domain_error(
+            exc,
+            field="playlist",
+            suggestion=(
+                "Check that the playlist_id is valid and the Sonos system is reachable. "
+                "Use 'list_playlists' to see available playlists and their IDs."
+            ),
+        )
+
 
 def _sanitize_text(text: str) -> str:
     """Redact sensitive transport and filesystem details from user-facing text."""

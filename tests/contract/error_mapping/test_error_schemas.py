@@ -99,3 +99,38 @@ class TestErrorResponseSchema:
         )
         assert "192.168.1.20" not in err.error
         assert "<redacted" in err.error
+
+    def test_playlist_error_uses_operation_category(self) -> None:
+        from soniq_mcp.domain.exceptions import PlaylistError
+
+        err = ErrorResponse.from_playlist_error(PlaylistError("SoCo playlist failed"))
+        assert err.category == ErrorCategory.OPERATION
+        assert err.field == "playlist"
+        assert err.suggestion is not None
+
+    def test_playlist_validation_error_uses_validation_category(self) -> None:
+        from soniq_mcp.domain.exceptions import PlaylistValidationError
+
+        err = ErrorResponse.from_playlist_error(
+            PlaylistValidationError("Playlist 'SQ:99' was not found.")
+        )
+        assert err.category == ErrorCategory.VALIDATION
+        assert err.field == "playlist"
+
+    def test_playlist_unsupported_operation_error_uses_operation_category(self) -> None:
+        from soniq_mcp.domain.exceptions import PlaylistUnsupportedOperationError
+
+        err = ErrorResponse.from_playlist_error(
+            PlaylistUnsupportedOperationError("Rename not supported")
+        )
+        assert err.category == ErrorCategory.OPERATION
+        assert err.field == "playlist"
+
+    def test_playlist_error_redacts_sensitive_data(self) -> None:
+        from soniq_mcp.domain.exceptions import PlaylistError
+
+        err = ErrorResponse.from_playlist_error(
+            PlaylistError("Playlist failed at http://192.168.1.20:1400/playlists")
+        )
+        assert "192.168.1.20" not in err.error
+        assert "<redacted" in err.error
