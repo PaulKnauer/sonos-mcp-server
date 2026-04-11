@@ -53,8 +53,8 @@ phase_id: phase-2
 phase_label: "Phase 2 (Tier 1 Expansion)"
 canonical_story_namespace: "phase-2/<story-key>"
 collision_index: "_bmad-output/phase-index.yaml"
-current_completed_story: "phase-2/3-1-add-alarm-discovery-and-lifecycle-operations"
-next_story_hint: "phase-2/3-3-preserve-existing-playlist-playback-alongside-playlist-lifecycle-support"
+current_completed_story: "phase-2/3-4-add-tests-and-docs-for-alarm-and-playlist-lifecycle-flows"
+next_story_hint: "phase-2/3-5-investigate-supported-sonos-playlist-rename-capability"
 
 development_status:
   # Epic 1: Advanced Playback and Audio Control
@@ -78,7 +78,7 @@ development_status:
   3-1-add-alarm-discovery-and-lifecycle-operations: done
   3-2-introduce-sonos-playlist-crud-operations: done
   3-3-preserve-existing-playlist-playback-alongside-playlist-lifecycle-support: done
-  3-4-add-tests-and-docs-for-alarm-and-playlist-lifecycle-flows: backlog
+  3-4-add-tests-and-docs-for-alarm-and-playlist-lifecycle-flows: done
   3-5-investigate-supported-sonos-playlist-rename-capability: backlog
   epic-3-retrospective: optional
 

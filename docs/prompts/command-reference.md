@@ -86,6 +86,39 @@ SONIQ_MCP_TOOLS_DISABLED=ping uv run python -m soniq_mcp
 .venv/bin/soniq-mcp
 ```
 
+## Alarm and playlist lifecycle surface
+
+These lifecycle tools are part of the supported MCP contract and are transport-neutral across local `stdio` and remote `Streamable HTTP`.
+
+### Alarm tools
+
+| Tool | Required parameters | Notes |
+|---|---|---|
+| `list_alarms` | none | Returns normalized alarm records with `alarm_id` values. |
+| `create_alarm` | `room`, `start_time`, `recurrence` | Optional fields: `enabled`, `volume`, `include_linked_zones`. |
+| `update_alarm` | `alarm_id`, `room`, `start_time`, `recurrence`, `enabled` | Optional fields: `volume`, `include_linked_zones`. |
+| `delete_alarm` | `alarm_id` | Destructive operation; returns delete confirmation. |
+
+Alarm lifecycle operations target alarms by `alarm_id`. Use `list_alarms` first when the caller needs to discover or confirm the current identifiers.
+
+### Playlist tools
+
+| Tool | Required parameters | Notes |
+|---|---|---|
+| `list_playlists` | none | Returns normalized playlist records with both playback `uri` and lifecycle `item_id`. |
+| `play_playlist` | `room`, `uri` | Playback operation only; starts a saved playlist by `uri`. |
+| `create_playlist` | `title` | Creates an empty saved playlist and returns its normalized record. |
+| `update_playlist` | `playlist_id`, `room` | Replaces the saved playlist contents with the current queue from the named room. |
+| `delete_playlist` | `playlist_id` | Destructive operation; returns delete confirmation. |
+
+Playlist playback and playlist management intentionally use different identifiers:
+
+- `play_playlist` uses the playlist `uri`
+- `create_playlist`, `update_playlist`, and `delete_playlist` use the playlist `item_id` returned by `list_playlists`
+- `rename_playlist` is not part of the supported MCP surface
+
+For natural-language examples of these flows, use [example-uses.md](example-uses.md).
+
 ## Related guides
 
 - [Example prompts and usage flows](example-uses.md)

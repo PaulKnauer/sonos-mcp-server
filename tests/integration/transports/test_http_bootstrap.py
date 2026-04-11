@@ -83,6 +83,15 @@ REPRESENTATIVE_TOOL_NAMES = (
     "set_bass",
     "set_loudness",
     "switch_to_tv",
+    "list_alarms",
+    "create_alarm",
+    "update_alarm",
+    "delete_alarm",
+    "list_playlists",
+    "play_playlist",
+    "create_playlist",
+    "update_playlist",
+    "delete_playlist",
 )
 
 

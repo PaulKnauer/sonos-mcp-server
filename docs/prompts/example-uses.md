@@ -209,6 +209,91 @@ Claude calls `list_favourites` and returns all saved favourites with their URIs.
 
 Claude calls `list_favourites` to find the matching URI, then `play_favourite` to start it in the target room.
 
+### Browse saved playlists
+
+> "What Sonos playlists do I have?"
+> "List the saved playlists and show their IDs."
+
+Claude calls `list_playlists` and returns each playlist's `title`, playback `uri`, and lifecycle `item_id`.
+
+### Play a saved playlist
+
+> "Play the playlist with URI `x-rincon-playlist://pl1` in the Kitchen."
+> "Start the saved playlist URI from `list_playlists` in the Living Room."
+
+Claude calls `play_playlist` with a room name and playlist `uri`.
+
+Use `play_playlist` only for playback. It targets playlists by `uri`, not by lifecycle ID.
+
+### Create a new empty playlist
+
+> "Create a new Sonos playlist called Road Trip."
+> "Make an empty playlist named Weekend Cleanup."
+
+Claude calls `create_playlist` and returns the normalized playlist record, including the new `item_id` for future lifecycle operations.
+
+### Replace a playlist's contents from a room queue
+
+> "Replace playlist `SQ:1` with the current Living Room queue."
+> "Update playlist `SQ:42` from whatever is queued in the Kitchen."
+
+Claude calls `update_playlist` with the target playlist `item_id` and the room whose active queue should become the saved playlist contents.
+
+Use `update_playlist` when you want to overwrite the saved playlist contents from a room queue. Use `play_playlist` when you want to start playback of an already-saved playlist by `uri`.
+
+### Delete a saved playlist
+
+> "Delete playlist `SQ:1`."
+> "Remove the saved playlist with item ID `SQ:42`."
+
+Claude calls `delete_playlist` with the playlist `item_id` and returns a delete confirmation.
+
+### Playlist lifecycle rules
+
+- `list_playlists` returns both `uri` and `item_id`.
+- `play_playlist` uses `uri`.
+- `create_playlist`, `update_playlist`, and `delete_playlist` use `item_id`.
+- Playlist rename is not currently supported by the MCP server and should not be requested.
+
+---
+
+## Alarm lifecycle
+
+### List alarms
+
+> "What Sonos alarms are configured?"
+> "List all alarms and show their IDs."
+
+Claude calls `list_alarms` and returns the normalized alarm records, including each `alarm_id`.
+
+### Create an alarm
+
+> "Create a weekday alarm for the Bedroom at 07:00:00."
+> "Set a daily Living Room alarm for 06:30:00 at volume 20."
+
+Claude calls `create_alarm` with `room`, `start_time`, `recurrence`, and any optional `enabled`, `volume`, or `include_linked_zones` values.
+
+### Update an alarm
+
+> "Disable alarm `101`."
+> "Move alarm `101` to the Kitchen at 08:00:00 on weekdays."
+
+Claude first uses `list_alarms` if it needs to confirm the current alarm state, then calls `update_alarm` with `alarm_id`, `room`, `start_time`, `recurrence`, `enabled`, and any optional lifecycle fields that need to change.
+
+### Delete an alarm
+
+> "Delete alarm `101`."
+> "Remove the Sonos alarm with ID `205`."
+
+Claude calls `delete_alarm` with the `alarm_id` and returns a delete confirmation.
+
+### Alarm lifecycle rules
+
+- `list_alarms` is the inventory/discovery step.
+- `create_alarm` returns the normalized alarm record for the newly-created alarm.
+- `update_alarm` and `delete_alarm` target alarms by `alarm_id`.
+- Alarm lifecycle responses use typed validation, room, and connectivity errors rather than free-form failures.
+
 ---
 
 ## Room grouping

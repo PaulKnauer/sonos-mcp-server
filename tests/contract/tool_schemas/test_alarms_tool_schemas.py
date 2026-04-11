@@ -53,6 +53,26 @@ def get_tools(app: FastMCP) -> dict:
     return {t.name: t for t in app._tool_manager.list_tools()}
 
 
+def _property_type(prop: dict) -> str | None:
+    if "type" in prop:
+        return prop["type"]
+    any_of = prop.get("anyOf", [])
+    types = [entry.get("type") for entry in any_of if "type" in entry]
+    if len(types) == 1:
+        return types[0]
+    return None
+
+
+class TestAlarmToolSurfaceContract:
+    def test_alarm_tool_surface_is_stable(self, registered_app: FastMCP) -> None:
+        assert set(get_tools(registered_app)) == {
+            "list_alarms",
+            "create_alarm",
+            "update_alarm",
+            "delete_alarm",
+        }
+
+
 class TestListAlarmsContract:
     def test_tool_name_is_stable(self, registered_app: FastMCP) -> None:
         assert "list_alarms" in get_tools(registered_app)
@@ -81,10 +101,7 @@ class TestCreateAlarmContract:
 
     def test_requires_room_start_time_and_recurrence(self, registered_app: FastMCP) -> None:
         schema = get_tools(registered_app)["create_alarm"].parameters
-        required = set(schema.get("required", []))
-        assert "room" in required
-        assert "start_time" in required
-        assert "recurrence" in required
+        assert set(schema.get("required", [])) == {"room", "start_time", "recurrence"}
 
     def test_has_optional_volume_and_flags(self, registered_app: FastMCP) -> None:
         schema = get_tools(registered_app)["create_alarm"].parameters
@@ -92,6 +109,11 @@ class TestCreateAlarmContract:
         assert "volume" in props
         assert "enabled" in props
         assert "include_linked_zones" in props
+        assert _property_type(props["room"]) == "string"
+        assert _property_type(props["start_time"]) == "string"
+        assert _property_type(props["recurrence"]) == "string"
+        assert _property_type(props["enabled"]) == "boolean"
+        assert _property_type(props["include_linked_zones"]) == "boolean"
 
     def test_is_control_tool(self, registered_app: FastMCP) -> None:
         ann = get_tools(registered_app)["create_alarm"].annotations
@@ -111,12 +133,21 @@ class TestUpdateAlarmContract:
         self, registered_app: FastMCP
     ) -> None:
         schema = get_tools(registered_app)["update_alarm"].parameters
-        required = set(schema.get("required", []))
-        assert "alarm_id" in required
-        assert "room" in required
-        assert "start_time" in required
-        assert "recurrence" in required
-        assert "enabled" in required
+        assert set(schema.get("required", [])) == {
+            "alarm_id",
+            "room",
+            "start_time",
+            "recurrence",
+            "enabled",
+        }
+
+    def test_has_expected_identifier_and_boolean_fields(self, registered_app: FastMCP) -> None:
+        schema = get_tools(registered_app)["update_alarm"].parameters
+        props = schema["properties"]
+        assert _property_type(props["alarm_id"]) == "string"
+        assert _property_type(props["room"]) == "string"
+        assert _property_type(props["enabled"]) == "boolean"
+        assert _property_type(props["include_linked_zones"]) == "boolean"
 
     def test_is_control_tool(self, registered_app: FastMCP) -> None:
         ann = get_tools(registered_app)["update_alarm"].annotations
@@ -136,6 +167,7 @@ class TestDeleteAlarmContract:
         schema = get_tools(registered_app)["delete_alarm"].parameters
         required = set(schema.get("required", []))
         assert "alarm_id" in required
+        assert _property_type(schema["properties"]["alarm_id"]) == "string"
 
     def test_is_control_tool(self, registered_app: FastMCP) -> None:
         ann = get_tools(registered_app)["delete_alarm"].annotations

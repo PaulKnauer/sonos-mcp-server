@@ -44,6 +44,20 @@ def get_tools(app: FastMCP) -> dict:
     return {t.name: t for t in app._tool_manager.list_tools()}
 
 
+class TestPlaylistToolSurfaceContract:
+    def test_playlist_tool_surface_is_stable(self, registered_app: FastMCP) -> None:
+        assert set(get_tools(registered_app)) == {
+            "list_playlists",
+            "play_playlist",
+            "create_playlist",
+            "update_playlist",
+            "delete_playlist",
+        }
+
+    def test_rename_playlist_is_not_exposed(self, registered_app: FastMCP) -> None:
+        assert "rename_playlist" not in get_tools(registered_app)
+
+
 class TestListPlaylistsContract:
     def test_tool_name_is_stable(self, registered_app: FastMCP) -> None:
         assert "list_playlists" in get_tools(registered_app)
@@ -75,6 +89,8 @@ class TestPlayPlaylistContract:
         assert "room" in schema["properties"]
         assert "uri" in schema["properties"]
         assert set(schema["required"]) == {"room", "uri"}
+        assert schema["properties"]["room"]["type"] == "string"
+        assert schema["properties"]["uri"]["type"] == "string"
 
     def test_is_control_tool(self, registered_app: FastMCP) -> None:
         ann = get_tools(registered_app)["play_playlist"].annotations
@@ -93,6 +109,7 @@ class TestCreatePlaylistContract:
         schema = get_tools(registered_app)["create_playlist"].parameters
         assert "title" in schema["properties"]
         assert "title" in schema.get("required", [])
+        assert schema["properties"]["title"]["type"] == "string"
 
     def test_is_control_tool(self, registered_app: FastMCP) -> None:
         ann = get_tools(registered_app)["create_playlist"].annotations
@@ -113,6 +130,8 @@ class TestUpdatePlaylistContract:
         assert "playlist_id" in schema["properties"]
         assert "room" in schema["properties"]
         assert set(schema["required"]) == {"playlist_id", "room"}
+        assert schema["properties"]["playlist_id"]["type"] == "string"
+        assert schema["properties"]["room"]["type"] == "string"
 
     def test_is_control_tool(self, registered_app: FastMCP) -> None:
         ann = get_tools(registered_app)["update_playlist"].annotations
@@ -132,6 +151,7 @@ class TestDeletePlaylistContract:
         schema = get_tools(registered_app)["delete_playlist"].parameters
         assert "playlist_id" in schema["properties"]
         assert "playlist_id" in schema.get("required", [])
+        assert schema["properties"]["playlist_id"]["type"] == "string"
 
     def test_is_destructive_tool(self, registered_app: FastMCP) -> None:
         ann = get_tools(registered_app)["delete_playlist"].annotations
