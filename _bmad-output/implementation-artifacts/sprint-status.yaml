@@ -1,5 +1,5 @@
 # generated: 2026-04-07
-# last_updated: 2026-04-11
+# last_updated: 2026-04-12
 # project: sonos-mcp-server
 # project_key: NOKEY
 # tracking_system: file-system
@@ -44,7 +44,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-07
-last_updated: 2026-04-11
+last_updated: 2026-04-12
 project: sonos-mcp-server
 project_key: NOKEY
 tracking_system: file-system
@@ -53,12 +53,12 @@ phase_id: phase-2
 phase_label: "Phase 2 (Tier 1 Expansion)"
 canonical_story_namespace: "phase-2/<story-key>"
 collision_index: "_bmad-output/phase-index.yaml"
-current_completed_story: "phase-2/3-4-add-tests-and-docs-for-alarm-and-playlist-lifecycle-flows"
-next_story_hint: "phase-2/3-5-investigate-supported-sonos-playlist-rename-capability"
+current_completed_story: "phase-2/4-1-add-bounded-local-music-library-browsing"
+next_story_hint: "phase-2/4-2-support-selection-and-playback-from-library-results"
 
 development_status:
   # Epic 1: Advanced Playback and Audio Control
-  epic-1: in-progress
+  epic-1: done
   1-1-expose-play-mode-controls-for-active-rooms: done
   1-2-support-seek-and-sleep-timer-operations: done
   1-3-add-room-level-audio-eq-controls: done
@@ -66,7 +66,7 @@ development_status:
   epic-1-retrospective: done
 
   # Epic 2: Input and Group Audio Expansion
-  epic-2: in-progress
+  epic-2: done
   2-1-support-capability-aware-input-switching: done
   2-2-control-core-playback-in-a-target-room: done
   2-3-control-volume-and-mute-safely: done
@@ -74,17 +74,21 @@ development_status:
   epic-2-retrospective: done
 
   # Epic 3: Alarm and Playlist Lifecycle Management
-  epic-3: in-progress
+  epic-3: done
   3-1-add-alarm-discovery-and-lifecycle-operations: done
   3-2-introduce-sonos-playlist-crud-operations: done
   3-3-preserve-existing-playlist-playback-alongside-playlist-lifecycle-support: done
   3-4-add-tests-and-docs-for-alarm-and-playlist-lifecycle-flows: done
-  3-5-investigate-supported-sonos-playlist-rename-capability: backlog
-  epic-3-retrospective: optional
+  epic-3-retrospective: done
+
+  # Deferred out of current Phase 2 scope on 2026-04-12 due to verified SoCo
+  # limitations around supported playlist rename capability. See:
+  # _bmad-output/planning-artifacts/sprint-change-proposal-2026-04-11.md
+  # _bmad-output/planning-artifacts/research/technical-playlist-rename-capability-decision-research-2026-04-11.md
 
   # Epic 4: Local Music Library Access and Selection
-  epic-4: backlog
-  4-1-add-bounded-local-music-library-browsing: backlog
+  epic-4: in-progress
+  4-1-add-bounded-local-music-library-browsing: done
   4-2-support-selection-and-playback-from-library-results: backlog
   4-3-preserve-parity-for-library-access-across-direct-and-agent-mediated-usage: backlog
   epic-4-retrospective: optional

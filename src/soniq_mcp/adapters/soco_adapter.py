@@ -17,17 +17,20 @@ from soniq_mcp.domain.exceptions import (
     FavouritesError,
     GroupError,
     InputError,
+    LibraryError,
     PlaybackError,
     PlaylistError,
     PlaylistUnsupportedOperationError,
     PlaylistValidationError,
     QueueError,
+    SonosDiscoveryError,
     VolumeError,
 )
 from soniq_mcp.domain.models import (
     AlarmRecord,
     AudioSettingsState,
     Favourite,
+    LibraryItem,
     PlaybackState,
     PlayModeState,
     QueueItem,
@@ -199,6 +202,46 @@ class SoCoAdapter:
         except Exception as exc:
             raise PlaylistError(f"Failed to get playlists: {exc}") from exc
 
+    def browse_library(
+        self,
+        ip_address: str,
+        category: str,
+        *,
+        start: int,
+        limit: int,
+        parent_id: str | None = None,
+    ) -> tuple[list[LibraryItem], int | None]:
+        """Browse a bounded slice of the local Sonos music library."""
+        from requests import exceptions as requests_exceptions  # noqa: PLC0415
+
+        try:
+            zone = self._make_zone(ip_address)
+            if parent_id is None:
+                results = zone.music_library.get_music_library_information(
+                    category,
+                    start=start,
+                    max_items=limit,
+                    full_album_art_uri=False,
+                    complete_result=False,
+                )
+            else:
+                results = zone.music_library.browse_by_idstring(
+                    category,
+                    parent_id,
+                    start=start,
+                    max_items=limit,
+                    full_album_art_uri=False,
+                )
+            items = [self._normalize_library_item(item) for item in list(results)]
+            total_matches = getattr(results, "total_matches", None)
+            return items, total_matches if isinstance(total_matches, int) else None
+        except (requests_exceptions.RequestException, ConnectionError, OSError) as exc:
+            raise SonosDiscoveryError(
+                f"Failed to reach Sonos music library on {ip_address}: {exc}"
+            ) from exc
+        except Exception as exc:
+            raise LibraryError(f"Failed to browse local music library: {exc}") from exc
+
     def play_playlist(self, ip_address: str, uri: str) -> None:
         try:
             zone = self._make_zone(ip_address)
@@ -323,6 +366,33 @@ class SoCoAdapter:
             return True
         title = _coerce_str(getattr(playlist, "title", None))
         return item_id is None and title == identifier
+
+    def _normalize_library_item(self, item: Any) -> LibraryItem:
+        """Normalize a SoCo music-library item into a stable domain record."""
+        title = _coerce_str(getattr(item, "title", None))
+        item_id = _coerce_str(getattr(item, "item_id", None))
+        uri = _coerce_str(getattr(item, "uri", None))
+        item_type = (
+            _coerce_str(getattr(item, "item_class", None))
+            or _coerce_str(getattr(item, "search_type", None))
+            or item.__class__.__name__.lower()
+        )
+        can_play = getattr(item, "can_play", None)
+        can_browse = getattr(item, "can_browse", None)
+        is_playable = bool(can_play) if can_play is not None else uri is not None
+        if can_browse is not None:
+            is_browsable = bool(can_browse)
+        else:
+            is_browsable = item_id is not None and not is_playable
+        return LibraryItem(
+            title=title or item_id or "Untitled",
+            item_type=item_type,
+            item_id=item_id,
+            uri=uri,
+            album_art_uri=_coerce_str(getattr(item, "album_art_uri", None)),
+            is_browsable=is_browsable,
+            is_playable=is_playable,
+        )
 
     def _list_raw_playlists(self, zone: Any) -> list[Any]:
         """Return the complete raw Sonos playlist inventory for a household."""

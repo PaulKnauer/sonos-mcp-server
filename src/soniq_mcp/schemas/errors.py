@@ -196,6 +196,17 @@ class ErrorResponse(BaseModel):
             ),
         )
 
+    @classmethod
+    def from_library_error(cls, exc: Exception) -> ErrorResponse:
+        return cls._from_domain_error(
+            exc,
+            field="library",
+            suggestion=(
+                "Check that the category, parent_id, start, and limit are valid and that the "
+                "Sonos system is reachable. Use bounded browse requests and try again."
+            ),
+        )
+
 
 def _sanitize_text(text: str) -> str:
     """Redact sensitive transport and filesystem details from user-facing text."""

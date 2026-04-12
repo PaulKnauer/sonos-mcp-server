@@ -20,6 +20,7 @@ def register_all(app: FastMCP, config: SoniqConfig) -> None:
     from soniq_mcp.services.favourites_service import FavouritesService
     from soniq_mcp.services.group_service import GroupService
     from soniq_mcp.services.input_service import InputService
+    from soniq_mcp.services.library_service import LibraryService
     from soniq_mcp.services.play_mode_service import PlayModeService
     from soniq_mcp.services.playback_service import PlaybackService
     from soniq_mcp.services.queue_service import QueueService
@@ -31,6 +32,7 @@ def register_all(app: FastMCP, config: SoniqConfig) -> None:
     from soniq_mcp.tools.favourites import register as register_favourites
     from soniq_mcp.tools.groups import register as register_groups
     from soniq_mcp.tools.inputs import register as register_inputs
+    from soniq_mcp.tools.library import register as register_library
     from soniq_mcp.tools.play_modes import register as register_play_modes
     from soniq_mcp.tools.playback import register as register_playback
     from soniq_mcp.tools.playlists import register as register_playlists
@@ -78,3 +80,6 @@ def register_all(app: FastMCP, config: SoniqConfig) -> None:
 
     alarm_service = AlarmService(room_service, SoCoAdapter())
     register_alarms(app, config, alarm_service)
+
+    library_service = LibraryService(room_service, SoCoAdapter())
+    register_library(app, config, library_service)

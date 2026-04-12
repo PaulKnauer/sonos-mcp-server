@@ -134,3 +134,27 @@ class TestErrorResponseSchema:
         )
         assert "192.168.1.20" not in err.error
         assert "<redacted" in err.error
+
+    def test_library_error_uses_operation_category(self) -> None:
+        from soniq_mcp.domain.exceptions import LibraryError
+
+        err = ErrorResponse.from_library_error(LibraryError("SoCo library failed"))
+        assert err.category == ErrorCategory.OPERATION
+        assert err.field == "library"
+        assert err.suggestion is not None
+
+    def test_library_validation_error_uses_validation_category(self) -> None:
+        from soniq_mcp.domain.exceptions import LibraryValidationError
+
+        err = ErrorResponse.from_library_error(LibraryValidationError("Invalid category"))
+        assert err.category == ErrorCategory.VALIDATION
+        assert err.field == "library"
+
+    def test_library_error_redacts_sensitive_data(self) -> None:
+        from soniq_mcp.domain.exceptions import LibraryError
+
+        err = ErrorResponse.from_library_error(
+            LibraryError("Library failed at http://192.168.1.20:1400/library")
+        )
+        assert "192.168.1.20" not in err.error
+        assert "<redacted" in err.error

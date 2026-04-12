@@ -274,6 +274,19 @@ class AlarmRecord:
 
 
 @dataclass(frozen=True)
+class LibraryItem:
+    """A normalized Sonos local music-library item."""
+
+    title: str
+    item_type: str
+    item_id: str | None = field(default=None)
+    uri: str | None = field(default=None)
+    album_art_uri: str | None = field(default=None)
+    is_browsable: bool = field(default=False)
+    is_playable: bool = field(default=False)
+
+
+@dataclass(frozen=True)
 class GroupAudioState:
     """Current group-level volume and mute state for an active Sonos group.
 

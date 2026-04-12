@@ -7,6 +7,7 @@ from soniq_mcp.domain.models import (
     AudioSettingsState,
     GroupAudioState,
     InputState,
+    LibraryItem,
     PlaybackState,
     Room,
     SleepTimerState,
@@ -22,6 +23,8 @@ from soniq_mcp.schemas.responses import (
     AudioSettingsResponse,
     GroupAudioStateResponse,
     InputStateResponse,
+    LibraryBrowseResponse,
+    LibraryItemResponse,
     PlaybackStateResponse,
     RoomListResponse,
     RoomResponse,
@@ -125,6 +128,70 @@ class TestSpeakerResponse:
         assert resp.is_visible is True
         assert resp.supports_line_in is False
         assert resp.supports_tv is False
+
+
+class TestLibraryResponses:
+    def test_library_item_response_from_domain(self) -> None:
+        item = LibraryItem(
+            title="Album",
+            item_type="object.container.album.musicAlbum",
+            item_id="A:ALBUM/1",
+            uri=None,
+            album_art_uri="/getaa?s=1",
+            is_browsable=True,
+            is_playable=False,
+        )
+
+        resp = LibraryItemResponse.from_domain(item)
+
+        assert resp.title == "Album"
+        assert resp.item_type == "object.container.album.musicAlbum"
+        assert resp.item_id == "A:ALBUM/1"
+        assert resp.is_browsable is True
+        assert resp.is_playable is False
+
+    def test_library_browse_response_from_domain(self) -> None:
+        item = LibraryItem(
+            title="Artist",
+            item_type="object.container.person.musicArtist",
+            item_id="A:ARTIST/1",
+            uri=None,
+            album_art_uri=None,
+            is_browsable=True,
+            is_playable=False,
+        )
+
+        resp = LibraryBrowseResponse.from_domain(
+            category="artists",
+            parent_id=None,
+            items=[item],
+            start=0,
+            limit=25,
+            has_more=True,
+        )
+
+        dump = resp.model_dump()
+        assert dump["category"] == "artists"
+        assert dump["count"] == 1
+        assert dump["start"] == 0
+        assert dump["limit"] == 25
+        assert dump["has_more"] is True
+        assert dump["next_start"] == 25
+        assert dump["items"][0]["title"] == "Artist"
+
+    def test_library_browse_response_advances_by_requested_limit_on_empty_page(self) -> None:
+        resp = LibraryBrowseResponse.from_domain(
+            category="artists",
+            parent_id="A:ARTIST/1",
+            items=[],
+            start=100,
+            limit=100,
+            has_more=True,
+        )
+
+        dump = resp.model_dump()
+        assert dump["count"] == 0
+        assert dump["next_start"] == 200
 
 
 class TestSystemTopologyResponse:

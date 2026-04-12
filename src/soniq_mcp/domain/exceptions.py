@@ -266,3 +266,18 @@ class PlaylistUnsupportedOperationError(PlaylistError):
     """
 
     error_category = ErrorCategory.OPERATION
+
+
+class LibraryError(SoniqDomainError):
+    """Raised when a Sonos local music-library operation fails."""
+
+    error_category = ErrorCategory.OPERATION
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+class LibraryValidationError(LibraryError):
+    """Raised when a local music-library browse request fails validation."""
+
+    error_category = ErrorCategory.VALIDATION

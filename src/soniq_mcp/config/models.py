@@ -71,6 +71,7 @@ KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
         "create_alarm",
         "update_alarm",
         "delete_alarm",
+        "browse_library",
     }
 )
 

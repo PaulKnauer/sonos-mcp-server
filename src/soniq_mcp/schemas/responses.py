@@ -18,6 +18,7 @@ from soniq_mcp.domain.models import (
     Favourite,
     GroupAudioState,
     InputState,
+    LibraryItem,
     PlaybackState,
     PlayModeState,
     QueueItem,
@@ -401,6 +402,65 @@ class AlarmDeleteResponse(BaseModel):
 
     alarm_id: str
     status: str
+
+
+class LibraryItemResponse(BaseModel):
+    """Serialisable representation of a local music-library item."""
+
+    title: str
+    item_type: str
+    item_id: str | None = None
+    uri: str | None = None
+    album_art_uri: str | None = None
+    is_browsable: bool
+    is_playable: bool
+
+    @classmethod
+    def from_domain(cls, item: LibraryItem) -> LibraryItemResponse:
+        return cls(
+            title=item.title,
+            item_type=item.item_type,
+            item_id=item.item_id,
+            uri=item.uri,
+            album_art_uri=item.album_art_uri,
+            is_browsable=item.is_browsable,
+            is_playable=item.is_playable,
+        )
+
+
+class LibraryBrowseResponse(BaseModel):
+    """Response for the ``browse_library`` tool."""
+
+    category: str
+    parent_id: str | None = None
+    items: list[LibraryItemResponse]
+    count: int
+    start: int
+    limit: int
+    has_more: bool
+    next_start: int | None = None
+
+    @classmethod
+    def from_domain(
+        cls,
+        *,
+        category: str,
+        parent_id: str | None,
+        items: list[LibraryItem],
+        start: int,
+        limit: int,
+        has_more: bool,
+    ) -> LibraryBrowseResponse:
+        return cls(
+            category=category,
+            parent_id=parent_id,
+            items=[LibraryItemResponse.from_domain(item) for item in items],
+            count=len(items),
+            start=start,
+            limit=limit,
+            has_more=has_more,
+            next_start=(start + limit) if has_more else None,
+        )
 
 
 class GroupTopologyResponse(BaseModel):
