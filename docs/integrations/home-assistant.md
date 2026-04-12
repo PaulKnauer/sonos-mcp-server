@@ -81,6 +81,7 @@ No Home Assistant-specific implementation path is required inside SoniqMCP.
 
 - A Home Assistant assistant decides which room should play a saved favourite and calls `play_favourite`.
 - A home routine checks `get_group_topology` before calling `join_group` for evening whole-home playback.
+- A browsing assistant calls `browse_library`, inspects `is_browsable` versus `is_playable`, then either browses deeper or calls `play_library_item` with the normalized playable selection.
 - A voice or automation flow checks `list_rooms` and `server_info` before issuing playback commands to verify the server is reachable and the environment is correct.
 
 ### Representative Epic 2 flow
@@ -94,6 +95,19 @@ Use diagnostics first, then mutate:
 5. Call `get_group_volume` or `set_group_volume` when the automation is targeting the active synced group instead of one room.
 
 Home Assistant decides when to branch or retry. SoniqMCP remains the execution layer only.
+
+### Representative library flow
+
+Keep the same library mental model used by direct AI clients:
+
+1. Call `ping`.
+2. Call `server_info`.
+3. Call `list_rooms`.
+4. Call `browse_library` with a bounded category request.
+5. If the result is browse-only, browse deeper.
+6. If the result is a normalized playable selection, call `play_library_item`.
+
+Transport setup may differ, but the request and response semantics for `browse_library` and `play_library_item` should remain the same.
 
 ---
 

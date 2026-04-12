@@ -66,6 +66,11 @@ class TestIntegrationGuides:
         assert "`group_unmute`" in readme
         assert "`group_rooms`" in readme
 
+    def test_root_readme_surfaces_library_tools(self) -> None:
+        readme = _read(ROOT_README)
+        assert "`browse_library`" in readme
+        assert "`play_library_item`" in readme
+
     def test_root_readme_qualifies_remote_deployment_claims(self) -> None:
         readme = _read(ROOT_README)
         assert "Docker on Linux" in readme
@@ -91,6 +96,16 @@ class TestIntegrationGuides:
         assert "Streamable HTTP" in prompts
         assert "[command-reference.md](command-reference.md)" in prompts
         assert "[../setup/troubleshooting.md](../setup/troubleshooting.md)" in prompts
+
+    def test_prompts_include_library_examples_for_direct_and_agent_usage(self) -> None:
+        prompts = _read(PROMPTS_GUIDE)
+        assert "## Local music library" in prompts
+        assert "`browse_library`" in prompts
+        assert "`play_library_item`" in prompts
+        assert "normalized playable selection" in prompts
+        assert "browse deeper" in prompts
+        assert "Home Assistant" in prompts
+        assert "`n8n`" in prompts
 
     def test_prompts_explain_input_and_group_control_boundaries(self) -> None:
         prompts = _read(PROMPTS_GUIDE)
@@ -125,6 +140,14 @@ class TestIntegrationGuides:
         assert "execution layer only" in home_assistant
         assert "execution layer only" in n8n
 
+    def test_agent_guides_reference_library_flows(self) -> None:
+        home_assistant = _read(HOME_ASSISTANT_GUIDE)
+        n8n = _read(N8N_GUIDE)
+        for guide in (home_assistant, n8n):
+            assert "`browse_library`" in guide
+            assert "`play_library_item`" in guide
+            assert "browse deeper" in guide
+
     def test_command_reference_surfaces_supported_command_paths(self) -> None:
         command_reference = _read(COMMAND_REFERENCE)
         assert "canonical command surface" in command_reference
@@ -139,6 +162,14 @@ class TestIntegrationGuides:
             "For Claude Desktop local integration, do not pre-start `make run-stdio`."
             in command_reference
         )
+
+    def test_command_reference_documents_library_surface(self) -> None:
+        command_reference = _read(COMMAND_REFERENCE)
+        assert "## Local music library surface" in command_reference
+        assert "| `browse_library` |" in command_reference
+        assert "| `play_library_item` |" in command_reference
+        assert "normalized playable selection" in command_reference
+        assert "transport-neutral" in command_reference
 
     def test_agent_guides_call_out_remote_deployment_caveats(self) -> None:
         home_assistant = _read(HOME_ASSISTANT_GUIDE)

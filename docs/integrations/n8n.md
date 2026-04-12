@@ -55,6 +55,7 @@ This keeps the workflow explicit and avoids brittle glue code.
 
 - A workflow receives a natural-language intent from an LLM step, maps it to a target room, then calls `play_favourite`.
 - A scheduled routine checks whether rooms are already grouped before choosing `join_group` or `party_mode`.
+- A library workflow calls `browse_library`, branches on whether the result is browse-only or playable, then calls `play_library_item` only for a normalized playable selection.
 - A recovery branch uses `server_info` and `list_rooms` before retrying a failed playback action.
 
 ### Representative Epic 2 workflow
@@ -70,6 +71,19 @@ For input and expanded group-audio flows, keep the sequence explicit:
 If the workflow is switching an active source instead of changing playback or volume, call `switch_to_tv` or `switch_to_line_in`.
 
 `n8n` owns the orchestration and branching. SoniqMCP remains the execution layer only.
+
+### Representative library workflow
+
+For library access, keep the sequence explicit and transport-neutral:
+
+1. Call `ping`.
+2. Call `server_info`.
+3. Call `list_rooms`.
+4. Call `browse_library` for a bounded category or drill-down request.
+5. If the result is browse-only, browse deeper.
+6. If the result is a normalized playable selection, call `play_library_item`.
+
+This keeps the same tool names, fields, and business semantics used by direct AI clients. `n8n` still owns the orchestration and branching.
 
 ---
 

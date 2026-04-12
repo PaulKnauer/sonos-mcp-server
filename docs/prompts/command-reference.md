@@ -119,6 +119,24 @@ Playlist playback and playlist management intentionally use different identifier
 
 For natural-language examples of these flows, use [example-uses.md](example-uses.md).
 
+## Local music library surface
+
+These library tools are part of the supported MCP contract and are transport-neutral across local `stdio`, remote `Streamable HTTP`, direct AI clients, and agent-mediated workflows.
+
+### Library tools
+
+| Tool | Required parameters | Notes |
+|---|---|---|
+| `browse_library` | `category` | Read-only browse tool. Optional fields: `start`, `limit`, `parent_id`. Returns a bounded result set with pagination metadata. |
+| `play_library_item` | `room`, `title`, `uri`, `is_playable` | Control tool. Optional field: `item_id`. Plays a normalized playable selection returned by `browse_library`. |
+
+Library browsing and playback intentionally use different interaction phases:
+
+- `browse_library` returns normalized items with fields such as `title`, `item_type`, `item_id`, `uri`, `is_browsable`, and `is_playable`
+- `play_library_item` should be called only with a normalized playable selection
+- if a result is browse-only, browse deeper instead of guessing playback behavior
+- transport differences should stay limited to setup and envelope details, not to business semantics
+
 ## Related guides
 
 - [Example prompts and usage flows](example-uses.md)

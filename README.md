@@ -4,7 +4,7 @@ Control your Sonos system from any MCP-compatible AI client. Run locally over st
 
 ## What it does
 
-SoniqMCP is an [MCP](https://modelcontextprotocol.io/) server that exposes your Sonos system as tools for AI agents. Connect Claude Desktop (or any MCP client) to control playback, volume, queues, favourites, playlists, and room grouping through natural conversation.
+SoniqMCP is an [MCP](https://modelcontextprotocol.io/) server that exposes your Sonos system as tools for AI agents. Connect Claude Desktop (or any MCP client) to control playback, volume, queues, favourites, playlists, local music library browsing and playback, and room grouping through natural conversation.
 
 **Tools available:**
 
@@ -19,6 +19,7 @@ SoniqMCP is an [MCP](https://modelcontextprotocol.io/) server that exposes your 
 | Favourites | `list_favourites`, `play_favourite` |
 | Alarm Lifecycle | `list_alarms`, `create_alarm`, `update_alarm`, `delete_alarm` |
 | Playlist Playback and Lifecycle | `list_playlists`, `play_playlist`, `create_playlist`, `update_playlist`, `delete_playlist` |
+| Local Music Library | `browse_library`, `play_library_item` |
 | Groups | `get_group_topology`, `join_group`, `unjoin_room`, `party_mode`, `group_rooms` |
 | Group Audio | `get_group_volume`, `set_group_volume`, `adjust_group_volume`, `group_mute`, `group_unmute` |
 | Inputs | `switch_to_line_in`, `switch_to_tv` |

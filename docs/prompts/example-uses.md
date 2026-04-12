@@ -257,6 +257,40 @@ Claude calls `delete_playlist` with the playlist `item_id` and returns a delete 
 
 ---
 
+## Local music library
+
+Use the library capability family when you want bounded discovery first and playback second. The same tool names and business semantics should apply in direct clients and agent-mediated workflows.
+
+### Browse the library
+
+> "Browse the albums in my local Sonos library."
+> "Show me the first 25 artists from the local music library."
+
+Claude calls `browse_library` with a supported category and returns a bounded result set with normalized fields such as `title`, `item_type`, `item_id`, `uri`, `is_browsable`, and `is_playable`.
+
+### Drill into a browsable library container
+
+> "Browse deeper into the artist with item ID `A:ARTIST/1`."
+> "Use the album artist result I just got and show me the next level."
+
+Claude calls `browse_library` again with the normalized `parent_id` from the earlier result.
+
+### Play a normalized playable selection
+
+> "Play the library track with URI `x-file-cifs://nas/Music/Track.mp3` in the Living Room."
+> "Use the playable library result we just browsed and start it in the Kitchen."
+
+Claude calls `play_library_item` with the room plus the normalized playable selection fields.
+
+### Library selection rules
+
+- Call `browse_library` first to discover or drill into library items.
+- Call `play_library_item` only for a normalized playable selection.
+- If a result is browse-only, browse deeper instead of guessing playback behavior.
+- Direct AI clients and agent workflows should keep the same mental model and the same named tools.
+
+---
+
 ## Alarm lifecycle
 
 ### List alarms
@@ -428,6 +462,12 @@ Expected tool flow:
 3. `set_treble`
 
 The automation still uses the same room-level audio tools and normalized responses as a direct conversational client.
+
+### Library parity examples
+
+- A Home Assistant assistant checks `ping`, `server_info`, and `list_rooms`, then calls `browse_library` to inspect a bounded category before deciding whether to browse deeper or play a normalized playable selection.
+- An `n8n` workflow branches on `is_browsable` versus `is_playable` from a `browse_library` result, then calls `play_library_item` only when the selection is explicitly playable.
+- The direct-client and agent-mediated flows should use the same fields and the same named capability family; only the transport envelope changes.
 
 ### Queue-aware automation
 

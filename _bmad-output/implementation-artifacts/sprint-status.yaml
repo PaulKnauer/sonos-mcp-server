@@ -87,10 +87,10 @@ development_status:
   # _bmad-output/planning-artifacts/research/technical-playlist-rename-capability-decision-research-2026-04-11.md
 
   # Epic 4: Local Music Library Access and Selection
-  epic-4: in-progress
+  epic-4: done
   4-1-add-bounded-local-music-library-browsing: done
   4-2-support-selection-and-playback-from-library-results: done
-  4-3-preserve-parity-for-library-access-across-direct-and-agent-mediated-usage: backlog
+  4-3-preserve-parity-for-library-access-across-direct-and-agent-mediated-usage: done
   epic-4-retrospective: optional
 
   # Epic 5: Phase-2 Contract Hardening and Documentation
