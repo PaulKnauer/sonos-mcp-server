@@ -25,6 +25,7 @@ from soniq_mcp.schemas.responses import (
     InputStateResponse,
     LibraryBrowseResponse,
     LibraryItemResponse,
+    LibraryPlaybackResponse,
     PlaybackStateResponse,
     RoomListResponse,
     RoomResponse,
@@ -192,6 +193,22 @@ class TestLibraryResponses:
         dump = resp.model_dump()
         assert dump["count"] == 0
         assert dump["next_start"] == 200
+
+    def test_library_playback_response_from_domain(self) -> None:
+        resp = LibraryPlaybackResponse.from_domain(
+            room="Living Room",
+            title="Track",
+            uri="x-file-cifs://track.mp3",
+            item_id="A:TRACKS/1",
+        )
+
+        assert resp.model_dump() == {
+            "status": "ok",
+            "room": "Living Room",
+            "title": "Track",
+            "item_id": "A:TRACKS/1",
+            "uri": "x-file-cifs://track.mp3",
+        }
 
 
 class TestSystemTopologyResponse:

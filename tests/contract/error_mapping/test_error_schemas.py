@@ -158,3 +158,12 @@ class TestErrorResponseSchema:
         )
         assert "192.168.1.20" not in err.error
         assert "<redacted" in err.error
+
+    def test_library_unsupported_operation_uses_operation_category(self) -> None:
+        from soniq_mcp.domain.exceptions import LibraryUnsupportedOperationError
+
+        err = ErrorResponse.from_library_error(
+            LibraryUnsupportedOperationError("Selection is not playable")
+        )
+        assert err.category == ErrorCategory.OPERATION
+        assert err.field == "library"

@@ -69,6 +69,7 @@ EXPECTED_TOOL_NAMES = {
     "update_playlist",
     "delete_playlist",
     "browse_library",
+    "play_library_item",
 }
 
 REPRESENTATIVE_TOOL_NAMES = (
@@ -94,6 +95,7 @@ REPRESENTATIVE_TOOL_NAMES = (
     "update_playlist",
     "delete_playlist",
     "browse_library",
+    "play_library_item",
 )
 
 

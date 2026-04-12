@@ -242,6 +242,16 @@ class SoCoAdapter:
         except Exception as exc:
             raise LibraryError(f"Failed to browse local music library: {exc}") from exc
 
+    def play_library_item(self, ip_address: str, uri: str) -> None:
+        """Play a normalized local-library selection in the target room."""
+        try:
+            zone = self._make_zone(ip_address)
+            zone.clear_queue()
+            zone.add_uri_to_queue(uri)
+            zone.play_from_queue(0)
+        except Exception as exc:
+            raise LibraryError(f"Failed to play library item: {exc}") from exc
+
     def play_playlist(self, ip_address: str, uri: str) -> None:
         try:
             zone = self._make_zone(ip_address)

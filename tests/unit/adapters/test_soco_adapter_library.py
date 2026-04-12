@@ -137,3 +137,25 @@ class TestBrowseLibrary:
         with _patch_soco(zone):
             with pytest.raises(SonosDiscoveryError, match="Failed to reach Sonos music library"):
                 adapter.browse_library(IP, "tracks", start=0, limit=100)
+
+
+class TestPlayLibraryItem:
+    def test_uses_queue_oriented_playback_pattern(self) -> None:
+        zone = MagicMock()
+        adapter = SoCoAdapter()
+
+        with _patch_soco(zone):
+            adapter.play_library_item(IP, "x-file-cifs://track.mp3")
+
+        zone.clear_queue.assert_called_once_with()
+        zone.add_uri_to_queue.assert_called_once_with("x-file-cifs://track.mp3")
+        zone.play_from_queue.assert_called_once_with(0)
+
+    def test_wraps_failures_as_library_error(self) -> None:
+        zone = MagicMock()
+        zone.add_uri_to_queue.side_effect = RuntimeError("boom")
+        adapter = SoCoAdapter()
+
+        with _patch_soco(zone):
+            with pytest.raises(LibraryError, match="Failed to play library item"):
+                adapter.play_library_item(IP, "x-file-cifs://track.mp3")

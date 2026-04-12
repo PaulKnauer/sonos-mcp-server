@@ -4,13 +4,22 @@ from __future__ import annotations
 
 import re
 
-from soniq_mcp.domain.exceptions import LibraryValidationError, SonosDiscoveryError
+from soniq_mcp.domain.exceptions import (
+    LibraryUnsupportedOperationError,
+    LibraryValidationError,
+    SonosDiscoveryError,
+)
 
 SUPPORTED_LIBRARY_CATEGORIES: frozenset[str] = frozenset(
     {"artists", "album_artists", "albums", "tracks", "genres", "composers"}
 )
 MAX_LIBRARY_BROWSE_LIMIT = 100
 _PARENT_ID_PATTERN = re.compile(r"^[A-Z0-9]+:.+")
+_LOCAL_LIBRARY_ITEM_PREFIX = "A:"
+_LOCAL_LIBRARY_URI_PREFIXES = (
+    "x-file-cifs://",
+    "x-rincon-cpcontainer:",
+)
 _CATEGORY_PARENT_PREFIXES: dict[str, tuple[str, ...]] = {
     "artists": ("A:ARTIST",),
     "album_artists": ("A:ALBUMARTIST",),
@@ -79,6 +88,56 @@ def _validate_parent_target(category: str, parent_id: str | None) -> None:
     )
 
 
+def _validate_title(value: object) -> str:
+    if not isinstance(value, str):
+        raise LibraryValidationError("Invalid title. Expected a non-empty string.")
+    normalized = value.strip()
+    if not normalized:
+        raise LibraryValidationError("Invalid title. Expected a non-empty string.")
+    return normalized
+
+
+def _validate_uri(value: object) -> str:
+    if not isinstance(value, str):
+        raise LibraryValidationError("Invalid uri. Expected a non-empty string.")
+    normalized = value.strip()
+    if not normalized:
+        raise LibraryValidationError("Invalid uri. Expected a non-empty string.")
+    return normalized
+
+
+def _validate_item_id(value: object) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise LibraryValidationError("Invalid item_id. Expected a string or null.")
+    normalized = value.strip()
+    return normalized or None
+
+
+def _validate_is_playable(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    raise LibraryValidationError("Invalid is_playable. Expected a boolean.")
+
+
+def _validate_library_selection(item_id: str | None, uri: str) -> None:
+    if item_id is None:
+        raise LibraryValidationError(
+            "Invalid item_id. Expected a normalized Sonos library item identifier."
+        )
+    if not item_id.startswith(_LOCAL_LIBRARY_ITEM_PREFIX):
+        raise LibraryUnsupportedOperationError(
+            "Selected item does not look like a local library selection. "
+            "Use 'browse_library' and choose a playable item."
+        )
+    if not uri.startswith(_LOCAL_LIBRARY_URI_PREFIXES):
+        raise LibraryUnsupportedOperationError(
+            "Selected item does not look like a playable local library selection. "
+            "Use 'browse_library' and choose a playable item."
+        )
+
+
 class LibraryService:
     """Service for bounded local Sonos music-library browsing."""
 
@@ -119,6 +178,34 @@ class LibraryService:
             "start": normalized_start,
             "limit": normalized_limit,
             "has_more": has_more,
+        }
+
+    def play_library_item(
+        self,
+        *,
+        room: str,
+        title: object,
+        uri: object,
+        item_id: object = None,
+        is_playable: object = True,
+    ) -> dict:
+        normalized_title = _validate_title(title)
+        normalized_uri = _validate_uri(uri)
+        normalized_item_id = _validate_item_id(item_id)
+        normalized_is_playable = _validate_is_playable(is_playable)
+        if not normalized_is_playable:
+            raise LibraryUnsupportedOperationError(
+                "Selected library item is not playable. Browse deeper and choose a playable item."
+            )
+        _validate_library_selection(normalized_item_id, normalized_uri)
+        room_obj = self._room_service.get_room(room)
+        self._adapter.play_library_item(room_obj.ip_address, normalized_uri)
+        return {
+            "status": "ok",
+            "room": room_obj.name,
+            "title": normalized_title,
+            "item_id": normalized_item_id,
+            "uri": normalized_uri,
         }
 
     def _get_any_ip(self) -> str:

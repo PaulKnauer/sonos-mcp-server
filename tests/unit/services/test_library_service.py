@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from soniq_mcp.domain.exceptions import LibraryValidationError, SonosDiscoveryError
+from soniq_mcp.domain.exceptions import (
+    LibraryError,
+    LibraryUnsupportedOperationError,
+    LibraryValidationError,
+    SonosDiscoveryError,
+)
 from soniq_mcp.domain.models import LibraryItem, Room
 from soniq_mcp.services.library_service import MAX_LIBRARY_BROWSE_LIMIT, LibraryService
 
@@ -26,11 +31,24 @@ def make_room(
 
 
 class FakeRoomService:
-    def __init__(self, rooms: list[Room]) -> None:
+    def __init__(self, rooms: list[Room], *, raise_not_found: bool = False) -> None:
         self._rooms = list(rooms)
+        self.raise_not_found = raise_not_found
 
     def list_rooms(self) -> list[Room]:
         return list(self._rooms)
+
+    def get_room(self, room_name: str) -> Room:
+        if self.raise_not_found:
+            from soniq_mcp.domain.exceptions import RoomNotFoundError
+
+            raise RoomNotFoundError(room_name)
+        for room in self._rooms:
+            if room.name == room_name:
+                return room
+        from soniq_mcp.domain.exceptions import RoomNotFoundError
+
+        raise RoomNotFoundError(room_name)
 
 
 class FakeAdapter:
@@ -43,6 +61,8 @@ class FakeAdapter:
         self.items = items or []
         self.total_matches = total_matches
         self.calls: list[tuple[str, str, int, int, str | None]] = []
+        self.play_calls: list[tuple[str, str]] = []
+        self.raise_library_error = False
 
     def browse_library(
         self,
@@ -55,6 +75,11 @@ class FakeAdapter:
     ) -> tuple[list[LibraryItem], int | None]:
         self.calls.append((ip_address, category, start, limit, parent_id))
         return self.items, self.total_matches
+
+    def play_library_item(self, ip_address: str, uri: str) -> None:
+        if self.raise_library_error:
+            raise LibraryError("adapter play failed")
+        self.play_calls.append((ip_address, uri))
 
 
 def make_item(title: str = "Album") -> LibraryItem:
@@ -163,3 +188,138 @@ def test_has_more_uses_requested_window_when_total_known() -> None:
     result = svc.browse_library("albums", start=100, limit=100)
 
     assert result["has_more"] is True
+
+
+class TestPlayLibraryItem:
+    def test_plays_valid_normalized_selection(self) -> None:
+        adapter = FakeAdapter()
+        svc = LibraryService(FakeRoomService([make_room()]), adapter)
+
+        result = svc.play_library_item(
+            room="Living Room",
+            title="Album",
+            uri="x-file-cifs://track.mp3",
+            item_id="A:TRACKS/1",
+            is_playable=True,
+        )
+
+        assert result == {
+            "status": "ok",
+            "room": "Living Room",
+            "title": "Album",
+            "item_id": "A:TRACKS/1",
+            "uri": "x-file-cifs://track.mp3",
+        }
+        assert adapter.play_calls == [("192.168.1.10", "x-file-cifs://track.mp3")]
+
+    def test_rejects_non_playable_selection(self) -> None:
+        svc = LibraryService(FakeRoomService([make_room()]), FakeAdapter())
+
+        with pytest.raises(LibraryUnsupportedOperationError, match="not playable"):
+            svc.play_library_item(
+                room="Living Room",
+                title="Artist",
+                uri="x-file-cifs://artist",
+                item_id="A:ARTIST/1",
+                is_playable=False,
+            )
+
+    def test_rejects_blank_uri(self) -> None:
+        svc = LibraryService(FakeRoomService([make_room()]), FakeAdapter())
+
+        with pytest.raises(LibraryValidationError, match="uri"):
+            svc.play_library_item(
+                room="Living Room",
+                title="Track",
+                uri="   ",
+                item_id="A:TRACKS/1",
+                is_playable=True,
+            )
+
+    def test_rejects_blank_title(self) -> None:
+        svc = LibraryService(FakeRoomService([make_room()]), FakeAdapter())
+
+        with pytest.raises(LibraryValidationError, match="title"):
+            svc.play_library_item(
+                room="Living Room",
+                title="  ",
+                uri="x-file-cifs://track.mp3",
+                item_id="A:TRACKS/1",
+                is_playable=True,
+            )
+
+    def test_rejects_non_string_item_id(self) -> None:
+        svc = LibraryService(FakeRoomService([make_room()]), FakeAdapter())
+
+        with pytest.raises(LibraryValidationError, match="item_id"):
+            svc.play_library_item(
+                room="Living Room",
+                title="Track",
+                uri="x-file-cifs://track.mp3",
+                item_id=123,
+                is_playable=True,
+            )
+
+    def test_rejects_missing_item_id(self) -> None:
+        svc = LibraryService(FakeRoomService([make_room()]), FakeAdapter())
+
+        with pytest.raises(LibraryValidationError, match="item_id"):
+            svc.play_library_item(
+                room="Living Room",
+                title="Track",
+                uri="x-file-cifs://track.mp3",
+                item_id=None,
+                is_playable=True,
+            )
+
+    def test_rejects_non_library_uri_even_when_marked_playable(self) -> None:
+        svc = LibraryService(FakeRoomService([make_room()]), FakeAdapter())
+
+        with pytest.raises(LibraryUnsupportedOperationError, match="library selection"):
+            svc.play_library_item(
+                room="Living Room",
+                title="Track",
+                uri="spotify:track:123",
+                item_id="A:TRACKS/1",
+                is_playable=True,
+            )
+
+    def test_rejects_non_bool_is_playable(self) -> None:
+        svc = LibraryService(FakeRoomService([make_room()]), FakeAdapter())
+
+        with pytest.raises(LibraryValidationError, match="is_playable"):
+            svc.play_library_item(
+                room="Living Room",
+                title="Track",
+                uri="x-file-cifs://track.mp3",
+                item_id="A:TRACKS/1",
+                is_playable="true",
+            )
+
+    def test_propagates_room_lookup_failure(self) -> None:
+        from soniq_mcp.domain.exceptions import RoomNotFoundError
+
+        svc = LibraryService(FakeRoomService([make_room()], raise_not_found=True), FakeAdapter())
+
+        with pytest.raises(RoomNotFoundError):
+            svc.play_library_item(
+                room="Unknown Room",
+                title="Track",
+                uri="x-file-cifs://track.mp3",
+                item_id="A:TRACKS/1",
+                is_playable=True,
+            )
+
+    def test_propagates_adapter_library_error(self) -> None:
+        adapter = FakeAdapter()
+        adapter.raise_library_error = True
+        svc = LibraryService(FakeRoomService([make_room()]), adapter)
+
+        with pytest.raises(LibraryError, match="adapter play failed"):
+            svc.play_library_item(
+                room="Living Room",
+                title="Track",
+                uri="x-file-cifs://track.mp3",
+                item_id="A:TRACKS/1",
+                is_playable=True,
+            )

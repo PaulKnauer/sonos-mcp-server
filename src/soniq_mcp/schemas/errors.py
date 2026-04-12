@@ -202,8 +202,9 @@ class ErrorResponse(BaseModel):
             exc,
             field="library",
             suggestion=(
-                "Check that the category, parent_id, start, and limit are valid and that the "
-                "Sonos system is reachable. Use bounded browse requests and try again."
+                "Check that the category, parent_id, start, limit, and playback selection are valid"
+                " and that the Sonos system is reachable."
+                " Use 'browse_library' to find a playable item and try again."
             ),
         )
 

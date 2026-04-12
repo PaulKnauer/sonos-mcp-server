@@ -463,6 +463,33 @@ class LibraryBrowseResponse(BaseModel):
         )
 
 
+class LibraryPlaybackResponse(BaseModel):
+    """Response for the ``play_library_item`` tool."""
+
+    status: str
+    room: str
+    title: str
+    item_id: str | None = None
+    uri: str
+
+    @classmethod
+    def from_domain(
+        cls,
+        *,
+        room: str,
+        title: str,
+        uri: str,
+        item_id: str | None,
+    ) -> LibraryPlaybackResponse:
+        return cls(
+            status="ok",
+            room=room,
+            title=title,
+            item_id=item_id,
+            uri=uri,
+        )
+
+
 class GroupTopologyResponse(BaseModel):
     """Current grouping state of the Sonos household."""
 

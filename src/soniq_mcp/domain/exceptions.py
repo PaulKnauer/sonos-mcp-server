@@ -281,3 +281,9 @@ class LibraryValidationError(LibraryError):
     """Raised when a local music-library browse request fails validation."""
 
     error_category = ErrorCategory.VALIDATION
+
+
+class LibraryUnsupportedOperationError(LibraryError):
+    """Raised when a normalized library selection cannot be played safely."""
+
+    error_category = ErrorCategory.OPERATION

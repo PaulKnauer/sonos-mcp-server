@@ -54,7 +54,7 @@ phase_label: "Phase 2 (Tier 1 Expansion)"
 canonical_story_namespace: "phase-2/<story-key>"
 collision_index: "_bmad-output/phase-index.yaml"
 current_completed_story: "phase-2/4-1-add-bounded-local-music-library-browsing"
-next_story_hint: "phase-2/4-2-support-selection-and-playback-from-library-results"
+next_story_hint: "phase-2/4-3-preserve-parity-for-library-access-across-direct-and-agent-mediated-usage"
 
 development_status:
   # Epic 1: Advanced Playback and Audio Control
@@ -89,7 +89,7 @@ development_status:
   # Epic 4: Local Music Library Access and Selection
   epic-4: in-progress
   4-1-add-bounded-local-music-library-browsing: done
-  4-2-support-selection-and-playback-from-library-results: backlog
+  4-2-support-selection-and-playback-from-library-results: done
   4-3-preserve-parity-for-library-access-across-direct-and-agent-mediated-usage: backlog
   epic-4-retrospective: optional
 

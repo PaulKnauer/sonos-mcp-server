@@ -41,6 +41,23 @@ class FakeLibraryService:
             "has_more": False,
         }
 
+    def play_library_item(
+        self,
+        *,
+        room: str,
+        title: str,
+        uri: object,
+        item_id: str | None = None,
+        is_playable: object = True,
+    ) -> dict:
+        return {
+            "status": "ok",
+            "room": room,
+            "title": title,
+            "item_id": item_id,
+            "uri": uri if isinstance(uri, str) else "",
+        }
+
 
 @pytest.fixture()
 def registered_app() -> FastMCP:
@@ -66,7 +83,7 @@ def _property_type(prop: dict) -> str | None:
 
 class TestLibraryToolSurfaceContract:
     def test_library_tool_surface_is_stable(self, registered_app: FastMCP) -> None:
-        assert set(get_tools(registered_app)) == {"browse_library"}
+        assert set(get_tools(registered_app)) == {"browse_library", "play_library_item"}
 
 
 class TestBrowseLibraryContract:
@@ -132,3 +149,69 @@ class TestBrowseLibraryContract:
         assert data["category"] == "connectivity"
         assert data["field"] == "sonos_network"
         assert "<redacted-host>" in data["error"]
+
+
+class TestPlayLibraryItemContract:
+    def test_tool_name_is_stable(self, registered_app: FastMCP) -> None:
+        assert "play_library_item" in get_tools(registered_app)
+
+    def test_tool_description_is_present(self, registered_app: FastMCP) -> None:
+        desc = get_tools(registered_app)["play_library_item"].description
+        assert desc and len(desc) > 0
+
+    def test_requires_room_title_uri_and_is_playable(self, registered_app: FastMCP) -> None:
+        schema = get_tools(registered_app)["play_library_item"].parameters
+        assert set(schema.get("required", [])) == {"room", "title", "uri", "is_playable"}
+
+    def test_parameter_types_are_stable(self, registered_app: FastMCP) -> None:
+        schema = get_tools(registered_app)["play_library_item"].parameters
+        props = schema["properties"]
+        assert _property_type(props["room"]) == "string"
+        assert _property_type(props["title"]) == "string"
+        assert _property_type(props["uri"]) == "string"
+        assert _property_type(props["is_playable"]) == "boolean"
+        assert any(entry.get("type") == "string" for entry in props["item_id"].get("anyOf", []))
+
+    def test_is_control_tool(self, registered_app: FastMCP) -> None:
+        ann = get_tools(registered_app)["play_library_item"].annotations
+        assert ann.readOnlyHint is False
+        assert ann.destructiveHint is False
+        assert ann.idempotentHint is False
+        assert ann.openWorldHint is False
+
+    @pytest.mark.anyio
+    async def test_response_shape_is_stable(self, registered_app: FastMCP) -> None:
+        result = await registered_app.call_tool(
+            "play_library_item",
+            {
+                "room": "Living Room",
+                "title": "Track",
+                "uri": "x-file-cifs://track.mp3",
+                "item_id": "A:TRACKS/1",
+                "is_playable": True,
+            },
+        )
+        data = json.loads(result[0].text)
+        assert data == {
+            "status": "ok",
+            "room": "Living Room",
+            "title": "Track",
+            "item_id": "A:TRACKS/1",
+            "uri": "x-file-cifs://track.mp3",
+        }
+
+    @pytest.mark.anyio
+    async def test_validation_error_shape_is_stable(self) -> None:
+        class _ValidationService(FakeLibraryService):
+            def play_library_item(self, **kwargs) -> dict:
+                raise LibraryValidationError("Invalid uri")
+
+        app = FastMCP("contract-test")
+        register(app, SoniqConfig(), _ValidationService())
+        result = await app.call_tool(
+            "play_library_item",
+            {"room": "Living Room", "title": "Track", "uri": "", "is_playable": True},
+        )
+        data = json.loads(result[0].text)
+        assert data["category"] == "validation"
+        assert data["field"] == "library"
