@@ -87,9 +87,7 @@ class TestBrowseLibraryContract:
         assert _property_type(props["category"]) == "string"
         assert _property_type(props["start"]) == "integer"
         assert _property_type(props["limit"]) == "integer"
-        assert any(
-            entry.get("type") == "string" for entry in props["parent_id"].get("anyOf", [])
-        )
+        assert any(entry.get("type") == "string" for entry in props["parent_id"].get("anyOf", []))
 
     def test_is_read_only(self, registered_app: FastMCP) -> None:
         ann = get_tools(registered_app)["browse_library"].annotations

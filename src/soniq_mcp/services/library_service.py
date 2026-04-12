@@ -37,21 +37,16 @@ def _validate_category(value: str) -> str:
 
 def _validate_start(value: object) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value < 0:
-        raise LibraryValidationError(
-            f"Invalid start {value!r}. Expected a non-negative integer."
-        )
+        raise LibraryValidationError(f"Invalid start {value!r}. Expected a non-negative integer.")
     return value
 
 
 def _validate_limit(value: object) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
-        raise LibraryValidationError(
-            f"Invalid limit {value!r}. Expected a positive integer."
-        )
+        raise LibraryValidationError(f"Invalid limit {value!r}. Expected a positive integer.")
     if value > MAX_LIBRARY_BROWSE_LIMIT:
         raise LibraryValidationError(
-            f"Invalid limit {value!r}. Maximum supported page size is "
-            f"{MAX_LIBRARY_BROWSE_LIMIT}."
+            f"Invalid limit {value!r}. Maximum supported page size is {MAX_LIBRARY_BROWSE_LIMIT}."
         )
     return value
 

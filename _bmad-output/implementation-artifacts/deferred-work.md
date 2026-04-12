@@ -1,5 +1,9 @@
 # Deferred Work
 
+## Deferred from: Epic 3 scope correction (2026-04-12)
+
+- Story 3.5 `Investigate supported Sonos playlist rename capability` — deferred out of active Phase 2 scope after verifying the current supported `SoCo` stack does not expose a clean first-class playlist rename path; revisit only if a newer supported `SoCo` release or alternate Sonos integration path can preserve the current `tools -> services -> adapters` architecture without workaround state
+
 ## Deferred from: code review of 1-1-expose-play-mode-controls-for-active-rooms (2026-04-07)
 
 - Untyped `object` parameters in `PlayModeService.__init__` — pre-existing pattern across all services; define Protocols when type strictness is prioritized

@@ -66,10 +66,10 @@ docker-run:
 		$(IMAGE):$(TAG)
 
 docker-build-k3s:
-	docker buildx build --platform linux/arm64 -t $(K3S_IMAGE):latest .
+	docker buildx build --platform linux/arm64 -t $(K3S_IMAGE):$(TAG) .
 
 docker-push-k3s: docker-build-k3s
-	docker push $(K3S_IMAGE):latest
+	docker push $(K3S_IMAGE):$(TAG)
 
 docker-compose-up:
 	docker compose up --build -d
