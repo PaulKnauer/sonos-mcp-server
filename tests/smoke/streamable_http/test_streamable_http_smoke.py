@@ -7,15 +7,18 @@ work identically to the stdio transport.
 
 from __future__ import annotations
 
+import json
 import os
 import socket
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 import anyio
 import pytest
 from mcp.client.session import ClientSession
+from mcp.client.stdio import StdioServerParameters, stdio_client
 from mcp.client.streamable_http import streamable_http_client
 
 _TEST_HOST = "127.0.0.1"
@@ -113,3 +116,38 @@ class TestStreamableHTTPSmoke:
                     assert "play" in tool_names
 
         anyio.run(run_session)
+
+    def test_phase_two_browse_library_validation_matches_stdio(self, http_server_proc) -> None:
+        _, test_port = http_server_proc
+
+        async def call_stdio() -> tuple[bool, dict]:
+            params = StdioServerParameters(
+                command=sys.executable,
+                args=["-m", "soniq_mcp"],
+                cwd=str(Path.cwd()),
+                env={"SONIQ_MCP_TRANSPORT": "stdio"},
+            )
+            async with stdio_client(params) as (read_stream, write_stream):
+                async with ClientSession(read_stream, write_stream) as session:
+                    await session.initialize()
+                    result = await session.call_tool("browse_library", {"category": "invalid"})
+                    return result.isError, json.loads(result.content[0].text)
+
+        async def call_http() -> tuple[bool, dict]:
+            url = f"http://{_TEST_HOST}:{test_port}{_MCP_PATH}"
+            async with streamable_http_client(url) as (read_stream, write_stream, _):
+                async with ClientSession(read_stream, write_stream) as session:
+                    await session.initialize()
+                    result = await session.call_tool("browse_library", {"category": "invalid"})
+                    return result.isError, json.loads(result.content[0].text)
+
+        async def run_comparison() -> None:
+            stdio_is_error, stdio_payload = await call_stdio()
+            http_is_error, http_payload = await call_http()
+
+            assert http_is_error == stdio_is_error
+            assert http_payload == stdio_payload
+            assert http_payload["category"] == "validation"
+            assert http_payload["field"] == "library"
+
+        anyio.run(run_comparison)

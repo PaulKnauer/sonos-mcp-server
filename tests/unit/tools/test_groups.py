@@ -233,3 +233,51 @@ class TestPartyMode:
     def test_tool_disabled_is_not_registered(self):
         fn, _, _ = _register_and_get("party_mode", disabled=["party_mode"])
         assert fn is None
+
+
+class TestGroupRooms:
+    def test_returns_group_topology_on_success(self):
+        gs = MagicMock()
+        gs.group_rooms.return_value = [COORDINATOR, MEMBER]
+
+        fn, _, _ = _register_and_get("group_rooms", gs)
+        result = fn(rooms=["Living Room", "Kitchen"], coordinator="Living Room")
+
+        gs.group_rooms.assert_called_once_with(["Living Room", "Kitchen"], "Living Room")
+        assert result["total_rooms"] == 2
+        assert result["groups"][0]["coordinator"] == "Living Room"
+        assert "Kitchen" in result["groups"][0]["members"]
+
+    def test_room_not_found_returns_error(self):
+        gs = MagicMock()
+        gs.group_rooms.side_effect = RoomNotFoundError("Living Room")
+
+        fn, _, _ = _register_and_get("group_rooms", gs)
+        result = fn(rooms=["Living Room", "Kitchen"], coordinator="Living Room")
+
+        assert "error" in result
+        assert result["field"] == "room"
+
+    def test_group_error_returns_error_response(self):
+        gs = MagicMock()
+        gs.group_rooms.side_effect = GroupError("group failed")
+
+        fn, _, _ = _register_and_get("group_rooms", gs)
+        result = fn(rooms=["Living Room", "Kitchen"], coordinator="Living Room")
+
+        assert "error" in result
+        assert result["field"] == "group"
+
+    def test_discovery_error_returns_error_response(self):
+        gs = MagicMock()
+        gs.group_rooms.side_effect = SonosDiscoveryError("network issue")
+
+        fn, _, _ = _register_and_get("group_rooms", gs)
+        result = fn(rooms=["Living Room", "Kitchen"], coordinator="Living Room")
+
+        assert "error" in result
+        assert result["field"] == "sonos_network"
+
+    def test_tool_disabled_is_not_registered(self):
+        fn, _, _ = _register_and_get("group_rooms", disabled=["group_rooms"])
+        assert fn is None

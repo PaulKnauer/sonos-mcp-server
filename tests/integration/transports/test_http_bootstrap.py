@@ -79,6 +79,9 @@ REPRESENTATIVE_TOOL_NAMES = (
     "play",
     "set_volume",
     "party_mode",
+    "get_group_volume",
+    "group_unmute",
+    "group_rooms",
     "set_play_mode",
     "seek",
     "set_sleep_timer",
@@ -170,6 +173,53 @@ class TestHttpToolSurfaceParity:
             assert getattr(http_tool, "output_schema", None) == getattr(
                 stdio_tool, "output_schema", None
             )
+
+    @pytest.mark.parametrize(
+        "disabled_tools",
+        [
+            ["get_play_mode", "set_play_mode"],
+            ["seek", "get_sleep_timer", "set_sleep_timer"],
+            ["get_eq_settings", "set_bass", "set_treble", "set_loudness"],
+            ["switch_to_line_in", "switch_to_tv"],
+            [
+                "get_group_topology",
+                "join_group",
+                "unjoin_room",
+                "party_mode",
+                "get_group_volume",
+                "set_group_volume",
+                "adjust_group_volume",
+                "group_mute",
+                "group_unmute",
+                "group_rooms",
+            ],
+            ["list_alarms", "create_alarm", "update_alarm", "delete_alarm"],
+            [
+                "list_playlists",
+                "play_playlist",
+                "create_playlist",
+                "update_playlist",
+                "delete_playlist",
+            ],
+            ["browse_library", "play_library_item"],
+        ],
+    )
+    def test_disabled_phase_two_tools_are_suppressed_equally_across_transports(
+        self, disabled_tools: list[str]
+    ) -> None:
+        http_app = create_server(
+            config=SoniqConfig(transport=TransportMode.HTTP, tools_disabled=disabled_tools)
+        )
+        stdio_app = create_server(
+            config=SoniqConfig(transport=TransportMode.STDIO, tools_disabled=disabled_tools)
+        )
+
+        http_tools = {t.name for t in http_app._tool_manager.list_tools()}
+        stdio_tools = {t.name for t in stdio_app._tool_manager.list_tools()}
+
+        assert http_tools == stdio_tools
+        for tool_name in disabled_tools:
+            assert tool_name not in http_tools
 
 
 class TestRunTransportHttpDispatch:
