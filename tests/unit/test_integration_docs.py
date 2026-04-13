@@ -159,6 +159,16 @@ class TestIntegrationGuides:
             assert "`play_library_item`" in guide
             assert "browse deeper" in guide
 
+    def test_agent_guides_reference_all_shared_error_categories(self) -> None:
+        home_assistant = _read(HOME_ASSISTANT_GUIDE)
+        n8n = _read(N8N_GUIDE)
+        for guide in (home_assistant, n8n):
+            assert "configuration" in guide
+            assert "connectivity" in guide
+            assert "internal" in guide
+            assert "validation" in guide
+            assert "operation" in guide
+
     def test_command_reference_surfaces_supported_command_paths(self) -> None:
         command_reference = _read(COMMAND_REFERENCE)
         assert "canonical command surface" in command_reference

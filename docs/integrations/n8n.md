@@ -107,4 +107,4 @@ This keeps the same tool names, fields, and business semantics used by direct AI
 3. Confirm the workflow is sending MCP tool calls that match the documented tool names and parameters.
 4. If the endpoint is reachable but actions fail, verify the target room exists by calling `ping`, `server_info`, and `list_rooms` before mutation.
 
-For general runtime and network setup issues, see [troubleshooting](../setup/troubleshooting.md). It documents the same `configuration`, `connectivity`, `validation`, and `operation` categories your workflow can branch on after a failed tool call.
+For general runtime and network setup issues, see [troubleshooting](../setup/troubleshooting.md). It documents the same `configuration`, `connectivity`, `internal`, `validation`, and `operation` categories your workflow can branch on after a failed tool call.

@@ -53,8 +53,8 @@ phase_id: phase-2
 phase_label: "Phase 2 (Tier 1 Expansion)"
 canonical_story_namespace: "phase-2/<story-key>"
 collision_index: "_bmad-output/phase-index.yaml"
-current_completed_story: "phase-2/5-3-update-setup-examples-and-troubleshooting-for-phase-2"
-next_story_hint: "phase-2/5-4-expand-automated-regression-coverage-for-phase-2-rollout"
+current_completed_story: "phase-2/5-4-expand-automated-regression-coverage-for-phase-2-rollout"
+next_story_hint: "epic-5-retrospective"
 
 development_status:
   # Epic 1: Advanced Playback and Audio Control
@@ -94,9 +94,9 @@ development_status:
   epic-4-retrospective: done
 
   # Epic 5: Phase-2 Contract Hardening and Documentation
-  epic-5: in-progress
+  epic-5: done
   5-1-extend-schemas-and-error-contracts-for-phase-2-capability-families: done
   5-2-preserve-transport-parity-and-tool-exposure-controls: done
   5-3-update-setup-examples-and-troubleshooting-for-phase-2: done
-  5-4-expand-automated-regression-coverage-for-phase-2-rollout: backlog
+  5-4-expand-automated-regression-coverage-for-phase-2-rollout: done
   epic-5-retrospective: optional

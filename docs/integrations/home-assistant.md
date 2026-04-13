@@ -121,4 +121,4 @@ Transport setup may differ, but the request and response semantics for `browse_l
 4. If a control action fails, use the setup and diagnostics tools first:
    `ping`, `server_info`, and `list_rooms`.
 
-For general transport and discovery problems, see [troubleshooting](../setup/troubleshooting.md). The same guide also explains the shared `configuration`, `connectivity`, `validation`, and `operation` error categories returned by SoniqMCP tools.
+For general transport and discovery problems, see [troubleshooting](../setup/troubleshooting.md). The same guide also explains the shared `configuration`, `connectivity`, `internal`, `validation`, and `operation` error categories returned by SoniqMCP tools.
