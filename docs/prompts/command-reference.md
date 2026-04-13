@@ -86,6 +86,50 @@ SONIQ_MCP_TOOLS_DISABLED=ping uv run python -m soniq_mcp
 .venv/bin/soniq-mcp
 ```
 
+## Phase-2 capability families
+
+These tool families are part of the supported MCP contract. They keep the same business semantics across local `stdio`, remote `Streamable HTTP`, direct AI clients, and agent-mediated workflows. Transport changes setup and envelope details, not what the tools mean.
+
+If a tool from one of these families is missing, check `SONIQ_MCP_TOOLS_DISABLED` and the diagnostics guidance in [../setup/troubleshooting.md](../setup/troubleshooting.md) before assuming the docs or transport are wrong.
+
+When you are adopting a new capability family, start with `ping`, `server_info`, and `list_rooms`, then move to the family-specific tools below. Use [example-uses.md](example-uses.md) for end-to-end prompt flows and [../setup/troubleshooting.md](../setup/troubleshooting.md) if discovery or setup does not match what you expect.
+
+### Playback modes, seek, and sleep timer
+
+| Tool | Typical use | Notes |
+|---|---|---|
+| `get_play_mode` | Inspect shuffle, repeat, and `cross_fade` state | Read-only state check before mutation |
+| `set_play_mode` | Update shuffle, repeat, or `cross_fade` | Keeps playback semantics transport-neutral |
+| `seek` | Jump within the current track | Uses `HH:MM:SS` position input |
+| `get_sleep_timer` | Read active timer state | Useful before changing an existing timer |
+| `set_sleep_timer` | Set or clear the sleep timer | Use `0` minutes to clear |
+
+### Room EQ, inputs, and group audio
+
+| Tool | Typical use | Notes |
+|---|---|---|
+| `get_eq_settings` | Inspect bass, treble, and loudness | Read room-level audio state before tuning |
+| `set_bass` | Adjust bass for one room | Room-level control |
+| `set_treble` | Adjust treble for one room | Room-level control |
+| `set_loudness` | Toggle loudness for one room | Room-level control |
+| `switch_to_line_in` | Move a supported room to line-in | Input-specific control, not playback transport |
+| `switch_to_tv` | Move a supported room to TV input | Input-specific control, not playback transport |
+| `get_group_volume` | Inspect synced-group volume and mute state | Group-level control |
+| `set_group_volume` | Set synced-group volume | Safety cap still applies |
+| `adjust_group_volume` | Change synced-group volume relatively | Safety cap still applies |
+| `group_mute` | Mute a synced group | Group-level control |
+| `group_unmute` | Unmute a synced group | Group-level control |
+
+### Group topology
+
+| Tool | Typical use | Notes |
+|---|---|---|
+| `get_group_topology` | Inspect the current coordinator/member layout | Read-only topology check before regrouping |
+| `join_group` | Add one room to an existing coordinator | Incremental grouping |
+| `unjoin_room` | Remove one room from its current group | Returns the room to standalone playback |
+| `party_mode` | Join all rooms into one whole-home group | Whole-home shortcut |
+| `group_rooms` | Build an explicit room set with an optional coordinator | Preferred when the caller knows the exact target set |
+
 ## Alarm and playlist lifecycle surface
 
 These lifecycle tools are part of the supported MCP contract and are transport-neutral across local `stdio` and remote `Streamable HTTP`.

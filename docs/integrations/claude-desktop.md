@@ -83,3 +83,5 @@ After editing `claude_desktop_config.json` for local stdio, Claude Desktop must 
 For remote connectors added through **Settings > Connectors**, follow the UI prompts. If Claude Desktop does not show the new connector immediately, quit and relaunch before troubleshooting further.
 
 After the connection is active, ask Claude: "Can you ping the SoniqMCP server?" to confirm the connection. Claude will call the `ping` tool and return `pong`.
+
+After `ping`, use `server_info` and `list_rooms` before issuing mutations. For the canonical named tool surface, use [../prompts/command-reference.md](../prompts/command-reference.md). For phase-2 scenario flows such as play modes, seek and sleep timer, room EQ, inputs, group audio, alarms, playlists, and local library browsing, use [../prompts/example-uses.md](../prompts/example-uses.md). Claude Desktop changes how the connection is configured, not the business semantics of the tools.

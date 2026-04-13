@@ -161,6 +161,42 @@ SONIQ_MCP_TOOLS_DISABLED=ping,server_info
 
 Remove the tool name from the list and restart.
 
+If the tool is present but you are not sure how it fits the current product surface, use [../prompts/command-reference.md](../prompts/command-reference.md) for the canonical named tool list and [../prompts/example-uses.md](../prompts/example-uses.md) for scenario-driven usage before assuming the implementation drifted.
+
+---
+
+## I can connect, but I cannot find the phase-2 feature I expected
+
+**Symptom:** The server responds, but you are unsure where features such as play modes, seek and sleep timer, room EQ, inputs, group audio, alarms, playlists, or local library browsing are documented.
+
+**What's happening:** This is usually a feature-discovery problem, not a transport bug. The supported capability families are split across canonical product docs rather than repeated in every setup page. It can also happen when a capability was intentionally disabled with `SONIQ_MCP_TOOLS_DISABLED`.
+
+**Fix:**
+
+1. Confirm the server is healthy with `ping` and `server_info`.
+2. Confirm the Sonos household is visible with `list_rooms`.
+3. Check whether the missing tool family was intentionally removed with `SONIQ_MCP_TOOLS_DISABLED`.
+4. Use [../prompts/command-reference.md](../prompts/command-reference.md) for the canonical named tool surface.
+5. Use [../prompts/example-uses.md](../prompts/example-uses.md) for direct-client and agent-mediated flows.
+6. Return to the matching setup or integration guide only if the issue is transport or client wiring.
+
+The same business semantics apply across local `stdio` and remote Streamable HTTP. Setup pages explain transport mechanics; prompt docs explain how to use the capability families.
+
+---
+
+## Local and remote usage seem to describe different behavior
+
+**Symptom:** A local guide, remote guide, or integration guide appears to describe a different product behavior for the same named tool.
+
+**What's happening:** Transport-specific docs should change only setup mechanics and connection shape. Tool names, fields, and Sonos business semantics should stay transport-neutral.
+
+**Fix:**
+
+1. Check `server_info` to confirm which transport and exposure posture are active.
+2. Use [../prompts/command-reference.md](../prompts/command-reference.md) as the canonical source for the named tool surface.
+3. Use [../prompts/example-uses.md](../prompts/example-uses.md) to compare a direct-client flow with an agent-mediated flow.
+4. If the docs still appear inconsistent, treat that as documentation drift and verify the actual tool response before assuming a runtime bug.
+
 ---
 
 ## Server prints startup logs but then hangs
@@ -304,4 +340,5 @@ Use this order when you need the quickest supported diagnosis path:
 2. Call `server_info` to confirm the active transport, exposure posture, log level, and volume cap without exposing sensitive config.
 3. Call `ping` to verify the MCP server is responsive.
 4. Call `list_rooms` to confirm Sonos discovery works from the machine or container where SoniqMCP is running.
-5. Retry the user action and follow the returned `category`, `field`, and `suggestion`.
+5. Use [../prompts/command-reference.md](../prompts/command-reference.md) and [../prompts/example-uses.md](../prompts/example-uses.md) to confirm the expected capability family and tool flow.
+6. Retry the user action and follow the returned `category`, `field`, and `suggestion`.

@@ -134,6 +134,14 @@ Ask for server details:
 
 Claude calls `server_info` and returns the active transport, exposure posture, log level, and volume cap.
 
+Before you start playback or lifecycle changes, run one more discovery check:
+
+> "List the available Sonos rooms before we change anything."
+
+Claude calls `list_rooms`. That diagnostics-first sequence keeps local troubleshooting simple and matches the same product workflow used by remote deployments and automation guides.
+
+After the connection works, use [../prompts/example-uses.md](../prompts/example-uses.md) for phase-2 scenarios such as play modes, seek and sleep timer, room EQ, inputs, group audio, alarms, playlists, and local library flows. Use [../prompts/command-reference.md](../prompts/command-reference.md) for the canonical named tool surface. The same tool semantics apply over local `stdio` and remote Streamable HTTP; only setup and transport envelopes differ.
+
 ---
 
 ## Differences from remote deployment

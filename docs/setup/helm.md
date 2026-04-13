@@ -173,6 +173,8 @@ Then add a Claude Desktop connector in **Settings > Connectors** using `http://l
 
 See [Claude Desktop integration guide](../integrations/claude-desktop.md) for full details on local stdio config vs. remote connector setup.
 
+Once the endpoint is reachable, use the same diagnostics-first flow as every other deployment: `ping`, `server_info`, then `list_rooms` before playback or lifecycle mutations. For phase-2 scenarios such as play modes, seek and sleep timer, room EQ, inputs, group audio, alarms, playlists, and local library browsing, use [../prompts/example-uses.md](../prompts/example-uses.md) and keep [../prompts/command-reference.md](../prompts/command-reference.md) as the canonical tool reference. Helm changes deployment mechanics, not business semantics.
+
 ---
 
 ## 7. Troubleshooting

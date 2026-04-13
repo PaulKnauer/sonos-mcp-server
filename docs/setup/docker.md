@@ -148,6 +148,8 @@ Replace `soniq-host` with the IP address or hostname of the machine running the 
 
 See [Claude Desktop integration guide](../integrations/claude-desktop.md) for the current local-vs-remote setup flow.
 
+Once the connector is up, start with `ping`, `server_info`, and `list_rooms` before mutation. Then use [../prompts/example-uses.md](../prompts/example-uses.md) for phase-2 scenarios such as play modes, seek and sleep timer, room EQ, inputs, group audio, alarms, playlists, and library browsing, and keep [../prompts/command-reference.md](../prompts/command-reference.md) as the canonical named tool surface. Docker changes deployment mechanics only; the tool semantics stay transport-neutral.
+
 ---
 
 ## 6. Troubleshooting

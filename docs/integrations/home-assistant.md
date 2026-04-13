@@ -75,6 +75,8 @@ Home Assistant should consume the same tool model used by direct AI clients:
 
 No Home Assistant-specific implementation path is required inside SoniqMCP.
 
+That same stability applies to the phase-2 capability families: play modes, seek and sleep timer, room EQ, inputs, group audio, alarms, playlists, and local library browsing. Use [../prompts/command-reference.md](../prompts/command-reference.md) for the canonical named tool surface and [../prompts/example-uses.md](../prompts/example-uses.md) for scenario-driven flows.
+
 ---
 
 ## Representative use cases

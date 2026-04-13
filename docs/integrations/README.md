@@ -22,3 +22,5 @@ All supported integrations use the same MCP tool surface:
 - capability families such as `browse_library` and `play_library_item` should keep the same request and response semantics across direct and agent-mediated use
 
 SoniqMCP is the Sonos control layer. It does not embed Home Assistant logic, `n8n` workflow semantics, or agent reasoning. That separation is intentional and keeps the tool semantics stable across direct and agent-mediated use.
+
+Start with `ping`, `server_info`, and `list_rooms` before mutation in any integration. For the canonical named tool surface, use [../prompts/command-reference.md](../prompts/command-reference.md). For scenario-driven flows covering play modes, seek and sleep timer, room EQ, inputs, group audio, alarms, playlists, and library browsing, use [../prompts/example-uses.md](../prompts/example-uses.md). For setup recovery, use [../setup/troubleshooting.md](../setup/troubleshooting.md).

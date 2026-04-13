@@ -27,6 +27,11 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def _assert_contains_links(text: str, links: list[str]) -> None:
+    for link in links:
+        assert link in text
+
+
 class TestIntegrationGuides:
     def test_agent_integration_guides_exist(self) -> None:
         assert HOME_ASSISTANT_GUIDE.exists()
@@ -84,9 +89,15 @@ class TestIntegrationGuides:
 
     def test_prompts_index_lists_prompt_and_command_pages(self) -> None:
         index = _read(PROMPTS_INDEX)
-        assert "[Example prompts and usage flows](example-uses.md)" in index
-        assert "[Command reference](command-reference.md)" in index
-        assert "[../setup/README.md](../setup/README.md)" in index
+        _assert_contains_links(
+            index,
+            [
+                "[Example prompts and usage flows](example-uses.md)",
+                "[Command reference](command-reference.md)",
+                "[../setup/README.md](../setup/README.md)",
+                "[../setup/troubleshooting.md](../setup/troubleshooting.md)",
+            ],
+        )
 
     def test_prompts_include_agent_automation_examples(self) -> None:
         prompts = _read(PROMPTS_GUIDE)
@@ -171,6 +182,33 @@ class TestIntegrationGuides:
         assert "normalized playable selection" in command_reference
         assert "transport-neutral" in command_reference
 
+    def test_command_reference_documents_phase_2_capability_families(self) -> None:
+        command_reference = _read(COMMAND_REFERENCE)
+        assert "## Phase-2 capability families" in command_reference
+        assert "SONIQ_MCP_TOOLS_DISABLED" in command_reference
+        assert "| `get_play_mode` |" in command_reference
+        assert "| `set_play_mode` |" in command_reference
+        assert "| `seek` |" in command_reference
+        assert "| `get_sleep_timer` |" in command_reference
+        assert "| `set_sleep_timer` |" in command_reference
+        assert "| `get_eq_settings` |" in command_reference
+        assert "| `set_bass` |" in command_reference
+        assert "| `set_treble` |" in command_reference
+        assert "| `set_loudness` |" in command_reference
+        assert "| `switch_to_line_in` |" in command_reference
+        assert "| `switch_to_tv` |" in command_reference
+        assert "| `get_group_volume` |" in command_reference
+        assert "| `set_group_volume` |" in command_reference
+        assert "| `adjust_group_volume` |" in command_reference
+        assert "| `group_mute` |" in command_reference
+        assert "| `group_unmute` |" in command_reference
+        assert "| `get_group_topology` |" in command_reference
+        assert "| `join_group` |" in command_reference
+        assert "| `unjoin_room` |" in command_reference
+        assert "| `party_mode` |" in command_reference
+        assert "| `group_rooms` |" in command_reference
+        assert "`ping`, `server_info`, and `list_rooms`" in command_reference
+
     def test_agent_guides_call_out_remote_deployment_caveats(self) -> None:
         home_assistant = _read(HOME_ASSISTANT_GUIDE)
         n8n = _read(N8N_GUIDE)
@@ -182,6 +220,42 @@ class TestIntegrationGuides:
         assert "`hostNetwork: true`" in n8n
         assert "manual workaround" in n8n
         assert "[troubleshooting](../setup/troubleshooting.md)" in n8n
+
+    def test_setup_and_integration_guides_route_to_canonical_phase_2_docs(self) -> None:
+        stdio = _read(REPO_ROOT / "docs" / "setup" / "stdio.md")
+        docker = _read(DOCKER_GUIDE)
+        helm = _read(HELM_GUIDE)
+        integrations = _read(INTEGRATIONS_README)
+        claude_desktop = _read(REPO_ROOT / "docs" / "integrations" / "claude-desktop.md")
+        home_assistant = _read(HOME_ASSISTANT_GUIDE)
+        n8n = _read(N8N_GUIDE)
+
+        for guide in (stdio, docker, helm, integrations, claude_desktop, home_assistant, n8n):
+            _assert_contains_links(
+                guide,
+                [
+                    "[../prompts/command-reference.md](../prompts/command-reference.md)",
+                    "[../prompts/example-uses.md](../prompts/example-uses.md)",
+                ],
+            )
+            assert "`ping`" in guide
+            assert "`server_info`" in guide
+            assert "`list_rooms`" in guide
+
+    def test_troubleshooting_guides_feature_discovery_and_transport_neutrality(self) -> None:
+        guide = _read(TROUBLESHOOTING_GUIDE)
+        assert "## I can connect, but I cannot find the phase-2 feature I expected" in guide
+        assert "## Local and remote usage seem to describe different behavior" in guide
+        assert "`stdio`" in guide
+        assert "Streamable HTTP" in guide
+        assert "SONIQ_MCP_TOOLS_DISABLED" in guide
+        _assert_contains_links(
+            guide,
+            [
+                "[../prompts/command-reference.md](../prompts/command-reference.md)",
+                "[../prompts/example-uses.md](../prompts/example-uses.md)",
+            ],
+        )
 
     def test_troubleshooting_guide_matches_supported_diagnostic_categories(self) -> None:
         guide = _read(TROUBLESHOOTING_GUIDE)
