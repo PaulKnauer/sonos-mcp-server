@@ -7,6 +7,8 @@ tool surface.
 
 from __future__ import annotations
 
+import json
+
 import pytest
 from mcp.server.fastmcp import FastMCP
 
@@ -95,6 +97,33 @@ class TestPlayPlaylistContract:
     def test_is_control_tool(self, registered_app: FastMCP) -> None:
         ann = get_tools(registered_app)["play_playlist"].annotations
         assert ann.readOnlyHint is False
+
+    @pytest.mark.anyio
+    async def test_response_shape_is_stable(self, registered_app: FastMCP) -> None:
+        result = await registered_app.call_tool(
+            "play_playlist", {"room": "Living Room", "uri": "x-rincon-playlist:RINCON"}
+        )
+        data = json.loads(result[0].text)
+        assert data == {
+            "status": "ok",
+            "room": "Living Room",
+            "uri": "x-rincon-playlist:RINCON",
+        }
+
+    @pytest.mark.anyio
+    async def test_internal_error_shape_is_stable(self) -> None:
+        class _InternalService(FakePlaylistService):
+            def play_playlist(self, room_name: str, uri: str) -> None:
+                raise RuntimeError("Unexpected playlist failure at /tmp/playlists.log")
+
+        app = FastMCP("contract-test")
+        register(app, SoniqConfig(), _InternalService())
+        result = await app.call_tool(
+            "play_playlist", {"room": "Living Room", "uri": "x-rincon-playlist:RINCON"}
+        )
+        data = json.loads(result[0].text)
+        assert data["category"] == "internal"
+        assert data["field"] == "playlist"
 
 
 class TestCreatePlaylistContract:

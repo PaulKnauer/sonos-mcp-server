@@ -217,6 +217,9 @@ def register(app: FastMCP, config: SoniqConfig, playback_service: object) -> Non
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in seek: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in seek")
+                return ErrorResponse.from_internal_error(exc, field="playback").model_dump()
 
     if "get_sleep_timer" not in config.tools_disabled:
 
@@ -238,6 +241,9 @@ def register(app: FastMCP, config: SoniqConfig, playback_service: object) -> Non
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in get_sleep_timer: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in get_sleep_timer")
+                return ErrorResponse.from_internal_error(exc, field="playback").model_dump()
 
     if "set_sleep_timer" not in config.tools_disabled:
 
@@ -262,3 +268,6 @@ def register(app: FastMCP, config: SoniqConfig, playback_service: object) -> Non
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in set_sleep_timer: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in set_sleep_timer")
+                return ErrorResponse.from_internal_error(exc, field="playback").model_dump()

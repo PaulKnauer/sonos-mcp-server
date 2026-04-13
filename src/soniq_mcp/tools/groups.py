@@ -21,7 +21,13 @@ from soniq_mcp.domain.exceptions import (
 )
 from soniq_mcp.domain.safety import assert_tool_permitted
 from soniq_mcp.schemas.errors import ErrorResponse
-from soniq_mcp.schemas.responses import GroupAudioStateResponse, GroupTopologyResponse
+from soniq_mcp.schemas.responses import (
+    GroupAudioStateResponse,
+    GroupJoinResponse,
+    GroupTopologyResponse,
+    RoomStatusResponse,
+    StatusResponse,
+)
 
 log = logging.getLogger(__name__)
 
@@ -61,6 +67,9 @@ def register(app: FastMCP, config: SoniqConfig, group_service: object) -> None:
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in get_group_topology: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in get_group_topology")
+                return ErrorResponse.from_internal_error(exc, field="group").model_dump()
 
     if "join_group" not in config.tools_disabled:
 
@@ -73,7 +82,7 @@ def register(app: FastMCP, config: SoniqConfig, group_service: object) -> None:
             assert_tool_permitted("join_group", config)
             try:
                 group_service.join_group(room, coordinator)
-                return {"status": "ok", "room": room, "coordinator": coordinator}
+                return GroupJoinResponse(room=room, coordinator=coordinator).model_dump()
             except RoomNotFoundError as exc:
                 return ErrorResponse.from_room_not_found(exc.room_name).model_dump()
             except GroupError as exc:
@@ -82,6 +91,9 @@ def register(app: FastMCP, config: SoniqConfig, group_service: object) -> None:
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in join_group: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in join_group")
+                return ErrorResponse.from_internal_error(exc, field="group").model_dump()
 
     if "unjoin_room" not in config.tools_disabled:
 
@@ -94,7 +106,7 @@ def register(app: FastMCP, config: SoniqConfig, group_service: object) -> None:
             assert_tool_permitted("unjoin_room", config)
             try:
                 group_service.unjoin_room(room)
-                return {"status": "ok", "room": room}
+                return RoomStatusResponse(room=room).model_dump()
             except RoomNotFoundError:
                 return ErrorResponse.from_room_not_found(room).model_dump()
             except GroupError as exc:
@@ -103,6 +115,9 @@ def register(app: FastMCP, config: SoniqConfig, group_service: object) -> None:
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in unjoin_room: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in unjoin_room")
+                return ErrorResponse.from_internal_error(exc, field="group").model_dump()
 
     if "party_mode" not in config.tools_disabled:
 
@@ -115,13 +130,16 @@ def register(app: FastMCP, config: SoniqConfig, group_service: object) -> None:
             assert_tool_permitted("party_mode", config)
             try:
                 group_service.party_mode()
-                return {"status": "ok"}
+                return StatusResponse().model_dump()
             except GroupError as exc:
                 log.warning("Group error in party_mode: %s", exc)
                 return ErrorResponse.from_group_error(exc).model_dump()
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in party_mode: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in party_mode")
+                return ErrorResponse.from_internal_error(exc, field="group").model_dump()
 
     if "get_group_volume" not in config.tools_disabled:
 
@@ -145,6 +163,9 @@ def register(app: FastMCP, config: SoniqConfig, group_service: object) -> None:
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in get_group_volume: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in get_group_volume")
+                return ErrorResponse.from_internal_error(exc, field="group").model_dump()
 
     if "set_group_volume" not in config.tools_disabled:
 
@@ -170,6 +191,9 @@ def register(app: FastMCP, config: SoniqConfig, group_service: object) -> None:
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in set_group_volume: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in set_group_volume")
+                return ErrorResponse.from_internal_error(exc, field="group").model_dump()
 
     if "adjust_group_volume" not in config.tools_disabled:
 
@@ -195,6 +219,9 @@ def register(app: FastMCP, config: SoniqConfig, group_service: object) -> None:
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in adjust_group_volume: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in adjust_group_volume")
+                return ErrorResponse.from_internal_error(exc, field="group").model_dump()
 
     if "group_mute" not in config.tools_disabled:
 
@@ -218,6 +245,9 @@ def register(app: FastMCP, config: SoniqConfig, group_service: object) -> None:
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in group_mute: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in group_mute")
+                return ErrorResponse.from_internal_error(exc, field="group").model_dump()
 
     if "group_unmute" not in config.tools_disabled:
 
@@ -241,6 +271,9 @@ def register(app: FastMCP, config: SoniqConfig, group_service: object) -> None:
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in group_unmute: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in group_unmute")
+                return ErrorResponse.from_internal_error(exc, field="group").model_dump()
 
     if "group_rooms" not in config.tools_disabled:
 
@@ -269,3 +302,6 @@ def register(app: FastMCP, config: SoniqConfig, group_service: object) -> None:
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in group_rooms: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in group_rooms")
+                return ErrorResponse.from_internal_error(exc, field="group").model_dump()

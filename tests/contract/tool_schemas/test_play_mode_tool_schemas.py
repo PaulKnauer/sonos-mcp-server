@@ -147,3 +147,20 @@ class TestSetPlayModeContract:
         assert isinstance(data["repeat"], str)
         assert data["repeat"] in ("none", "all", "one")
         assert isinstance(data["cross_fade"], bool)
+
+    @pytest.mark.anyio
+    async def test_internal_error_shape_is_stable(self) -> None:
+        import json
+
+        class _InternalService(_StubPlayModeService):
+            def set_play_mode(
+                self, room: str, shuffle=None, repeat=None, cross_fade=None
+            ) -> PlayModeState:
+                raise RuntimeError("Unexpected failure in /tmp/playmode.txt")
+
+        app = FastMCP("contract-test")
+        register(app, SoniqConfig(), _InternalService())
+        result = await app.call_tool("set_play_mode", {"room": "Living Room", "shuffle": True})
+        data = json.loads(result[0].text)
+        assert data["category"] == "internal"
+        assert data["field"] == "playback"

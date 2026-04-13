@@ -217,6 +217,30 @@ class PlaylistsListResponse(BaseModel):
         return cls(items=[PlaylistResponse.from_domain(p) for p in items], count=len(items))
 
 
+class StatusResponse(BaseModel):
+    """Minimal success response for command-style tools."""
+
+    status: str = "ok"
+
+
+class RoomStatusResponse(StatusResponse):
+    """Success response for command-style tools scoped to a room."""
+
+    room: str
+
+
+class GroupJoinResponse(RoomStatusResponse):
+    """Success response for the ``join_group`` tool."""
+
+    coordinator: str
+
+
+class PlaylistPlaybackResponse(RoomStatusResponse):
+    """Success response for the ``play_playlist`` tool."""
+
+    uri: str
+
+
 class PlaylistDeleteResponse(BaseModel):
     """Response for the ``delete_playlist`` tool."""
 

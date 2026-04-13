@@ -6,6 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from soniq_mcp.config.models import (
+    KNOWN_TOOL_NAMES,
     ExposurePosture,
     LogLevel,
     SoniqConfig,
@@ -77,3 +78,36 @@ class TestSoniqConfigInvalidValues:
     def test_unknown_field_raises(self) -> None:
         with pytest.raises(ValidationError):
             SoniqConfig(not_a_real_field="value")
+
+
+class TestKnownToolNames:
+    def test_phase_two_tool_names_are_present(self) -> None:
+        expected_phase_two_tools = {
+            "get_play_mode",
+            "set_play_mode",
+            "seek",
+            "get_sleep_timer",
+            "set_sleep_timer",
+            "get_eq_settings",
+            "set_bass",
+            "set_treble",
+            "set_loudness",
+            "switch_to_line_in",
+            "switch_to_tv",
+            "get_group_volume",
+            "set_group_volume",
+            "adjust_group_volume",
+            "group_mute",
+            "group_unmute",
+            "group_rooms",
+            "list_alarms",
+            "create_alarm",
+            "update_alarm",
+            "delete_alarm",
+            "create_playlist",
+            "update_playlist",
+            "delete_playlist",
+            "browse_library",
+            "play_library_item",
+        }
+        assert expected_phase_two_tools <= KNOWN_TOOL_NAMES

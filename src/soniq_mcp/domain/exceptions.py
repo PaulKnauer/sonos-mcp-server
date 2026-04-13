@@ -14,6 +14,7 @@ class ErrorCategory(StrEnum):
 
     CONFIGURATION = "configuration"
     CONNECTIVITY = "connectivity"
+    INTERNAL = "internal"
     VALIDATION = "validation"
     OPERATION = "operation"
 

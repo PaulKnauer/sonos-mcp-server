@@ -208,6 +208,24 @@ class ErrorResponse(BaseModel):
             ),
         )
 
+    @classmethod
+    def from_internal_error(
+        cls,
+        exc: Exception,
+        *,
+        field: str,
+        suggestion: str | None = None,
+    ) -> ErrorResponse:
+        return cls._build(
+            category=ErrorCategory.INTERNAL,
+            error="An internal server error occurred while processing the request.",
+            field=field,
+            suggestion=(
+                suggestion
+                or "Retry the request. If the problem persists, check server logs for details."
+            ),
+        )
+
 
 def _sanitize_text(text: str) -> str:
     """Redact sensitive transport and filesystem details from user-facing text."""

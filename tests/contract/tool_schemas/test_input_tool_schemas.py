@@ -126,3 +126,16 @@ class TestSwitchToTvContract:
         assert data["category"] == "validation"
         assert data["field"] == "input_source"
         assert "suggestion" in data
+
+    @pytest.mark.anyio
+    async def test_internal_error_shape_is_stable(self) -> None:
+        class _InternalService(_StubInputService):
+            def switch_to_tv(self, room: str) -> InputState:
+                raise RuntimeError("Unexpected TV input failure at /tmp/input.log")
+
+        app = FastMCP("contract-test")
+        register(app, SoniqConfig(), _InternalService())
+        result = await app.call_tool("switch_to_tv", {"room": "Living Room"})
+        data = json.loads(result[0].text)
+        assert data["category"] == "internal"
+        assert data["field"] == "input_source"

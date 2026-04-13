@@ -7,6 +7,8 @@ that depend on the alarm tool surface.
 
 from __future__ import annotations
 
+import json
+
 import pytest
 from mcp.server.fastmcp import FastMCP
 
@@ -119,6 +121,34 @@ class TestCreateAlarmContract:
         ann = get_tools(registered_app)["create_alarm"].annotations
         assert ann.readOnlyHint is False
         assert ann.destructiveHint is False
+
+    @pytest.mark.anyio
+    async def test_response_shape_is_stable(self, registered_app: FastMCP) -> None:
+        result = await registered_app.call_tool(
+            "create_alarm",
+            {"room": "Living Room", "start_time": "07:00:00", "recurrence": "DAILY"},
+        )
+        data = json.loads(result[0].text)
+        assert data["alarm_id"] == "101"
+        assert data["room_name"] == "Living Room"
+        assert data["start_time"] == "07:00:00"
+        assert data["recurrence"] == "DAILY"
+
+    @pytest.mark.anyio
+    async def test_internal_error_shape_is_stable(self) -> None:
+        class _InternalService(FakeAlarmService):
+            def create_alarm(self, **kwargs) -> AlarmRecord:
+                raise RuntimeError("Unexpected alarm failure at /tmp/alarms.log")
+
+        app = FastMCP("contract-test")
+        register(app, SoniqConfig(), _InternalService())
+        result = await app.call_tool(
+            "create_alarm",
+            {"room": "Living Room", "start_time": "07:00:00", "recurrence": "DAILY"},
+        )
+        data = json.loads(result[0].text)
+        assert data["category"] == "internal"
+        assert data["field"] == "alarm"
 
 
 class TestUpdateAlarmContract:

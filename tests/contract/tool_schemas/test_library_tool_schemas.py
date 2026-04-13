@@ -215,3 +215,19 @@ class TestPlayLibraryItemContract:
         data = json.loads(result[0].text)
         assert data["category"] == "validation"
         assert data["field"] == "library"
+
+    @pytest.mark.anyio
+    async def test_internal_error_shape_is_stable(self) -> None:
+        class _InternalService(FakeLibraryService):
+            def play_library_item(self, **kwargs) -> dict:
+                raise RuntimeError("Unexpected library failure at /tmp/library.log")
+
+        app = FastMCP("contract-test")
+        register(app, SoniqConfig(), _InternalService())
+        result = await app.call_tool(
+            "play_library_item",
+            {"room": "Living Room", "title": "Track", "uri": "", "is_playable": True},
+        )
+        data = json.loads(result[0].text)
+        assert data["category"] == "internal"
+        assert data["field"] == "library"

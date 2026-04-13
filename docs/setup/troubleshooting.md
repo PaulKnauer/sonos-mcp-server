@@ -6,12 +6,13 @@ Common problems and fixes for SoniqMCP local stdio setup.
 
 ## Diagnostic categories you will see
 
-SoniqMCP now keeps user-facing failures in four stable categories across tool responses and startup guidance:
+SoniqMCP now keeps user-facing failures in five stable categories across tool responses and startup guidance:
 
 | Category | Typical fields | What it means | What to do next |
 |---|---|---|---|
 | `configuration` | `tools_disabled` | A local setup choice prevents the requested action | Fix `.env`, environment variables, or tool exposure settings, then restart |
 | `connectivity` | `sonos_network` | SoniqMCP cannot discover or reach the Sonos household | Check host networking, Docker/Helm discovery posture, then retry |
+| `internal` | `playback`, `audio_settings`, `input_source`, `group`, `alarm`, `playlist`, `library` | SoniqMCP hit an unexpected server-side failure while handling an otherwise valid request | Retry once, then check server logs if it keeps happening |
 | `validation` | `room`, `volume` | The request target or value is invalid for the current system state | Correct the room name, queue position, or volume input |
 | `operation` | `playback`, `queue`, `group`, `favourites`, `sonos_volume` | Sonos accepted the request path but the action could not complete | Check room reachability, playback state, queue state, or grouping prerequisites |
 

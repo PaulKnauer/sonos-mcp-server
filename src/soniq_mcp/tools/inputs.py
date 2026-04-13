@@ -42,6 +42,9 @@ def register(app: FastMCP, config: SoniqConfig, input_service: object) -> None:
             except SonosDiscoveryError as exc:
                 log.warning("Discovery failed in switch_to_line_in: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in switch_to_line_in")
+                return ErrorResponse.from_internal_error(exc, field="input_source").model_dump()
 
     if "switch_to_tv" not in config.tools_disabled:
 
@@ -59,3 +62,6 @@ def register(app: FastMCP, config: SoniqConfig, input_service: object) -> None:
             except SonosDiscoveryError as exc:
                 log.warning("Discovery failed in switch_to_tv: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in switch_to_tv")
+                return ErrorResponse.from_internal_error(exc, field="input_source").model_dump()

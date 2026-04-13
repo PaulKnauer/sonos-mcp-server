@@ -86,6 +86,9 @@ def register(app: FastMCP, config: SoniqConfig, play_mode_service: object) -> No
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in get_play_mode: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in get_play_mode")
+                return ErrorResponse.from_internal_error(exc, field="playback").model_dump()
 
     if "set_play_mode" not in config.tools_disabled:
 
@@ -121,3 +124,6 @@ def register(app: FastMCP, config: SoniqConfig, play_mode_service: object) -> No
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in set_play_mode: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in set_play_mode")
+                return ErrorResponse.from_internal_error(exc, field="playback").model_dump()

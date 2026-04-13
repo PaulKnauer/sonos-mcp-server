@@ -93,6 +93,16 @@ class TestJoinGroupContract:
         assert annotations.readOnlyHint is False
         assert annotations.destructiveHint is False
 
+    @pytest.mark.anyio
+    async def test_response_shape_is_stable(self, registered_app: FastMCP) -> None:
+        import json
+
+        result = await registered_app.call_tool(
+            "join_group", {"room": "Office", "coordinator": "Living Room"}
+        )
+        data = json.loads(result[0].text)
+        assert data == {"status": "ok", "room": "Office", "coordinator": "Living Room"}
+
 
 class TestUnjoinRoomContract:
     def test_tool_name_is_stable(self, registered_app: FastMCP) -> None:
@@ -139,3 +149,18 @@ class TestPartyModeContract:
         data = json.loads(result[0].text)
         assert "status" in data
         assert data["status"] == "ok"
+
+    @pytest.mark.anyio
+    async def test_internal_error_shape_is_stable(self) -> None:
+        import json
+
+        class _InternalService(_StubGroupService):
+            def party_mode(self) -> None:
+                raise RuntimeError("Unexpected group failure at /tmp/groups.log")
+
+        app = FastMCP("contract-test")
+        register(app, SoniqConfig(), _InternalService())
+        result = await app.call_tool("party_mode", {})
+        data = json.loads(result[0].text)
+        assert data["category"] == "internal"
+        assert data["field"] == "group"

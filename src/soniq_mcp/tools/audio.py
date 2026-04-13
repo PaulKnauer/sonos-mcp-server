@@ -69,6 +69,9 @@ def register(app: FastMCP, config: SoniqConfig, audio_settings_service: object) 
             except SonosDiscoveryError as exc:
                 log.warning("Discovery failed in get_eq_settings: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in get_eq_settings")
+                return ErrorResponse.from_internal_error(exc, field="audio_settings").model_dump()
 
     if "set_bass" not in config.tools_disabled:
 
@@ -86,6 +89,9 @@ def register(app: FastMCP, config: SoniqConfig, audio_settings_service: object) 
             except SonosDiscoveryError as exc:
                 log.warning("Discovery failed in set_bass: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in set_bass")
+                return ErrorResponse.from_internal_error(exc, field="audio_settings").model_dump()
 
     if "set_treble" not in config.tools_disabled:
 
@@ -103,6 +109,9 @@ def register(app: FastMCP, config: SoniqConfig, audio_settings_service: object) 
             except SonosDiscoveryError as exc:
                 log.warning("Discovery failed in set_treble: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in set_treble")
+                return ErrorResponse.from_internal_error(exc, field="audio_settings").model_dump()
 
     if "set_loudness" not in config.tools_disabled:
 
@@ -120,3 +129,6 @@ def register(app: FastMCP, config: SoniqConfig, audio_settings_service: object) 
             except SonosDiscoveryError as exc:
                 log.warning("Discovery failed in set_loudness: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in set_loudness")
+                return ErrorResponse.from_internal_error(exc, field="audio_settings").model_dump()

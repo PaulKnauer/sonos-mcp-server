@@ -167,3 +167,17 @@ class TestErrorResponseSchema:
         )
         assert err.category == ErrorCategory.OPERATION
         assert err.field == "library"
+
+    def test_internal_error_uses_internal_category_and_redacts_details(self) -> None:
+        raw_message = "Failure at http://192.168.1.20:1400 on /Users/paul/.config/secret.env"
+        err = ErrorResponse.from_internal_error(
+            RuntimeError(raw_message),
+            field="playlist",
+        )
+        assert err.category == ErrorCategory.INTERNAL
+        assert err.field == "playlist"
+        assert err.suggestion is not None
+        assert err.error == "An internal server error occurred while processing the request."
+        assert raw_message not in err.error
+        assert "192.168.1.20" not in err.error
+        assert "/Users/paul/.config/secret.env" not in err.error

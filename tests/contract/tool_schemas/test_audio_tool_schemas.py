@@ -205,3 +205,16 @@ class TestSetLoudnessContract:
         )
         data = json.loads(result[0].text)
         assert data["loudness"] is False
+
+    @pytest.mark.anyio
+    async def test_internal_error_shape_is_stable(self) -> None:
+        class _InternalService(_StubAudioSettingsService):
+            def set_loudness(self, room: str, enabled: bool) -> AudioSettingsState:
+                raise RuntimeError("Unexpected EQ failure at /tmp/eq.log")
+
+        app = FastMCP("contract-test")
+        register(app, SoniqConfig(), _InternalService())
+        result = await app.call_tool("set_loudness", {"room": "Bedroom", "enabled": False})
+        data = json.loads(result[0].text)
+        assert data["category"] == "internal"
+        assert data["field"] == "audio_settings"

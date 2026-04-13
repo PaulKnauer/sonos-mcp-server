@@ -59,6 +59,9 @@ def register(app: FastMCP, config: SoniqConfig, library_service: object) -> None
                 return ErrorResponse.from_discovery_error(exc).model_dump()
             except LibraryError as exc:
                 return ErrorResponse.from_library_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in browse_library")
+                return ErrorResponse.from_internal_error(exc, field="library").model_dump()
 
     if "play_library_item" not in config.tools_disabled:
 
@@ -97,3 +100,6 @@ def register(app: FastMCP, config: SoniqConfig, library_service: object) -> None
             except LibraryError as exc:
                 log.warning("Library error in play_library_item: %s", exc)
                 return ErrorResponse.from_library_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in play_library_item")
+                return ErrorResponse.from_internal_error(exc, field="library").model_dump()

@@ -22,6 +22,7 @@ from soniq_mcp.domain.safety import assert_tool_permitted
 from soniq_mcp.schemas.errors import ErrorResponse
 from soniq_mcp.schemas.responses import (
     PlaylistDeleteResponse,
+    PlaylistPlaybackResponse,
     PlaylistResponse,
     PlaylistsListResponse,
 )
@@ -79,6 +80,9 @@ def register(app: FastMCP, config: SoniqConfig, playlist_service: object) -> Non
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in list_playlists: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in list_playlists")
+                return ErrorResponse.from_internal_error(exc, field="playlist").model_dump()
 
     if "play_playlist" not in config.tools_disabled:
 
@@ -93,7 +97,7 @@ def register(app: FastMCP, config: SoniqConfig, playlist_service: object) -> Non
             assert_tool_permitted("play_playlist", config)
             try:
                 playlist_service.play_playlist(room, uri)
-                return {"status": "ok", "room": room, "uri": uri}
+                return PlaylistPlaybackResponse(room=room, uri=uri).model_dump()
             except RoomNotFoundError:
                 return ErrorResponse.from_room_not_found(room).model_dump()
             except PlaylistError as exc:
@@ -102,6 +106,9 @@ def register(app: FastMCP, config: SoniqConfig, playlist_service: object) -> Non
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in play_playlist: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in play_playlist")
+                return ErrorResponse.from_internal_error(exc, field="playlist").model_dump()
 
     if "create_playlist" not in config.tools_disabled:
 
@@ -128,6 +135,9 @@ def register(app: FastMCP, config: SoniqConfig, playlist_service: object) -> Non
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in create_playlist: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in create_playlist")
+                return ErrorResponse.from_internal_error(exc, field="playlist").model_dump()
 
     if "update_playlist" not in config.tools_disabled:
 
@@ -160,6 +170,9 @@ def register(app: FastMCP, config: SoniqConfig, playlist_service: object) -> Non
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in update_playlist: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in update_playlist")
+                return ErrorResponse.from_internal_error(exc, field="playlist").model_dump()
 
     if "delete_playlist" not in config.tools_disabled:
 
@@ -190,3 +203,6 @@ def register(app: FastMCP, config: SoniqConfig, playlist_service: object) -> Non
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in delete_playlist: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in delete_playlist")
+                return ErrorResponse.from_internal_error(exc, field="playlist").model_dump()

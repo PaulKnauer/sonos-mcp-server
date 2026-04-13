@@ -58,6 +58,9 @@ def register(app: FastMCP, config: SoniqConfig, alarm_service: object) -> None:
             except SonosDiscoveryError as exc:
                 log.warning("Discovery failed in list_alarms: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in list_alarms")
+                return ErrorResponse.from_internal_error(exc, field="alarm").model_dump()
 
     if "create_alarm" not in config.tools_disabled:
 
@@ -99,6 +102,9 @@ def register(app: FastMCP, config: SoniqConfig, alarm_service: object) -> None:
             except SonosDiscoveryError as exc:
                 log.warning("Discovery failed in create_alarm: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in create_alarm")
+                return ErrorResponse.from_internal_error(exc, field="alarm").model_dump()
 
     if "update_alarm" not in config.tools_disabled:
 
@@ -142,6 +148,9 @@ def register(app: FastMCP, config: SoniqConfig, alarm_service: object) -> None:
             except SonosDiscoveryError as exc:
                 log.warning("Discovery failed in update_alarm: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in update_alarm")
+                return ErrorResponse.from_internal_error(exc, field="alarm").model_dump()
 
     if "delete_alarm" not in config.tools_disabled:
 
@@ -164,3 +173,6 @@ def register(app: FastMCP, config: SoniqConfig, alarm_service: object) -> None:
             except SonosDiscoveryError as exc:
                 log.warning("Discovery failed in delete_alarm: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in delete_alarm")
+                return ErrorResponse.from_internal_error(exc, field="alarm").model_dump()

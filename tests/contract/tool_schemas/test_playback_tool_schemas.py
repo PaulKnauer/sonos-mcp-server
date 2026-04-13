@@ -7,6 +7,8 @@ that depend on the tool surface.
 
 from __future__ import annotations
 
+import json
+
 import pytest
 from mcp.server.fastmcp import FastMCP
 
@@ -228,8 +230,6 @@ class TestSeekContract:
 
     @pytest.mark.anyio
     async def test_response_includes_transport_state(self, registered_app: FastMCP) -> None:
-        import json
-
         result = await registered_app.call_tool(
             "seek", {"room": "Living Room", "position": "0:01:00"}
         )
@@ -238,6 +238,19 @@ class TestSeekContract:
         assert "room_name" in data
         assert isinstance(data["transport_state"], str)
         assert isinstance(data["room_name"], str)
+
+    @pytest.mark.anyio
+    async def test_internal_error_shape_is_stable(self) -> None:
+        class _InternalService(_StubPlaybackService):
+            def seek(self, room: str, position: str) -> PlaybackState:
+                raise RuntimeError("Unexpected seek failure at /tmp/seek.log")
+
+        app = FastMCP("contract-test")
+        register(app, SoniqConfig(), _InternalService())
+        result = await app.call_tool("seek", {"room": "Living Room", "position": "0:01:00"})
+        data = json.loads(result[0].text)
+        assert data["category"] == "internal"
+        assert data["field"] == "playback"
 
 
 class TestGetSleepTimerContract:

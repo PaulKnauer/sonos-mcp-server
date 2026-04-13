@@ -187,6 +187,7 @@ class TestIntegrationGuides:
         guide = _read(TROUBLESHOOTING_GUIDE)
         assert "configuration" in guide
         assert "connectivity" in guide
+        assert "internal" in guide
         assert "validation" in guide
         assert "operation" in guide
         assert "`home-network`" in guide
