@@ -9,6 +9,7 @@ Public surface:
 
 from soniq_mcp.config.loader import load_config
 from soniq_mcp.config.models import (
+    AuthMode,
     ExposurePosture,
     LogLevel,
     SoniqConfig,
@@ -17,6 +18,7 @@ from soniq_mcp.config.models import (
 from soniq_mcp.config.validation import ConfigValidationError, run_preflight
 
 __all__ = [
+    "AuthMode",
     "ConfigValidationError",
     "ExposurePosture",
     "LogLevel",

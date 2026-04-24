@@ -45,3 +45,37 @@ class TestRunPreflightFailure:
         for msg in exc_info.value.messages:
             assert "/workdir" not in msg
             assert "token" not in msg.lower()
+
+
+class TestRunPreflightAuthValidation:
+    def test_unsupported_auth_mode_raises_config_validation_error(self) -> None:
+        with pytest.raises(ConfigValidationError) as exc_info:
+            run_preflight(overrides={"auth_mode": "oauth2"})
+        assert len(exc_info.value.messages) > 0
+
+    def test_oidc_without_issuer_raises_config_validation_error(self) -> None:
+        with pytest.raises(ConfigValidationError) as exc_info:
+            run_preflight(overrides={"auth_mode": "oidc", "transport": "http"})
+        assert len(exc_info.value.messages) > 0
+        assert any("oidc_issuer" in msg for msg in exc_info.value.messages)
+
+    def test_oidc_without_issuer_allowed_for_stdio(self) -> None:
+        cfg = run_preflight(overrides={"auth_mode": "oidc", "transport": "stdio"})
+        from soniq_mcp.config.models import AuthMode
+
+        assert cfg.auth_mode == AuthMode.OIDC
+        assert cfg.oidc_issuer is None
+
+    def test_valid_static_auth_mode_passes(self) -> None:
+        cfg = run_preflight(overrides={"auth_mode": "static"})
+        from soniq_mcp.config.models import AuthMode
+
+        assert cfg.auth_mode == AuthMode.STATIC
+
+    def test_valid_oidc_auth_mode_with_issuer_passes(self) -> None:
+        cfg = run_preflight(
+            overrides={"auth_mode": "oidc", "oidc_issuer": "https://issuer.example.com"}
+        )
+        from soniq_mcp.config.models import AuthMode
+
+        assert cfg.auth_mode == AuthMode.OIDC

@@ -80,6 +80,100 @@ class TestSoniqConfigInvalidValues:
             SoniqConfig(not_a_real_field="value")
 
 
+class TestAuthModeEnum:
+    def test_auth_mode_none_value(self) -> None:
+        from soniq_mcp.config.models import AuthMode
+
+        assert AuthMode.NONE == "none"
+
+    def test_auth_mode_static_value(self) -> None:
+        from soniq_mcp.config.models import AuthMode
+
+        assert AuthMode.STATIC == "static"
+
+    def test_auth_mode_oidc_value(self) -> None:
+        from soniq_mcp.config.models import AuthMode
+
+        assert AuthMode.OIDC == "oidc"
+
+
+class TestSoniqConfigAuthDefaults:
+    def test_auth_mode_defaults_to_none(self) -> None:
+        from soniq_mcp.config.models import AuthMode
+
+        cfg = SoniqConfig()
+        assert cfg.auth_mode == AuthMode.NONE
+
+    def test_auth_token_defaults_to_none(self) -> None:
+        cfg = SoniqConfig()
+        assert cfg.auth_token is None
+
+    def test_oidc_fields_default_to_none(self) -> None:
+        cfg = SoniqConfig()
+        assert cfg.oidc_issuer is None
+        assert cfg.oidc_audience is None
+        assert cfg.oidc_jwks_uri is None
+        assert cfg.oidc_ca_bundle is None
+        assert cfg.oidc_resource_url is None
+
+
+class TestSoniqConfigAuthParsing:
+    def test_auth_mode_none_string_accepted(self) -> None:
+        from soniq_mcp.config.models import AuthMode
+
+        cfg = SoniqConfig(auth_mode="none")
+        assert cfg.auth_mode == AuthMode.NONE
+
+    def test_auth_mode_static_string_accepted(self) -> None:
+        from soniq_mcp.config.models import AuthMode
+
+        cfg = SoniqConfig(auth_mode="static")
+        assert cfg.auth_mode == AuthMode.STATIC
+
+    def test_auth_mode_oidc_with_issuer_accepted(self) -> None:
+        from soniq_mcp.config.models import AuthMode
+
+        cfg = SoniqConfig(auth_mode="oidc", oidc_issuer="https://issuer.example.com")
+        assert cfg.auth_mode == AuthMode.OIDC
+        assert cfg.oidc_issuer == "https://issuer.example.com"
+
+    def test_invalid_auth_mode_raises(self) -> None:
+        with pytest.raises(ValidationError) as exc_info:
+            SoniqConfig(auth_mode="bearer")
+        errors = exc_info.value.errors()
+        assert any(e["loc"] == ("auth_mode",) for e in errors)
+
+    def test_auth_mode_oidc_without_issuer_raises(self) -> None:
+        with pytest.raises(ValidationError) as exc_info:
+            SoniqConfig(auth_mode="oidc", transport="http")
+        error_msg = str(exc_info.value)
+        assert "oidc_issuer" in error_msg
+
+    def test_auth_mode_oidc_without_issuer_allowed_for_stdio(self) -> None:
+        from soniq_mcp.config.models import AuthMode
+
+        cfg = SoniqConfig(auth_mode="oidc", transport="stdio")
+        assert cfg.auth_mode == AuthMode.OIDC
+        assert cfg.oidc_issuer is None
+
+
+class TestSoniqConfigAuthTokenMasking:
+    def test_auth_token_secret_str_masked_in_repr(self) -> None:
+        cfg = SoniqConfig(auth_mode="static", auth_token="super-secret-token")
+        assert "super-secret-token" not in repr(cfg)
+
+    def test_auth_token_secret_str_masked_in_model_dump(self) -> None:
+        cfg = SoniqConfig(auth_mode="static", auth_token="super-secret-token")
+        dumped = cfg.model_dump()
+        # SecretStr serializes as the SecretStr object, not raw string
+        # The raw value should not appear when converted to string
+        assert "super-secret-token" not in str(dumped)
+
+    def test_auth_token_none_accepted(self) -> None:
+        cfg = SoniqConfig(auth_mode="static", auth_token=None)
+        assert cfg.auth_token is None
+
+
 class TestKnownToolNames:
     def test_phase_two_tool_names_are_present(self) -> None:
         expected_phase_two_tools = {

@@ -16,4 +16,11 @@ DEFAULTS: dict[str, object] = {
     "tools_disabled": [],
     "http_host": "127.0.0.1",
     "http_port": 8000,
+    "auth_mode": "none",
+    "auth_token": None,
+    "oidc_issuer": None,
+    "oidc_audience": None,
+    "oidc_jwks_uri": None,
+    "oidc_ca_bundle": None,
+    "oidc_resource_url": None,
 }

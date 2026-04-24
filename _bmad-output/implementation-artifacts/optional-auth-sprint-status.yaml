@@ -1,5 +1,5 @@
-# generated: 2026-04-23
-# last_updated: 2026-04-23
+# generated: 2026-04-24
+# last_updated: 2026-04-24
 # project: sonos-mcp-server
 # project_key: NOKEY
 # tracking_system: file-system
@@ -41,8 +41,8 @@
 # - Epic 1 is the foundation epic; Epic 2 and Epic 3 build on it.
 # - Epic 4 should generally follow completion of the core capability stories.
 
-generated: 2026-04-23
-last_updated: 2026-04-23
+generated: 2026-04-24
+last_updated: 2026-04-24
 project: sonos-mcp-server
 project_key: NOKEY
 tracking_system: file-system
@@ -50,13 +50,13 @@ story_location: _bmad-output/implementation-artifacts/optional-auth
 phase_id: optional-auth-v0-6-0
 phase_label: "Optional Authentication v0.6.0"
 epics_source: "_bmad-output/planning-artifacts/epics-optional-auth.md"
-current_completed_story: ""
-next_story_hint: "1-1-add-optional-auth-configuration-model"
+current_completed_story: "1-1-add-optional-auth-configuration-model"
+next_story_hint: "1-2-validate-auth-configuration-during-preflight"
 
 development_status:
   # Epic 1: Safe Opt-In Auth Configuration
-  epic-1: backlog
-  1-1-add-optional-auth-configuration-model: backlog
+  epic-1: in-progress
+  1-1-add-optional-auth-configuration-model: done
   1-2-validate-auth-configuration-during-preflight: backlog
   1-3-preserve-backward-compatibility-for-disabled-auth: backlog
   epic-1-retrospective: optional

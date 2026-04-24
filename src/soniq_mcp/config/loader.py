@@ -26,6 +26,13 @@ _ENV_MAP: dict[str, str] = {
     "SONIQ_MCP_TOOLS_DISABLED": "tools_disabled",
     "SONIQ_MCP_HTTP_HOST": "http_host",
     "SONIQ_MCP_HTTP_PORT": "http_port",
+    "SONIQ_MCP_AUTH_MODE": "auth_mode",
+    "SONIQ_MCP_AUTH_TOKEN": "auth_token",
+    "SONIQ_MCP_OIDC_ISSUER": "oidc_issuer",
+    "SONIQ_MCP_OIDC_AUDIENCE": "oidc_audience",
+    "SONIQ_MCP_OIDC_JWKS_URI": "oidc_jwks_uri",
+    "SONIQ_MCP_OIDC_CA_BUNDLE": "oidc_ca_bundle",
+    "SONIQ_MCP_OIDC_RESOURCE_URL": "oidc_resource_url",
 }
 
 

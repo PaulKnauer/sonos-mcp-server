@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
 
 KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
     {
@@ -75,6 +75,14 @@ KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
         "play_library_item",
     }
 )
+
+
+class AuthMode(StrEnum):
+    """Supported authentication modes."""
+
+    NONE = "none"
+    STATIC = "static"
+    OIDC = "oidc"
 
 
 class TransportMode(StrEnum):
@@ -143,6 +151,34 @@ class SoniqConfig(BaseModel):
         le=65535,
         description="Bind port for HTTP transport (1-65535).",
     )
+    auth_mode: AuthMode = Field(
+        default=AuthMode.NONE,
+        description="Authentication mode: none, static, or oidc.",
+    )
+    auth_token: SecretStr | None = Field(
+        default=None,
+        description="Static bearer token for auth_mode=static.",
+    )
+    oidc_issuer: str | None = Field(
+        default=None,
+        description="OIDC issuer URL for auth_mode=oidc.",
+    )
+    oidc_audience: str | None = Field(
+        default=None,
+        description="OIDC audience for JWT validation.",
+    )
+    oidc_jwks_uri: str | None = Field(
+        default=None,
+        description="JWKS URI for OIDC token verification.",
+    )
+    oidc_ca_bundle: str | None = Field(
+        default=None,
+        description="Path to CA bundle for OIDC HTTPS connections.",
+    )
+    oidc_resource_url: str | None = Field(
+        default=None,
+        description="OIDC resource server URL.",
+    )
 
     model_config = {"str_strip_whitespace": True, "extra": "forbid"}
 
@@ -165,6 +201,17 @@ class SoniqConfig(BaseModel):
                 f"Allowed values: {allowed_tools}."
             )
         return value
+
+    @model_validator(mode="after")
+    def validate_auth_config(self) -> SoniqConfig:
+        """Enforce auth mode consistency."""
+        if (
+            self.auth_mode == AuthMode.OIDC
+            and self.transport != TransportMode.STDIO
+            and not self.oidc_issuer
+        ):
+            raise ValueError("auth_mode=oidc requires oidc_issuer to be set.")
+        return self
 
     @model_validator(mode="after")
     def validate_http_exposure_combination(self) -> SoniqConfig:
