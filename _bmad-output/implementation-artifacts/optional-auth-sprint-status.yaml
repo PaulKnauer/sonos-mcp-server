@@ -59,7 +59,7 @@ development_status:
   1-1-add-optional-auth-configuration-model: done
   1-2-validate-auth-configuration-during-preflight: done
   1-3-preserve-backward-compatibility-for-disabled-auth: done
-  epic-1-retrospective: optional
+  epic-1-retrospective: done
 
   # Epic 2: Static Bearer Token Protection for HTTP
   epic-2: backlog
