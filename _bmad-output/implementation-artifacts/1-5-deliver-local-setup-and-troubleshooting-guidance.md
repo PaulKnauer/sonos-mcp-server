@@ -70,7 +70,7 @@ so that I can get the product working without understanding MCP internals.
 
 ### Agent Model Used
 
-claude-sonnet-4-6 (container-use environment: deep-dassie)
+claude-sonnet-4-6
 
 ### Debug Log References
 

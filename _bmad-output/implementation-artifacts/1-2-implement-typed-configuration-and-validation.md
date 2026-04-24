@@ -78,7 +78,7 @@ so that setup mistakes are caught early and explained clearly.
 
 ### Agent Model Used
 
-claude-sonnet-4-6 (container-use environment: pumped-feline)
+claude-sonnet-4-6
 
 ### Debug Log References
 

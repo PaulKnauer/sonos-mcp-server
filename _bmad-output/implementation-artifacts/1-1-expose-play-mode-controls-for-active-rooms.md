@@ -184,7 +184,6 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
-- container-use environment `included-grouse` — Dagger session expired after contract tests; work recovered via git merge from `container-use/included-grouse` remote ref
 
 ### Completion Notes List
 

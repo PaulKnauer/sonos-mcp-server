@@ -205,7 +205,7 @@ def list_rooms() -> dict:
 
 ### Agent Model Used
 
-claude-sonnet-4-6 (container-use environment: knowing-fish)
+claude-sonnet-4-6
 
 ### Debug Log References
 

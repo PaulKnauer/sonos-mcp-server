@@ -74,7 +74,7 @@ so that I can use it directly from an MCP-capable AI client on the same machine.
 
 ### Agent Model Used
 
-claude-sonnet-4-6 (container-use environment: mighty-lacewing)
+claude-sonnet-4-6
 
 ### Debug Log References
 

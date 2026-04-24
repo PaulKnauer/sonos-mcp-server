@@ -75,7 +75,7 @@ so that AI clients cannot cause unnecessary disruption in my home environment.
 
 ### Agent Model Used
 
-claude-sonnet-4-6 (container-use environment: working-warthog)
+claude-sonnet-4-6
 
 ### Debug Log References
 

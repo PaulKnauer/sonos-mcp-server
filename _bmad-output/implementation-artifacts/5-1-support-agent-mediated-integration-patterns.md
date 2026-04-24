@@ -177,7 +177,6 @@ GPT-5 Codex
 
 ### Debug Log References
 
-- No active `container-use` environment was used for this story, per user instruction.
 - Red phase: added transport-parity and documentation regression tests, then ran `./.venv/bin/python -m pytest tests/integration/transports/test_http_bootstrap.py tests/unit/test_integration_docs.py`; the new docs tests failed until the integration guides and links were implemented.
 - Green phase: added Home Assistant and `n8n` integration guides, updated integration and setup index docs, expanded automation examples, and reran the targeted test selection successfully.
 - Validation phase: `./.venv/bin/python -m pytest` passed 650 tests with 3 skipped and 4 sandbox-related smoke-test errors; reran the blocked smoke tests outside the sandbox and they passed.

@@ -1,0 +1,84 @@
+# generated: 2026-04-23
+# last_updated: 2026-04-23
+# project: sonos-mcp-server
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/optional-auth
+# phase_id: optional-auth-v0-6-0
+# phase_label: Optional Authentication v0.6.0
+#
+# PHASE NOTE:
+# This sprint tracker is authoritative for the optional-auth feature only.
+# It is intentionally separate from the existing Phase 2 tracker at
+# _bmad-output/implementation-artifacts/sprint-status.yaml.
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - This tracker is isolated to the optional-auth feature set.
+# - Stories can be worked sequentially or in parallel where dependencies allow.
+# - Epic 1 is the foundation epic; Epic 2 and Epic 3 build on it.
+# - Epic 4 should generally follow completion of the core capability stories.
+
+generated: 2026-04-23
+last_updated: 2026-04-23
+project: sonos-mcp-server
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/optional-auth
+phase_id: optional-auth-v0-6-0
+phase_label: "Optional Authentication v0.6.0"
+epics_source: "_bmad-output/planning-artifacts/epics-optional-auth.md"
+current_completed_story: ""
+next_story_hint: "1-1-add-optional-auth-configuration-model"
+
+development_status:
+  # Epic 1: Safe Opt-In Auth Configuration
+  epic-1: backlog
+  1-1-add-optional-auth-configuration-model: backlog
+  1-2-validate-auth-configuration-during-preflight: backlog
+  1-3-preserve-backward-compatibility-for-disabled-auth: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Static Bearer Token Protection for HTTP
+  epic-2: backlog
+  2-1-implement-static-bearer-token-verifier: backlog
+  2-2-wire-static-auth-into-http-server-construction: backlog
+  2-3-add-static-auth-regression-coverage: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: OIDC and JWKS Validation for Homelab Operators
+  epic-3: backlog
+  3-1-implement-oidc-jwt-verifier-with-cached-jwks: backlog
+  3-2-support-jwks-refresh-https-and-custom-ca-trust: backlog
+  3-3-add-oidc-startup-preflight-and-actionable-errors: backlog
+  3-4-add-oidc-verifier-unit-coverage: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Operator Adoption, Deployment, and Release Readiness
+  epic-4: backlog
+  4-1-document-optional-auth-setup-and-constraints: backlog
+  4-2-add-deployment-examples-for-docker-and-helm: backlog
+  4-3-add-auth-smoke-coverage-and-release-validation: backlog
+  epic-4-retrospective: optional

@@ -3,14 +3,17 @@ stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 inputDocuments:
   - '/Users/paul/github/sonos-mcp-server/_bmad-output/planning-artifacts/prd.md'
   - '/Users/paul/github/sonos-mcp-server/docs/sonos-mcp-research.md'
+  - '/Users/paul/github/sonos-mcp-server/_bmad-output/planning-artifacts/prd-optional-auth.md'
+  - '/Users/paul/github/sonos-mcp-server/_bmad-output/planning-artifacts/oidc-authelia-integration-assessment-2026-04-22.md'
+  - '/Users/paul/github/sonos-mcp-server/_bmad-output/planning-artifacts/research/technical-oidc-fastmcp-authelia-research-2026-04-22.md'
 workflowType: 'architecture'
 project_name: 'sonos-mcp-server'
 user_name: 'Paul'
 date: '2026-03-23'
 lastStep: 8
-status: 'complete'
+status: 'in-progress-refresh-phase3'
 completedAt: '2026-03-23'
-updatedAt: '2026-04-07'
+updatedAt: '2026-04-23'
 ---
 
 # Architecture Decision Document
@@ -1176,3 +1179,478 @@ The original architecture was complete but stale relative to the updated PRD. Th
 
 **First Implementation Priority:**
 Use this refreshed architecture as the source of truth for epic and story decomposition of the Tier 1 and Tier 2 PRD expansion.
+
+## Project Context Analysis — Phase 3 (Optional Auth)
+
+### Requirements Overview
+
+**Functional Requirements:**
+The optional auth PRD adds a credential-gate for the HTTP transport only. 27 FRs span seven areas: authentication mode configuration, static Bearer token validation, OIDC JWT validation (RS256, JWKS, key-rotation retry), startup preflight checks, strict no-op backward compatibility for `AUTH_MODE=none` and stdio, secret masking for the static token, and documentation/deployment guidance for all three modes across pip, Docker, and Helm. The architecture must expand the configuration model, introduce a new auth module, and wire a `TokenVerifier` into the server factory — touching only six files in the existing source tree.
+
+**Non-Functional Requirements:**
+12 NFRs add architectural pressure in three areas: performance (< 5ms overhead for any auth path; zero overhead for `AUTH_MODE=none`; JWKS cached to eliminate per-request network calls), security (constant-time static token comparison; JWT validation fails closed; static token masked from all outputs; HTTPS-only JWKS; expiry validated on every request), and integration (provider-agnostic OIDC; FastMCP `TokenVerifier` as the sole integration point; `SSL_CERT_FILE` as the CA cert mechanism; `verify_token` returns `None`, never raises, for invalid tokens).
+
+**Scale & Complexity:**
+This is a bounded brownfield feature addition to a running production system. Complexity arises from the opt-in contract (zero impact on the common path), the FastMCP `TokenVerifier` protocol wiring, PyJWT JWKS caching, self-signed CA cert handling, and maintaining exact backward compatibility across all three distribution channels.
+
+- Primary domain: developer tool / MCP integration service (unchanged)
+- Complexity level: low-medium (well-researched, bounded scope)
+- Estimated new architectural components: 2 (auth module, auth config fields)
+
+### Technical Constraints & Dependencies
+
+The architecture is constrained by:
+- `mcp[cli]>=1.26.0` — `TokenVerifier` Protocol is the only supported integration point; no ASGI middleware bypass; no Uvicorn wrapping
+- `PyJWT>=2.8` — sole new production dependency; `PyJWKClient` with `ssl_context` since 2.8.0; `cryptography>=46.0.7` already present
+- FastMCP's auth wiring requires `AuthSettings` alongside `token_verifier` in the `FastMCP()` constructor; `AUTH_MODE=none` must leave the constructor call identical to current behaviour
+- MCP spec (April 2026 draft): authorization is OPTIONAL for HTTP, NOT applicable for stdio
+- Authelia client pre-registration required via Terraform (dynamic registration unsupported)
+- Self-signed homelab CA must be supplied via `SSL_CERT_FILE` env var or explicit `oidc_ca_bundle` config path
+
+### Cross-Cutting Concerns Identified
+
+Auth is explicitly a **transport concern**, not a domain concern. It must not reach tools, services, or adapters. Cross-cutting implications:
+- Config model expansion (`SoniqConfig`) — new fields with `@model_validator` for consistency checks
+- Preflight validation extension — OIDC startup JWKS connectivity check, static token presence check
+- Secret masking — `auth_token` must never appear in logs, Pydantic serialisation, or tracebacks
+- Stdio/HTTP transport parity — auth verifier constructed only for HTTP; stdio path is completely unaffected
+- Deployment documentation — all three distribution channels require documented auth setup paths
+
+## Starter Template Evaluation — Phase 3 (Optional Auth)
+
+### Primary Technology Domain
+
+Python backend / MCP integration service — no change from Phase 2
+
+### Starter Options Considered
+
+1. Continue with existing `uv` + `mcp[cli]` + SoCo foundation, adding `PyJWT>=2.8`
+2. Introduce a higher-level auth framework (e.g. `authlib`, `fastapi-users`)
+3. Use the separate `fastmcp` package (jlowin/fastmcp) which includes a built-in `JWTVerifier`
+
+### Selected Starter: Continue with existing foundation + PyJWT>=2.8
+
+**Rationale for Selection:**
+The auth feature is a bounded addition to the existing application — not a platform change. The `mcp[cli]` 1.26.0 SDK already provides the `TokenVerifier` Protocol. `PyJWT>=2.8` provides `PyJWKClient` with JWKS caching and `ssl_context` support, and `cryptography>=46.0.7` (already a production dependency) supplies the RSA backend. No new framework is needed.
+
+The separate `fastmcp` package was ruled out: it is a different package from `mcp[cli]`, the project is already committed to the official SDK, and switching would be a larger breaking change than the feature warrants.
+
+**Dependency Addition:**
+
+```toml
+# pyproject.toml — add one line
+"PyJWT>=2.8",
+```
+
+**Architectural Decisions Provided by Starter:**
+No change to language, runtime, build tooling, testing framework, code organisation, or development experience. The sole change is one new production dependency and one new source module (`src/soniq_mcp/auth/`).
+
+**Note:** No project re-initialisation is required. Phase 3 is a pure feature-addition inside the existing repository structure.
+
+## Core Architectural Decisions — Phase 3 (Optional Auth)
+
+### Decision Priority Analysis
+
+**Critical Decisions (Block Phase-3 Implementation):**
+- `AUTH_MODE` as a three-value enum: `none` | `static` | `oidc` — default `none`
+- FastMCP `TokenVerifier` Protocol as the sole integration point — no ASGI bypass
+- `PyJWT>=2.8` (`PyJWKClient`) as the JWT/JWKS library
+- Auth wired exclusively in `create_server()` in `server.py` — never in tools, services, or adapters
+- `AUTH_MODE=none` must leave the `FastMCP()` constructor call equivalent to current behaviour
+- Static token stored as Pydantic `SecretStr` in `SoniqConfig` to prevent serialisation leakage
+
+**Important Decisions (Shape Architecture):**
+- `AuthSettings` is always required alongside `token_verifier` (FastMCP enforces this at construction time); for `auth_mode=static`, `issuer_url` is derived from the server's own HTTP base URL (`http://{host}:{port}`) — no external issuer, no arbitrary placeholder constant
+- CA cert delivery: dual-path — `SSL_CERT_FILE` env var (zero-code, standard Python) as primary; `SONIQ_MCP_OIDC_CA_BUNDLE` config field as explicit optional override for Docker Compose and direct paths
+- JWKS cache: in-memory via `PyJWKClient` — no external cache; single-instance assumption holds
+- Preflight checks belong in `config/validation.py` `run_preflight()` — not in verifier constructors
+- OIDC startup preflight performs a live JWKS connectivity check, aborting with an actionable error before accepting connections; static mode preflight checks only that `auth_token` is set
+- Stdio transport: `auth_mode != none` with `transport=stdio` emits a preflight warning (not error)
+
+**Deferred Decisions (Post-Phase-3):**
+- RBAC / role-based claims validation
+- Token acquisition helper scripts for AI agent clients
+- Auth status in a health/readiness endpoint
+
+### Data Architecture
+
+No change. Auth state is not persisted. Verifier instances are constructed once at startup and held in memory for the process lifetime.
+
+### Authentication & Security
+
+Three-mode opt-in model:
+
+- `auth_mode=none` (default): zero code path entered after startup; `FastMCP()` constructor identical to current
+- `auth_mode=static`: `StaticBearerVerifier` uses `secrets.compare_digest` for constant-time comparison; token sourced from `SoniqConfig.auth_token` (`SecretStr`); never logged or serialised; `AuthSettings.issuer_url` derived from the server's own base URL
+- `auth_mode=oidc`: `OIDCVerifier` uses `PyJWKClient` for JWKS fetch and in-memory caching; `jwt.decode()` validates signature, `iss`, `aud`, and `exp` atomically; returns `None` (never raises) for invalid tokens; JWKS refreshed on unknown `kid` to handle key rotation; custom CA cert supported via `ssl_context` built from `SSL_CERT_FILE` or `oidc_ca_bundle`
+
+Both verifiers implement: `async verify_token(token: str) -> AccessToken | None`.
+
+**Secret Handling:**
+`SONIQ_MCP_AUTH_TOKEN` maps to `SoniqConfig.auth_token: SecretStr | None`. Pydantic `SecretStr` masks the value in `repr()`, `str()`, and model serialisation. `get_secret_value()` is called only inside `StaticBearerVerifier.verify_token()`.
+
+**Security Properties:**
+- Timing: `secrets.compare_digest` prevents token enumeration
+- Fail-closed: JWT exceptions → `None` → FastMCP returns `401`
+- HTTPS enforcement: `PyJWKClient` does not support plaintext HTTP JWKS URIs
+- Audience binding: `AuthSettings.resource_server_url` binds tokens to this specific server per RFC 8707
+
+### API & Communication Patterns
+
+No change to the MCP tool surface. Auth is invisible at the tool/service level. FastMCP's `RequireAuthMiddleware` handles `401` before tool handlers are invoked.
+
+### Infrastructure & Deployment
+
+Three deployment paths gain documented auth configuration:
+- **pip/uvx**: env vars only; no install changes
+- **Docker**: env vars in `docker-compose.yml`; CA cert via volume mount + `SSL_CERT_FILE`
+- **Helm (k3s)**: auth env vars in chart values; CA cert via ConfigMap + `subPath` mount; `SSL_CERT_FILE` in pod spec
+
+No new infrastructure components. Authelia OIDC is an external dependency for OIDC mode only.
+
+### Decision Impact Analysis
+
+**Implementation Sequence:**
+1. Add auth fields to `SoniqConfig` — `auth_mode` enum, `auth_token` (`SecretStr`), `oidc_issuer`, `oidc_audience`, `oidc_jwks_uri`, `oidc_ca_bundle`, `oidc_resource_url` — with `@model_validator` consistency checks
+2. Extend `config/loader.py` env-var mappings for all new `SONIQ_MCP_AUTH_*` vars
+3. Extend `config/validation.py` `run_preflight()` with auth config and OIDC JWKS connectivity checks
+4. Implement `src/soniq_mcp/auth/verifiers.py` — `StaticBearerVerifier` and `OIDCVerifier`
+5. Wire `TokenVerifier` + `AuthSettings` into `create_server()` in `server.py` behind `auth_mode != none` guard
+6. Unit tests for both verifiers — mock JWKS; valid/expired/tampered/missing token cases
+7. Extend smoke tests — 401 without token, 200 with valid token (`auth_mode=static`), stdio no-op
+8. Add `docs/setup/authentication.md`; update `.env.example`
+9. Helm chart and Docker Compose updates for auth env vars and CA cert mount
+
+**Cross-Component Dependencies:**
+Config changes gate everything. Verifier module depends on config. Server wiring depends on both. CI tests use `auth_mode=static` only — no Authelia dependency in the automated test environment.
+
+## Implementation Patterns — Phase 3 (Optional Auth)
+
+### Pattern Categories Defined
+
+**Critical Conflict Points Identified:**
+6 areas where AI agents could make incompatible choices implementing the auth feature:
+- auth module structure and file layout
+- `AuthMode` enum placement
+- `SecretStr` access discipline
+- JWKS client ownership and lifecycle
+- preflight integration point
+- auth failure logging discipline
+
+### Naming Patterns
+
+**Auth Module Naming:**
+- The auth module is `src/soniq_mcp/auth/` — two files: `__init__.py` (exports `build_token_verifier`) and `verifiers.py` (class implementations)
+- Verifier classes are named `StaticBearerVerifier` and `OIDCVerifier` — not `StaticVerifier`, `BearerVerifier`, `JWTVerifier`, or similar
+- The factory function is `build_token_verifier(config: SoniqConfig) -> TokenVerifier` — not `create_`, `make_`, or `get_`
+
+**Config Field Naming:**
+- Enum type: `AuthMode` (values: `none`, `static`, `oidc`) — placed in `config/models.py` alongside `SoniqConfig`, not in the auth module
+- Config fields: `auth_mode`, `auth_token`, `oidc_issuer`, `oidc_audience`, `oidc_jwks_uri`, `oidc_ca_bundle`, `oidc_resource_url`
+- Env vars: `SONIQ_MCP_AUTH_MODE`, `SONIQ_MCP_AUTH_TOKEN`, `SONIQ_MCP_OIDC_ISSUER`, `SONIQ_MCP_OIDC_AUDIENCE`, `SONIQ_MCP_OIDC_JWKS_URI`, `SONIQ_MCP_OIDC_CA_BUNDLE`, `SONIQ_MCP_OIDC_RESOURCE_URL`
+
+**Server Wiring Naming:**
+- Private helper in `server.py`: `_build_auth_settings(config: SoniqConfig) -> AuthSettings` — prefixed `_`, never exported
+
+### Structure Patterns
+
+**Module Placement:**
+- `AuthMode` enum lives in `config/models.py` — it is a config concern, not an auth-module concern
+- `StaticBearerVerifier` and `OIDCVerifier` live in `auth/verifiers.py` — never in `server.py` or `config/`
+- `build_token_verifier()` factory exported from `auth/__init__.py` — the only public surface of the auth module
+- No auth logic in `tools/`, `services/`, `adapters/`, or `transports/`
+
+**Preflight Placement:**
+- Auth preflight checks are added to `config/validation.py` `run_preflight()` — not as a method on verifier classes, not as a standalone function, not in `server.py`
+- OIDC connectivity check constructs a temporary `PyJWKClient` in `run_preflight()` solely for the connectivity test; it does not share state with the runtime verifier instance
+
+**Test Placement:**
+- Verifier unit tests: `tests/unit/auth/test_verifiers.py`
+- Config validator tests for auth fields: `tests/unit/config/test_validation.py` (existing file, new test class)
+- Smoke test extensions: existing `tests/smoke/streamable_http/test_streamable_http_smoke.py` — new test functions, not a new file
+
+### Format Patterns
+
+**`verify_token` Return Contract:**
+- Both verifiers MUST return `None` for any invalid token — never raise into the FastMCP layer
+- `OIDCVerifier.verify_token` catches `PyJWTError` and all subclasses; any uncaught exception is caught by a bare `except Exception` fallback that returns `None` and logs at `ERROR` level
+- `AccessToken` is constructed with: `token=token`, `client_id` from JWT `client_id` or `sub` claim, `scopes` parsed from `scp` or `scope` claim, `expires_at` from `exp` claim
+
+**`AuthSettings` Construction:**
+- For `auth_mode=static`: `issuer_url` = `f"http://{config.http_host}:{config.http_port}"`, `resource_server_url` = `config.oidc_resource_url`
+- For `auth_mode=oidc`: `issuer_url` = `config.oidc_issuer`, `resource_server_url` = `config.oidc_resource_url`
+- `required_scopes` is always `None` — scope enforcement is deferred
+
+### Communication Patterns
+
+**Secret Access Discipline:**
+- `config.auth_token.get_secret_value()` is called in exactly one place: inside `StaticBearerVerifier.verify_token()` — nowhere else
+- The raw token value must never be assigned to a local variable with a longer scope than the comparison expression
+- Log statements including config context must use `config.auth_token` (the `SecretStr` object), never its unwrapped value
+
+**Auth Failure Logging:**
+- Auth failures: `WARNING` level, no token content
+- Successful auth: `DEBUG` level with `client_id` only
+- OIDC JWKS cache misses: `DEBUG` level
+- Startup preflight auth checks: `INFO` on success, `ERROR` on failure
+
+**JWKS Client Lifecycle:**
+- `PyJWKClient` is an instance variable on `OIDCVerifier`, initialised in `__init__` — not a module-level singleton, not recreated per request
+- `ssl_context` is also constructed once in `__init__` — not per-request
+
+### Process Patterns
+
+**`server.py` Wiring Pattern:**
+
+```python
+# CORRECT — clean conditional, no auth code in main flow
+def create_server(config: SoniqConfig) -> FastMCP:
+    kwargs: dict[str, Any] = {}
+    if config.auth_mode != AuthMode.NONE:
+        kwargs["auth"] = _build_auth_settings(config)
+        kwargs["token_verifier"] = build_token_verifier(config)
+    app = FastMCP("soniq-mcp", **kwargs)
+    register_all(app, config)
+    return app
+```
+
+**Testing Pattern:**
+- Unit tests for `OIDCVerifier` use `cryptography` (already present) to generate an in-process RSA key pair and sign test JWTs — no network, no Authelia, no external JWKS
+- Unit tests for `StaticBearerVerifier` need no special fixtures — plain string comparison cases
+- Smoke tests use `auth_mode=static` only; `auth_mode=oidc` is not tested in CI
+
+### Enforcement Guidelines
+
+**All AI Agents MUST:**
+- Keep `AuthMode` enum in `config/models.py`, not in the auth module
+- Access `SecretStr.get_secret_value()` only inside `StaticBearerVerifier.verify_token()`
+- Return `None` (never raise) from both `verify_token` implementations for any invalid token
+- Add auth preflight checks to `run_preflight()` in `config/validation.py` — not elsewhere
+- Use `auth_mode=static` for all CI smoke tests — never add an Authelia dependency to the test environment
+- Never add auth logic below the `server.py` boundary
+
+**Pattern Enforcement:**
+- `make lint` (`ruff` + `mypy`) catches type errors in verifier signatures and `SecretStr` misuse
+- Contract tests should assert that `verify_token` signature matches `TokenVerifier` Protocol
+- Code review rejects any `get_secret_value()` call outside `StaticBearerVerifier.verify_token()`
+
+### Pattern Examples
+
+**Good Examples:**
+- `auth/verifiers.py` implements both verifier classes; `auth/__init__.py` exports only `build_token_verifier`
+- `server.py` calls `build_token_verifier(config)` and `_build_auth_settings(config)` — no JWT or PyJWT import in `server.py`
+- Preflight adds an OIDC connectivity check to `run_preflight()` alongside existing Sonos checks
+- Unit test generates an RSA key pair inline with `cryptography`, signs a JWT, patches `PyJWKClient`, asserts `verify_token` returns an `AccessToken`
+
+**Anti-Patterns:**
+- Putting `OIDCVerifier` in `server.py` or `transports/streamable_http.py`
+- Calling `config.auth_token.get_secret_value()` in `server.py` or `config/validation.py`
+- Raising `AuthenticationError` or any exception from `verify_token` instead of returning `None`
+- Adding a `verify_jwks_connectivity()` standalone function outside `run_preflight()`
+- Using `auth_mode=oidc` in smoke tests with a mocked Authelia server
+
+## Architecture Validation — Phase 3 (Optional Auth)
+
+### Coherence Validation ✅
+
+**Decision Compatibility:**
+All Phase 3 technology choices are compatible. `PyJWT>=2.8` uses `cryptography>=46.0.7` (already a production dependency) for RSA operations — no new transitive deps. `mcp[cli]` 1.26.0 `TokenVerifier` Protocol is verified by package inspection. `SecretStr` is Pydantic built-in. `secrets.compare_digest` is Python stdlib. The `AUTH_MODE=none` guard produces a FastMCP constructor call structurally identical to the current codebase, with no branches, no imports, and no performance impact.
+
+**Pattern Consistency:**
+All patterns align with the Phase 2 established model: config in `config/`, business logic in `services/`, transport concerns at `server.py`. Auth follows the same boundary discipline — a new capability module (`auth/`) that touches `server.py` and `config/` only, with no downward reach into tools or services.
+
+**Structure Alignment:**
+The six-file change surface is consistent with the existing module organisation. New `auth/` module mirrors the structure of other capability modules. New `tests/unit/auth/` mirrors the structure of other unit test directories.
+
+### Requirements Coverage Validation ✅
+
+**Functional Requirements Coverage:**
+All 27 FRs are mapped to specific files. No FR category is orphaned. The strictest requirement — FR17 (`AUTH_MODE=none` is a strict no-op) — is enforced architecturally by the guard in `create_server()` that leaves the `FastMCP()` constructor call unchanged.
+
+**Non-Functional Requirements Coverage:**
+- NFR1 (< 5ms): string comparison (static) and cached JWKS + RSA verify (OIDC cache hit) — both well within budget
+- NFR2 (JWKS caching): `PyJWKClient` in-memory cache; no per-request network calls
+- NFR3 (zero overhead for `none`): confirmed by guard structure — no code path entered
+- NFR4 (`secrets.compare_digest`): enforced in `StaticBearerVerifier`
+- NFR5 (token not in logs): enforced by `SecretStr` + discipline rule
+- NFR6 (fail-closed): enforced by `except Exception` fallback returning `None`
+- NFR7 (HTTPS-only JWKS): `PyJWKClient` does not support `http://` JWKS URIs
+- NFR8 (expiry on every request): `jwt.decode()` validates `exp` atomically
+- NFR9–NFR12 (integration): `TokenVerifier` Protocol, `SSL_CERT_FILE`, `None` return — all specified
+
+### Implementation Readiness Validation ✅
+
+**Decision Completeness:**
+All blocking decisions are documented with verified versions. The one open point — `oidc_resource_url` default — is flagged as a story-level acceptance criterion rather than an architecture blocker.
+
+**Structure Completeness:**
+Two new source files, two new test files, one new doc file, and nine modified files are all named with their specific change described. No placeholders.
+
+**Pattern Completeness:**
+All 6 conflict points resolved. The `server.py` wiring pattern is shown as concrete Python. The `verify_token` return contract, `SecretStr` access discipline, and JWKS client lifecycle are unambiguous.
+
+### Gap Analysis Results
+
+**Critical Gaps:** None.
+
+**Important Gaps:**
+- `oidc_resource_url` default behaviour when not set: `resource_server_url=None` in `AuthSettings` may affect RFC 8707 audience binding. Story AC for the OIDC story must verify whether Authelia's `aud` claim validation works with `resource_server_url=None` or whether this field should be required when `auth_mode=oidc`.
+
+**Nice-to-Have Gaps:**
+- Explicit `make test-auth` and `make smoke-auth` Makefile targets — recommended but not blocking
+- Token acquisition example scripts for AI agent clients — deferred to Phase 3 post-MVP
+
+### Architecture Completeness Checklist
+
+**✅ Requirements Analysis**
+- [x] Phase 3 PRD analyzed (27 FRs, 12 NFRs, 4 user journeys)
+- [x] Complexity assessed — bounded brownfield feature addition
+- [x] Technical constraints identified — FastMCP API, PyJWT, CA cert delivery
+- [x] Cross-cutting concerns mapped — config, preflight, secret masking, transport parity
+
+**✅ Architectural Decisions**
+- [x] Critical decisions documented — auth mode enum, integration point, JWT library, placement
+- [x] AuthSettings constraint verified by source inspection — cannot skip, issuer_url required
+- [x] CA cert dual-path decided — `SSL_CERT_FILE` + optional `oidc_ca_bundle`
+- [x] Secret handling approach specified — Pydantic `SecretStr`
+
+**✅ Implementation Patterns**
+- [x] Module structure and file layout specified
+- [x] Class and factory naming specified
+- [x] `SecretStr` access discipline enforced
+- [x] JWKS client lifecycle specified
+- [x] Preflight integration point specified
+- [x] Logging discipline specified
+
+**✅ Project Structure**
+- [x] New files enumerated — 2 source, 2 test, 1 doc
+- [x] Modified files enumerated with specific change described
+- [x] All FRs mapped to specific files
+- [x] Auth data flow documented
+
+### Architecture Readiness Assessment
+
+**Overall Status:** READY FOR EPIC AND STORY PLANNING
+
+**Confidence Level:** High — key technical facts verified by direct `mcp[cli]` 1.26.0 source inspection; one open point (`oidc_resource_url` default) flagged for story-level AC
+
+**Key Strengths:**
+- Smallest possible change surface for the feature delivered
+- Strict backward compatibility enforced architecturally, not just by convention
+- FastMCP integration uses the correct first-class API — no transport-layer hacks
+- Security properties (fail-closed, constant-time, secret masking) specified at the code pattern level
+- CI test strategy is independent of Authelia — no external dependency in automated tests
+
+**Areas for Future Enhancement:**
+- RBAC / role-based claims validation if MCP spec mandates it
+- Token acquisition helpers for AI agent clients
+- Auth status in a future health/readiness endpoint
+
+### Implementation Handoff
+
+**AI Agent Guidelines:**
+- `AuthMode` enum belongs in `config/models.py` — do not move it to `auth/`
+- `get_secret_value()` is called in exactly one place: `StaticBearerVerifier.verify_token()`
+- Both verifiers return `None` for invalid tokens — never raise
+- Auth preflight belongs in `run_preflight()` — not in verifier constructors or `server.py`
+- Smoke tests use `auth_mode=static` only — do not add Authelia to CI
+
+**First Implementation Priority:**
+Story A — auth config fields: add `AuthMode` enum and auth fields to `SoniqConfig`, extend `config/loader.py` env-var mappings, extend `run_preflight()` with auth config validation. This is the foundation that gates all other Phase 3 implementation work.
+
+## Project Structure & Boundaries — Phase 3 (Optional Auth)
+
+### New and Modified Files
+
+The Phase 3 change surface is minimal. The existing structure from Phase 2 is unchanged except for the additions below.
+
+**New files:**
+
+```text
+src/soniq_mcp/
+└── auth/
+    ├── __init__.py          # exports: build_token_verifier(config) -> TokenVerifier
+    └── verifiers.py         # StaticBearerVerifier, OIDCVerifier
+
+tests/
+└── unit/
+    └── auth/
+        ├── __init__.py
+        └── test_verifiers.py
+
+docs/setup/
+└── authentication.md        # all three modes, Authelia walkthrough, CA cert pattern,
+                             # Claude Desktop scope note
+```
+
+**Modified files:**
+
+| File | Change |
+|------|--------|
+| `src/soniq_mcp/config/models.py` | Add `AuthMode` enum; add 7 new fields to `SoniqConfig`; add `@model_validator` consistency checks |
+| `src/soniq_mcp/config/loader.py` | Add `SONIQ_MCP_AUTH_*` and `SONIQ_MCP_OIDC_*` env-var mappings |
+| `src/soniq_mcp/config/validation.py` | Extend `run_preflight()` with auth config checks and OIDC JWKS connectivity check |
+| `src/soniq_mcp/server.py` | Add `_build_auth_settings()` helper; wire `auth` + `token_verifier` into `create_server()` |
+| `tests/unit/config/test_validation.py` | New test class for auth preflight validation cases |
+| `tests/smoke/streamable_http/test_streamable_http_smoke.py` | New test functions: 401 without token, 200 with valid static token, stdio no-op |
+| `pyproject.toml` | Add `PyJWT>=2.8` to production dependencies |
+| `.env.example` | Add commented auth env var examples |
+| `helm/soniq/values.yaml` | Add auth env var entries and CA cert ConfigMap volume mount scaffolding |
+
+### Architectural Boundaries
+
+**Auth Boundary:**
+- Auth is enforced at the FastMCP middleware layer, above tool handlers
+- `auth/` module is only imported by `server.py` — no other module imports from `auth/`
+- `config/models.py` defines `AuthMode` and auth config fields — imported by `auth/verifiers.py` and `server.py`
+- `config/validation.py` imports `PyJWKClient` directly for the preflight connectivity check only
+
+**Component Boundaries (unchanged from Phase 2):**
+- `tools/`, `services/`, `adapters/` have zero awareness of auth
+- Transport runners (`transports/`) have zero auth logic; auth wiring happens in `server.py` above them
+
+**Data Boundaries:**
+- No new persistent state
+- `SoniqConfig.auth_token` is `SecretStr | None` — Pydantic handles masking at the model boundary
+- `OIDCVerifier._jwks_client` holds the in-memory JWKS cache — scoped to the verifier instance lifetime
+
+### Requirements to Structure Mapping
+
+| FR Category | Files |
+|-------------|-------|
+| Auth mode config (FR1–FR4) | `config/models.py`, `config/loader.py`, `config/validation.py` |
+| Static mode (FR5–FR7) | `auth/verifiers.py` (`StaticBearerVerifier`), `server.py` |
+| OIDC mode (FR8–FR13) | `auth/verifiers.py` (`OIDCVerifier`), `server.py` |
+| Startup validation (FR14–FR16) | `config/validation.py` (`run_preflight()`) |
+| No-op & backward compat (FR17–FR19) | `server.py` conditional guard; no change to other files |
+| Secret handling (FR20) | `config/models.py` (`SecretStr`), `auth/verifiers.py` |
+| Documentation (FR21–FR25) | `docs/setup/authentication.md`, `.env.example` |
+| Deployment config (FR26–FR27) | `helm/soniq/values.yaml`, `docker-compose.yml` (docs only) |
+
+### Integration Points
+
+**Internal Communication:**
+- `run_preflight(config)` → auth field validation → OIDC JWKS connectivity check (if `auth_mode=oidc`)
+- `create_server(config)` → `build_token_verifier(config)` → `StaticBearerVerifier` or `OIDCVerifier`
+- `create_server(config)` → `_build_auth_settings(config)` → `AuthSettings(issuer_url=..., resource_server_url=...)`
+- FastMCP constructor receives `auth=` + `token_verifier=` → wires `BearerAuthBackend` + `RequireAuthMiddleware` automatically
+
+**External Integrations:**
+- `OIDCVerifier` → Authelia JWKS endpoint (startup fetch + cache; refresh on unknown `kid`)
+- CA cert trust: `SSL_CERT_FILE` env var (Python stdlib picks it up automatically) or `ssl.create_default_context(cafile=config.oidc_ca_bundle)` in `OIDCVerifier.__init__`
+
+**Data Flow (auth path):**
+1. HTTP request arrives at FastMCP
+2. `BearerAuthBackend` extracts `Authorization: Bearer <token>`
+3. FastMCP calls `token_verifier.verify_token(token)`
+4. Verifier returns `AccessToken` (valid) or `None` (invalid)
+5. `None` → FastMCP returns `401 Unauthorized` with `WWW-Authenticate` header
+6. `AccessToken` → `RequireAuthMiddleware` passes request to tool handler
+
+### Development Workflow Integration
+
+**New `make` targets (recommended):**
+- `make test-auth` — runs `tests/unit/auth/` in isolation
+- `make smoke-auth` — runs auth smoke tests with `SONIQ_MCP_AUTH_MODE=static`
+
+**No CI changes required.** `make lint` (`ruff` + `mypy`) covers new code automatically. Auth unit and smoke tests run under existing `make test` and `make smoke` targets.
