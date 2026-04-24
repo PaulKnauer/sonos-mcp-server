@@ -222,6 +222,53 @@ class TestHttpToolSurfaceParity:
             assert tool_name not in http_tools
 
 
+class TestDisabledAuthHttpBackwardCompat:
+    """HTTP tool surface unchanged when auth_mode=none (AC 1, 2, 4)."""
+
+    def test_http_with_auth_mode_none_returns_fastmcp(self) -> None:
+        from soniq_mcp.config.models import AuthMode
+
+        cfg = SoniqConfig(transport=TransportMode.HTTP, auth_mode=AuthMode.NONE)
+        app = create_server(config=cfg)
+        assert isinstance(app, FastMCP)
+
+    def test_http_disabled_auth_same_tools_as_default(self) -> None:
+        """HTTP with auth_mode=none must expose the same tool surface as the pre-auth default."""
+        from soniq_mcp.config.models import AuthMode
+
+        auth_none_cfg = SoniqConfig(transport=TransportMode.HTTP, auth_mode=AuthMode.NONE)
+        auth_none_app = create_server(config=auth_none_cfg)
+        default_app = create_server(config=SoniqConfig(transport=TransportMode.HTTP))
+        assert {t.name for t in auth_none_app._tool_manager.list_tools()} == {
+            t.name for t in default_app._tool_manager.list_tools()
+        }
+
+    def test_http_disabled_auth_settings_auth_is_none(self) -> None:
+        """FastMCP.settings.auth must remain None for HTTP with auth_mode=none (AC 1, 4)."""
+        from soniq_mcp.config.models import AuthMode
+
+        cfg = SoniqConfig(transport=TransportMode.HTTP, auth_mode=AuthMode.NONE)
+        app = create_server(config=cfg)
+        assert app.settings.auth is None
+
+    def test_http_disabled_auth_token_verifier_is_none(self) -> None:
+        """No token verifier must be attached for HTTP with auth_mode=none (AC 1)."""
+        from soniq_mcp.config.models import AuthMode
+
+        cfg = SoniqConfig(transport=TransportMode.HTTP, auth_mode=AuthMode.NONE)
+        app = create_server(config=cfg)
+        assert app._token_verifier is None
+
+    def test_http_disabled_auth_exposes_all_expected_tools(self) -> None:
+        """auth_mode=none must not alter the expected HTTP tool surface (AC 2)."""
+        from soniq_mcp.config.models import AuthMode
+
+        cfg = SoniqConfig(transport=TransportMode.HTTP, auth_mode=AuthMode.NONE)
+        app = create_server(config=cfg)
+        tool_names = {t.name for t in app._tool_manager.list_tools()}
+        assert tool_names == EXPECTED_TOOL_NAMES
+
+
 class TestRunTransportHttpDispatch:
     def test_run_transport_dispatches_to_http(self) -> None:
         cfg = SoniqConfig(transport=TransportMode.HTTP)
