@@ -1,6 +1,6 @@
 [project]
 name = "soniq-mcp"
-version = "0.5.0"
+version = "0.5.1"
 description = "Sonos MCP server"
 requires-python = ">=3.12"
 dependencies = [
