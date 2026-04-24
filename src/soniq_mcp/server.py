@@ -21,14 +21,13 @@ from soniq_mcp.transports.bootstrap import bootstrap_transport
 log = logging.getLogger(__name__)
 
 
-def _build_auth_kwargs(config: SoniqConfig) -> dict[str, object]:
-    """Return auth constructor kwargs for FastMCP when auth is enabled.
+def _build_auth_kwargs(config: SoniqConfig) -> None:
+    """Seam for future auth wiring in Epic 2/3.
 
-    This seam is intentionally empty until Epic 2/3 wire real verifiers.
-    For auth_mode=none it must never be called — the guard in create_server()
+    Epic 2/3 will populate this and pass the result into the FastMCP constructor.
+    For auth_mode=none this must never be called — the guard in create_server()
     ensures that.
     """
-    return {}
 
 
 def create_server(config: SoniqConfig | None = None) -> FastMCP:
@@ -40,11 +39,10 @@ def create_server(config: SoniqConfig | None = None) -> FastMCP:
     for warning in warnings:
         log.warning("Exposure posture: %s", warning)
 
-    auth_kwargs: dict[str, object] = {}
     if config.auth_mode != AuthMode.NONE:
-        auth_kwargs = _build_auth_kwargs(config)
+        _build_auth_kwargs(config)  # Epic 2/3 wires this result into FastMCP
 
-    app = FastMCP("soniq-mcp", host=config.http_host, port=config.http_port, **auth_kwargs)
+    app = FastMCP("soniq-mcp", host=config.http_host, port=config.http_port)
     register_all(app, config)
 
     log.info(
