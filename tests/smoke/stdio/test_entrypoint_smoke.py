@@ -74,6 +74,49 @@ class TestEntrypointBadConfig:
         assert "fix the above errors" in captured.err
 
 
+class TestEntrypointAuthPreflight:
+    """Auth preflight failures must produce clean, secret-safe stderr (AC 5)."""
+
+    def test_static_http_no_token_exits_nonzero(
+        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+    ) -> None:
+        monkeypatch.setenv("SONIQ_MCP_AUTH_MODE", "static")
+        monkeypatch.setenv("SONIQ_MCP_TRANSPORT", "http")
+        from soniq_mcp.__main__ import main
+
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+
+        assert exc_info.value.code == 1
+
+    def test_static_http_no_token_stderr_names_field(
+        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+    ) -> None:
+        monkeypatch.setenv("SONIQ_MCP_AUTH_MODE", "static")
+        monkeypatch.setenv("SONIQ_MCP_TRANSPORT", "http")
+        from soniq_mcp.__main__ import main
+
+        with pytest.raises(SystemExit):
+            main()
+
+        captured = capsys.readouterr()
+        assert "auth_token" in captured.err
+        assert "configuration error" in captured.err
+
+    def test_static_http_no_token_no_traceback_in_stderr(
+        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+    ) -> None:
+        monkeypatch.setenv("SONIQ_MCP_AUTH_MODE", "static")
+        monkeypatch.setenv("SONIQ_MCP_TRANSPORT", "http")
+        from soniq_mcp.__main__ import main
+
+        with pytest.raises(SystemExit):
+            main()
+
+        captured = capsys.readouterr()
+        assert "Traceback" not in captured.err
+
+
 class TestStdioConnectivity:
     """A same-machine MCP client must be able to connect and call tools (AC 3)."""
 

@@ -50,14 +50,14 @@ story_location: _bmad-output/implementation-artifacts/optional-auth
 phase_id: optional-auth-v0-6-0
 phase_label: "Optional Authentication v0.6.0"
 epics_source: "_bmad-output/planning-artifacts/epics-optional-auth.md"
-current_completed_story: "1-1-add-optional-auth-configuration-model"
-next_story_hint: "1-2-validate-auth-configuration-during-preflight"
+current_completed_story: "1-2-validate-auth-configuration-during-preflight"
+next_story_hint: "1-3-preserve-backward-compatibility-for-disabled-auth"
 
 development_status:
   # Epic 1: Safe Opt-In Auth Configuration
   epic-1: in-progress
   1-1-add-optional-auth-configuration-model: done
-  1-2-validate-auth-configuration-during-preflight: backlog
+  1-2-validate-auth-configuration-during-preflight: done
   1-3-preserve-backward-compatibility-for-disabled-auth: backlog
   epic-1-retrospective: optional
 

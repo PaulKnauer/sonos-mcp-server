@@ -79,3 +79,56 @@ class TestRunPreflightAuthValidation:
         from soniq_mcp.config.models import AuthMode
 
         assert cfg.auth_mode == AuthMode.OIDC
+
+    def test_static_http_without_token_raises_config_validation_error(self) -> None:
+        with pytest.raises(ConfigValidationError) as exc_info:
+            run_preflight(overrides={"auth_mode": "static", "transport": "http"})
+        assert len(exc_info.value.messages) > 0
+
+    def test_static_http_without_token_message_names_missing_field(self) -> None:
+        with pytest.raises(ConfigValidationError) as exc_info:
+            run_preflight(overrides={"auth_mode": "static", "transport": "http"})
+        assert any("auth_token" in msg for msg in exc_info.value.messages)
+
+    def test_static_http_without_token_messages_contain_only_field_names(self) -> None:
+        with pytest.raises(ConfigValidationError) as exc_info:
+            run_preflight(overrides={"auth_mode": "static", "transport": "http"})
+        for msg in exc_info.value.messages:
+            # Messages must reference field names, not raw secret values
+            assert "auth_token" in msg
+            # Must be human-readable, not a raw dump or traceback fragment
+            assert "Traceback" not in msg
+            assert "SecretStr" not in msg
+
+    def test_static_stdio_without_token_does_not_raise(self) -> None:
+        from soniq_mcp.config.models import AuthMode
+
+        cfg = run_preflight(overrides={"auth_mode": "static", "transport": "stdio"})
+        assert cfg.auth_mode == AuthMode.STATIC
+
+    def test_auth_none_with_http_passes(self) -> None:
+        from soniq_mcp.config.models import AuthMode
+
+        cfg = run_preflight(
+            overrides={
+                "auth_mode": "none",
+                "transport": "http",
+                "exposure": "home-network",
+                "http_host": "0.0.0.0",
+            }
+        )
+        assert cfg.auth_mode == AuthMode.NONE
+
+    def test_static_http_with_token_passes(self) -> None:
+        from soniq_mcp.config.models import AuthMode
+
+        cfg = run_preflight(
+            overrides={
+                "auth_mode": "static",
+                "transport": "http",
+                "auth_token": "a-valid-token",
+                "exposure": "home-network",
+                "http_host": "0.0.0.0",
+            }
+        )
+        assert cfg.auth_mode == AuthMode.STATIC
