@@ -1,43 +1,49 @@
 installation:
-  version: 6.3.0
+  version: 6.5.0
   installDate: 2026-03-22T18:20:29.341Z
-  lastUpdated: 2026-04-17T10:06:09.526Z
+  lastUpdated: 2026-04-28T08:18:48.806Z
 modules:
   - name: core
-    version: 6.3.0
+    version: 6.5.0
     installDate: 2026-03-22T18:20:26.320Z
-    lastUpdated: 2026-04-17T10:06:09.484Z
+    lastUpdated: 2026-04-28T08:18:48.723Z
     source: built-in
     npmPackage: null
     repoUrl: null
   - name: bmm
-    version: 6.3.0
+    version: 6.5.0
     installDate: 2026-03-22T18:20:20.057Z
-    lastUpdated: 2026-04-17T10:06:09.484Z
+    lastUpdated: 2026-04-28T08:18:48.723Z
     source: built-in
     npmPackage: null
     repoUrl: null
   - name: bmb
-    version: 1.5.0
+    version: v1.7.0
     installDate: 2026-03-22T18:20:21.828Z
-    lastUpdated: 2026-04-17T10:06:09.507Z
+    lastUpdated: 2026-04-28T08:18:48.752Z
     source: external
     npmPackage: bmad-builder
     repoUrl: https://github.com/bmad-code-org/bmad-builder
-  - name: tea
-    version: 1.7.2
-    installDate: 2026-03-22T18:20:24.319Z
-    lastUpdated: 2026-04-17T10:06:09.519Z
-    source: external
-    npmPackage: bmad-method-test-architecture-enterprise
-    repoUrl: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
+    channel: stable
+    sha: 86033fc9aeae2ca6d52c7cdb675c1f4bf17fc1c1
   - name: cis
-    version: 0.1.9
+    version: v0.2.0
     installDate: 2026-04-02T15:48:04.142Z
-    lastUpdated: 2026-04-17T10:06:09.526Z
+    lastUpdated: 2026-04-28T08:18:48.779Z
     source: external
     npmPackage: bmad-creative-intelligence-suite
     repoUrl: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
+    channel: stable
+    sha: 14a63b893c07173b7a6cfe0fb6a9a72ba51d3cf1
+  - name: tea
+    version: v1.15.1
+    installDate: 2026-03-22T18:20:24.319Z
+    lastUpdated: 2026-04-28T08:18:48.806Z
+    source: external
+    npmPackage: bmad-method-test-architecture-enterprise
+    repoUrl: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
+    channel: stable
+    sha: 7c94bdc6e3d2c8c3cad09eb0a32a42fade0e9079
 ides:
   - claude-code
   - codex
