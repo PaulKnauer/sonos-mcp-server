@@ -3,13 +3,15 @@
 Builds the Docker image from the project root, starts a container, and verifies
 the MCP endpoint is reachable and the tool surface is populated.
 
-These tests are skipped automatically when the `docker` CLI is not available
-(e.g., CI environments without Docker-in-Docker).
+These tests are skipped automatically when Docker is not available
+(e.g., CI environments without Docker-in-Docker or local machines where the
+daemon is stopped).
 """
 
 from __future__ import annotations
 
 import shutil
+import socket
 import subprocess
 import time
 from pathlib import Path
@@ -21,13 +23,35 @@ from mcp.client.streamable_http import streamable_http_client
 
 _IMAGE = "soniq-mcp-test:smoke"
 _HOST = "127.0.0.1"
-_PORT = 18432  # distinct from HTTP smoke test port (18431)
-_MCP_URL = f"http://{_HOST}:{_PORT}/mcp"
 _PROJECT_ROOT = Path(__file__).parents[3]
 
+
+def _docker_available() -> bool:
+    if shutil.which("docker") is None:
+        return False
+
+    try:
+        result = subprocess.run(
+            ["docker", "info"],
+            check=False,
+            capture_output=True,
+            timeout=5.0,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+    return result.returncode == 0
+
+
+def _free_tcp_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind((_HOST, 0))
+        return int(sock.getsockname()[1])
+
+
 pytestmark = pytest.mark.skipif(
-    shutil.which("docker") is None,
-    reason="docker CLI not found — skipping Docker smoke tests",
+    not _docker_available(),
+    reason="Docker CLI or daemon not available - skipping Docker smoke tests",
 )
 
 
@@ -48,6 +72,7 @@ def docker_image():
 @pytest.fixture(scope="module")
 def docker_container(docker_image):
     """Start a container from the built image and wait for it to be ready."""
+    host_port = _free_tcp_port()
     result = subprocess.run(
         [
             "docker",
@@ -55,7 +80,7 @@ def docker_container(docker_image):
             "--rm",
             "-d",
             "-p",
-            f"{_PORT}:8000",
+            f"{host_port}:8000",
             "-e",
             "SONIQ_MCP_TRANSPORT=http",
             "-e",
@@ -74,16 +99,16 @@ def docker_container(docker_image):
     )
     container_id = result.stdout.strip()
     time.sleep(3.0)  # allow uvicorn to bind and become ready
-    yield container_id
+    yield f"http://{_HOST}:{host_port}/mcp"
     subprocess.run(["docker", "rm", "-f", container_id], check=False)
 
 
 class TestDockerSmoke:
     """Container must serve the MCP endpoint and expose the tool surface (AC 1, 2, 3)."""
 
-    def test_docker_mcp_endpoint_responds(self, docker_container) -> None:
+    def test_docker_mcp_endpoint_responds(self, docker_container: str) -> None:
         async def run_session() -> None:
-            async with streamable_http_client(_MCP_URL) as (read_stream, write_stream, _):
+            async with streamable_http_client(docker_container) as (read_stream, write_stream, _):
                 async with ClientSession(read_stream, write_stream) as session:
                     await session.initialize()
                     result = await session.call_tool("ping")
@@ -92,9 +117,9 @@ class TestDockerSmoke:
 
         anyio.run(run_session)
 
-    def test_docker_tool_surface_populated(self, docker_container) -> None:
+    def test_docker_tool_surface_populated(self, docker_container: str) -> None:
         async def run_session() -> None:
-            async with streamable_http_client(_MCP_URL) as (read_stream, write_stream, _):
+            async with streamable_http_client(docker_container) as (read_stream, write_stream, _):
                 async with ClientSession(read_stream, write_stream) as session:
                     await session.initialize()
                     tools = await session.list_tools()
