@@ -16,6 +16,7 @@ import time
 from pathlib import Path
 
 import anyio
+import httpx
 import pytest
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
@@ -73,13 +74,15 @@ def http_server_proc():
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
     )
-    _wait_for_server(proc, _TEST_HOST, test_port)
-    yield proc, test_port
-    proc.terminate()
     try:
-        proc.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        proc.kill()
+        _wait_for_server(proc, _TEST_HOST, test_port)
+        yield proc, test_port
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
 
 
 class TestStreamableHTTPSmoke:
@@ -191,3 +194,78 @@ class TestStreamableHTTPSmoke:
             assert "minutes" in http_payload["error"]
 
         anyio.run(run_comparison)
+
+
+_SMOKE_AUTH_TOKEN = "test-smoke-bearer-token"
+
+
+@pytest.fixture(scope="module")
+def http_server_proc_with_auth():
+    """Start the SoniqMCP server with static auth enabled in a subprocess."""
+    test_port = _find_open_port()
+    env = {
+        **os.environ,
+        "SONIQ_MCP_TRANSPORT": "http",
+        "SONIQ_MCP_HTTP_HOST": _TEST_HOST,
+        "SONIQ_MCP_HTTP_PORT": str(test_port),
+        "SONIQ_MCP_EXPOSURE": "local",
+        "SONIQ_MCP_LOG_LEVEL": "WARNING",
+        "SONIQ_MCP_AUTH_MODE": "static",
+        "SONIQ_MCP_AUTH_TOKEN": _SMOKE_AUTH_TOKEN,
+    }
+    proc = subprocess.Popen(
+        [sys.executable, "-m", "soniq_mcp"],
+        env=env,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+    )
+    try:
+        _wait_for_server(proc, _TEST_HOST, test_port)
+        yield proc, test_port
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+
+
+class TestStreamableHTTPAuthSmoke:
+    """Static auth: HTTP requests rejected before MCP handlers when unauthorized (AC 4, 5, 6)."""
+
+    def test_no_auth_header_returns_401(self, http_server_proc_with_auth) -> None:
+        _, test_port = http_server_proc_with_auth
+        url = f"http://{_TEST_HOST}:{test_port}{_MCP_PATH}"
+        response = httpx.post(url, json={"jsonrpc": "2.0", "method": "initialize", "id": 1})
+        assert response.status_code == 401
+
+    def test_wrong_token_returns_401(self, http_server_proc_with_auth) -> None:
+        _, test_port = http_server_proc_with_auth
+        url = f"http://{_TEST_HOST}:{test_port}{_MCP_PATH}"
+        response = httpx.post(
+            url,
+            json={"jsonrpc": "2.0", "method": "initialize", "id": 1},
+            headers={"Authorization": "Bearer wrong-token"},
+        )
+        assert response.status_code == 401
+
+    def test_correct_token_reaches_mcp_handling(self, http_server_proc_with_auth) -> None:
+        _, test_port = http_server_proc_with_auth
+        url = f"http://{_TEST_HOST}:{test_port}{_MCP_PATH}"
+
+        async def run_session() -> None:
+            async with httpx.AsyncClient(
+                headers={"Authorization": f"Bearer {_SMOKE_AUTH_TOKEN}"}
+            ) as auth_client:
+                async with streamable_http_client(url, http_client=auth_client) as (
+                    read_stream,
+                    write_stream,
+                    _,
+                ):
+                    async with ClientSession(read_stream, write_stream) as session:
+                        await session.initialize()
+                        result = await session.call_tool("ping")
+                        assert result.isError is False
+                        assert [item.text for item in result.content] == ["pong"]
+
+        anyio.run(run_session)

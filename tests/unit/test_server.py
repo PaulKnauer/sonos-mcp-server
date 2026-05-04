@@ -93,6 +93,69 @@ class TestDisabledAuthNoOp:
         assert "ping" in tool_names
         assert "server_info" in tool_names
 
+    def test_stdio_static_auth_is_ignored(self) -> None:
+        """Stdio must ignore configured static auth instead of wiring FastMCP auth."""
+        cfg = SoniqConfig(transport="stdio", auth_mode="static", auth_token="test-token-unit")
+        app = create_server(config=cfg)
+        assert app.settings.auth is None
+        assert app._token_verifier is None
+
+    def test_stdio_oidc_auth_is_ignored(self) -> None:
+        """Stdio must ignore configured OIDC auth even though OIDC runtime is not implemented."""
+        cfg = SoniqConfig(transport="stdio", auth_mode="oidc")
+        app = create_server(config=cfg)
+        assert app.settings.auth is None
+        assert app._token_verifier is None
+
+    def test_http_oidc_auth_is_ignored_until_oidc_is_implemented(self) -> None:
+        """HTTP OIDC must not hit the unimplemented runtime branch in this story."""
+        cfg = SoniqConfig(
+            transport="http",
+            auth_mode="oidc",
+            oidc_issuer="https://issuer.example.com",
+        )
+        app = create_server(config=cfg)
+        assert app.settings.auth is None
+        assert app._token_verifier is None
+
+
+class TestStaticAuthWiring:
+    """auth_mode=static must wire FastMCP auth settings and token verifier (AC 1, 2, 3)."""
+
+    def _static_cfg(self, **kwargs) -> SoniqConfig:  # type: ignore[type-arg]
+        values = {"transport": "http", "auth_mode": "static", "auth_token": "test-token-unit"}
+        values.update(kwargs)
+        return SoniqConfig(**values)
+
+    def test_static_auth_sets_settings_auth(self) -> None:
+        """FastMCP.settings.auth must be populated when auth_mode=static (AC 1)."""
+        app = create_server(config=self._static_cfg())
+        assert app.settings.auth is not None
+
+    def test_static_auth_sets_token_verifier(self) -> None:
+        """FastMCP._token_verifier must be set when auth_mode=static (AC 1)."""
+        app = create_server(config=self._static_cfg())
+        assert app._token_verifier is not None
+
+    def test_static_auth_issuer_url_uses_config_host_and_port(self) -> None:
+        """issuer_url must be derived from configured http_host and http_port (AC 2)."""
+        app = create_server(config=self._static_cfg(http_host="127.0.0.1", http_port=9123))
+        issuer = str(app.settings.auth.issuer_url)
+        assert issuer.startswith("http://127.0.0.1:9123")
+
+    def test_static_auth_issuer_url_brackets_ipv6_host(self) -> None:
+        """IPv6 hosts must be bracketed before constructing AuthSettings issuer_url."""
+        app = create_server(config=self._static_cfg(http_host="::1", http_port=9123))
+        issuer = str(app.settings.auth.issuer_url)
+        assert issuer.startswith("http://[::1]:9123")
+
+    def test_static_auth_registers_tools(self) -> None:
+        """Tool registration must proceed unchanged when auth_mode=static (AC 3)."""
+        app = create_server(config=self._static_cfg())
+        tool_names = {t.name for t in app._tool_manager.list_tools()}
+        assert "ping" in tool_names
+        assert "server_info" in tool_names
+
 
 class TestDiagnosticSafety:
     """Serialization and repr must not leak auth secrets (AC 5)."""

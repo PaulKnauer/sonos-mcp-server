@@ -50,8 +50,8 @@ story_location: _bmad-output/implementation-artifacts/optional-auth
 phase_id: optional-auth-v0-6-0
 phase_label: "Optional Authentication v0.6.0"
 epics_source: "_bmad-output/planning-artifacts/epics-optional-auth.md"
-current_completed_story: "2-1-implement-static-bearer-token-verifier"
-next_story_hint: "2-2-wire-static-auth-into-http-server-construction"
+current_completed_story: "2-2-wire-static-auth-into-http-server-construction"
+next_story_hint: "2-3-add-static-auth-regression-coverage"
 
 development_status:
   # Epic 1: Safe Opt-In Auth Configuration
@@ -64,7 +64,7 @@ development_status:
   # Epic 2: Static Bearer Token Protection for HTTP
   epic-2: in-progress
   2-1-implement-static-bearer-token-verifier: done
-  2-2-wire-static-auth-into-http-server-construction: backlog
+  2-2-wire-static-auth-into-http-server-construction: done
   2-3-add-static-auth-regression-coverage: backlog
   epic-2-retrospective: optional
 
