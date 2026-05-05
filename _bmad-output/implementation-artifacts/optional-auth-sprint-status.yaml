@@ -50,8 +50,8 @@ story_location: _bmad-output/implementation-artifacts/optional-auth
 phase_id: optional-auth-v0-6-0
 phase_label: "Optional Authentication v0.6.0"
 epics_source: "_bmad-output/planning-artifacts/epics-optional-auth.md"
-current_completed_story: "2-3-add-static-auth-regression-coverage"
-next_story_hint: "3-1-implement-oidc-jwt-verifier-with-cached-jwks"
+current_completed_story: "3-1-implement-oidc-jwt-verifier-with-cached-jwks"
+next_story_hint: "3-2-support-jwks-refresh-https-and-custom-ca-trust"
 
 development_status:
   # Epic 1: Safe Opt-In Auth Configuration
@@ -66,11 +66,11 @@ development_status:
   2-1-implement-static-bearer-token-verifier: done
   2-2-wire-static-auth-into-http-server-construction: done
   2-3-add-static-auth-regression-coverage: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   # Epic 3: OIDC and JWKS Validation for Homelab Operators
-  epic-3: backlog
-  3-1-implement-oidc-jwt-verifier-with-cached-jwks: backlog
+  epic-3: in-progress
+  3-1-implement-oidc-jwt-verifier-with-cached-jwks: done
   3-2-support-jwks-refresh-https-and-custom-ca-trust: backlog
   3-3-add-oidc-startup-preflight-and-actionable-errors: backlog
   3-4-add-oidc-verifier-unit-coverage: backlog

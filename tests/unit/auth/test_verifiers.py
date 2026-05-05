@@ -8,17 +8,37 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from jwt import PyJWTError
 from mcp.server.auth.provider import AccessToken, TokenVerifier
 from pydantic import SecretStr
 
 from soniq_mcp.auth import build_token_verifier
-from soniq_mcp.auth.verifiers import StaticBearerVerifier
+from soniq_mcp.auth.verifiers import OIDCVerifier, StaticBearerVerifier
 from soniq_mcp.config import SoniqConfig
-from soniq_mcp.config.models import AuthMode
+from soniq_mcp.config.models import AuthMode, TransportMode
 
 
 def config_with_static_token() -> SoniqConfig:
     return SoniqConfig(auth_mode=AuthMode.STATIC, auth_token=SecretStr("shared-secret"))
+
+
+def config_with_oidc() -> SoniqConfig:
+    return SoniqConfig(
+        transport=TransportMode.HTTP,
+        auth_mode=AuthMode.OIDC,
+        oidc_issuer="https://issuer.example.com/",
+        oidc_audience="soniq-mcp",
+        oidc_jwks_uri="https://issuer.example.com/jwks.json",
+    )
+
+
+def config_with_oidc_missing_claim_enforcement() -> SoniqConfig:
+    return SoniqConfig(
+        transport=TransportMode.HTTP,
+        auth_mode=AuthMode.OIDC,
+        oidc_issuer="https://issuer.example.com/",
+        oidc_jwks_uri="https://issuer.example.com/jwks.json",
+    )
 
 
 def run_verify(verifier: TokenVerifier, token: str | None) -> AccessToken | None:
@@ -30,6 +50,12 @@ def test_build_token_verifier_returns_static_verifier_for_static_auth() -> None:
     verifier = build_token_verifier(config_with_static_token())
 
     assert isinstance(verifier, StaticBearerVerifier)
+
+
+def test_build_token_verifier_returns_oidc_verifier_for_oidc_auth() -> None:
+    verifier = build_token_verifier(config_with_oidc())
+
+    assert isinstance(verifier, OIDCVerifier)
 
 
 def test_matching_token_returns_access_token() -> None:
@@ -108,6 +134,209 @@ def test_whitespace_only_configured_token_always_returns_none() -> None:
 
     assert run_verify(verifier, "   ") is None
     assert run_verify(verifier, "anything") is None
+
+
+def test_oidc_verifier_constructs_jwk_client_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    import soniq_mcp.auth.verifiers as verifier_mod
+
+    init_calls: list[str] = []
+
+    class FakeJWKClient:
+        def __init__(self, uri: str) -> None:
+            init_calls.append(uri)
+
+    monkeypatch.setattr(verifier_mod, "PyJWKClient", FakeJWKClient)
+
+    verifier = OIDCVerifier(config_with_oidc())
+
+    assert init_calls == ["https://issuer.example.com/jwks.json"]
+    assert isinstance(verifier, OIDCVerifier)
+
+
+def test_valid_oidc_token_maps_scope_string_sub_and_exp(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import soniq_mcp.auth.verifiers as verifier_mod
+
+    captured_tokens: list[str] = []
+
+    class FakeSigningKey:
+        key = "public-key"
+
+    class FakeJWKClient:
+        def __init__(self, uri: str) -> None:
+            self.uri = uri
+
+        def get_signing_key_from_jwt(self, token: str) -> FakeSigningKey:
+            captured_tokens.append(token)
+            return FakeSigningKey()
+
+    def fake_decode(
+        token: str,
+        key: str,
+        algorithms: list[str],
+        audience: str | None,
+        issuer: str | None,
+    ) -> dict[str, Any]:
+        assert token == "good-token"
+        assert key == "public-key"
+        assert algorithms == ["RS256"]
+        assert audience == "soniq-mcp"
+        assert issuer == "https://issuer.example.com/"
+        return {
+            "sub": "user-123",
+            "scope": "read write",
+            "exp": 1_762_345_678,
+        }
+
+    monkeypatch.setattr(verifier_mod, "PyJWKClient", FakeJWKClient)
+    monkeypatch.setattr(verifier_mod.jwt, "decode", fake_decode)
+
+    verifier = OIDCVerifier(config_with_oidc())
+
+    assert run_verify(verifier, "good-token") == AccessToken(
+        token="good-token",
+        client_id="user-123",
+        scopes=["read", "write"],
+        expires_at=1_762_345_678,
+    )
+    assert captured_tokens == ["good-token"]
+
+
+def test_valid_oidc_token_prefers_client_id_and_scp(monkeypatch: pytest.MonkeyPatch) -> None:
+    import soniq_mcp.auth.verifiers as verifier_mod
+
+    class FakeSigningKey:
+        key = "public-key"
+
+    class FakeJWKClient:
+        def __init__(self, uri: str) -> None:
+            self.uri = uri
+
+        def get_signing_key_from_jwt(self, token: str) -> FakeSigningKey:
+            return FakeSigningKey()
+
+    monkeypatch.setattr(verifier_mod, "PyJWKClient", FakeJWKClient)
+    monkeypatch.setattr(
+        verifier_mod.jwt,
+        "decode",
+        lambda *args, **kwargs: {
+            "client_id": "cli-789",
+            "sub": "user-123",
+            "scp": ["playback", "zones"],
+            "exp": 1_762_345_999,
+        },
+    )
+
+    verifier = OIDCVerifier(config_with_oidc())
+
+    assert run_verify(verifier, "good-token") == AccessToken(
+        token="good-token",
+        client_id="cli-789",
+        scopes=["playback", "zones"],
+        expires_at=1_762_345_999,
+    )
+
+
+def test_invalid_oidc_tokens_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    import soniq_mcp.auth.verifiers as verifier_mod
+
+    class FakeJWKClient:
+        def __init__(self, uri: str) -> None:
+            self.uri = uri
+
+        def get_signing_key_from_jwt(self, token: str) -> None:
+            raise PyJWTError("bad token")
+
+    monkeypatch.setattr(verifier_mod, "PyJWKClient", FakeJWKClient)
+
+    verifier = OIDCVerifier(config_with_oidc())
+
+    assert run_verify(verifier, None) is None
+    assert run_verify(verifier, "") is None
+    assert run_verify(verifier, "   ") is None
+    assert run_verify(verifier, "bad-token") is None
+
+
+def test_oidc_verifier_fails_closed_without_audience_or_issuer() -> None:
+    missing_audience = OIDCVerifier(config_with_oidc_missing_claim_enforcement())
+    missing_issuer = OIDCVerifier(
+        SoniqConfig(
+            transport=TransportMode.STDIO,
+            auth_mode=AuthMode.OIDC,
+            oidc_audience="soniq-mcp",
+            oidc_jwks_uri="https://issuer.example.com/jwks.json",
+        )
+    )
+
+    assert run_verify(missing_audience, "good-token") is None
+    assert run_verify(missing_issuer, "good-token") is None
+
+
+def test_oidc_decode_exceptions_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    import soniq_mcp.auth.verifiers as verifier_mod
+
+    class FakeSigningKey:
+        key = "public-key"
+
+    class FakeJWKClient:
+        def __init__(self, uri: str) -> None:
+            self.uri = uri
+
+        def get_signing_key_from_jwt(self, token: str) -> FakeSigningKey:
+            return FakeSigningKey()
+
+    monkeypatch.setattr(verifier_mod, "PyJWKClient", FakeJWKClient)
+
+    verifier = OIDCVerifier(config_with_oidc())
+
+    monkeypatch.setattr(
+        verifier_mod.jwt,
+        "decode",
+        lambda *args, **kwargs: (_ for _ in ()).throw(PyJWTError("expired")),
+    )
+    assert run_verify(verifier, "expired-token") is None
+
+    monkeypatch.setattr(
+        verifier_mod.jwt,
+        "decode",
+        lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("boom")),
+    )
+    assert run_verify(verifier, "broken-token") is None
+
+
+def test_valid_oidc_token_accepts_string_scp(monkeypatch: pytest.MonkeyPatch) -> None:
+    import soniq_mcp.auth.verifiers as verifier_mod
+
+    class FakeSigningKey:
+        key = "public-key"
+
+    class FakeJWKClient:
+        def __init__(self, uri: str) -> None:
+            self.uri = uri
+
+        def get_signing_key_from_jwt(self, token: str) -> FakeSigningKey:
+            return FakeSigningKey()
+
+    monkeypatch.setattr(verifier_mod, "PyJWKClient", FakeJWKClient)
+    monkeypatch.setattr(
+        verifier_mod.jwt,
+        "decode",
+        lambda *args, **kwargs: {
+            "client_id": "cli-789",
+            "scp": "playback zones",
+            "exp": 1_762_345_999,
+        },
+    )
+
+    verifier = OIDCVerifier(config_with_oidc())
+
+    assert run_verify(verifier, "good-token") == AccessToken(
+        token="good-token",
+        client_id="cli-789",
+        scopes=["playback", "zones"],
+        expires_at=1_762_345_999,
+    )
 
 
 def test_secret_unwrapping_is_confined_to_static_verify_token() -> None:

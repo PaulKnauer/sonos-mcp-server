@@ -1297,6 +1297,7 @@ dependencies = [
     { name = "cryptography" },
     { name = "lxml" },
     { name = "mcp", extra = ["cli"] },
+    { name = "pyjwt", extra = ["crypto"] },
     { name = "python-dotenv" },
     { name = "soco" },
 ]
@@ -1317,6 +1318,7 @@ requires-dist = [
     { name = "cryptography", specifier = ">=46.0.7" },
     { name = "lxml", specifier = ">=6.1.0" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.26.0" },
+    { name = "pyjwt", extras = ["crypto"], specifier = ">=2.12.1" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "soco", specifier = ">=0.30.14" },
 ]
