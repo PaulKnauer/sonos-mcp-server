@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import secrets
+import ssl
+from urllib.parse import urlparse
 
 import jwt
 from jwt import PyJWKClient, PyJWTError
@@ -54,7 +56,7 @@ class OIDCVerifier:
         self._issuer = config.oidc_issuer
         self._audience = config.oidc_audience
         self._resource = config.oidc_resource_url
-        self._jwk_client = PyJWKClient(config.oidc_jwks_uri or "")
+        self._jwk_client = self._build_jwk_client(config)
 
     async def verify_token(self, token: str) -> AccessToken | None:
         """Return access details for a valid OIDC JWT, else fail closed."""
@@ -63,6 +65,7 @@ class OIDCVerifier:
             or token.strip() == ""
             or not self._issuer
             or not self._audience
+            or self._jwk_client is None
         ):
             return None
 
@@ -97,6 +100,26 @@ class OIDCVerifier:
             resource=self._resource,
         )
         return access_token
+
+    @staticmethod
+    def _build_jwk_client(config: SoniqConfig) -> PyJWKClient | None:
+        """Build a JWKS client only for valid HTTPS endpoints."""
+        jwks_uri = config.oidc_jwks_uri
+        if not jwks_uri:
+            return None
+
+        parsed = urlparse(jwks_uri)
+        if parsed.scheme != "https" or not parsed.netloc:
+            return None
+
+        if config.oidc_ca_bundle:
+            try:
+                ssl_context = ssl.create_default_context(cafile=config.oidc_ca_bundle)
+            except (OSError, ValueError, ssl.SSLError):
+                return None
+            return PyJWKClient(jwks_uri, ssl_context=ssl_context)
+
+        return PyJWKClient(jwks_uri)
 
 
 def _extract_scopes(claims: dict[str, object]) -> list[str]:

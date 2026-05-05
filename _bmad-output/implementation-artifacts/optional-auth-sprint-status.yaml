@@ -71,7 +71,7 @@ development_status:
   # Epic 3: OIDC and JWKS Validation for Homelab Operators
   epic-3: in-progress
   3-1-implement-oidc-jwt-verifier-with-cached-jwks: done
-  3-2-support-jwks-refresh-https-and-custom-ca-trust: backlog
+  3-2-support-jwks-refresh-https-and-custom-ca-trust: done
   3-3-add-oidc-startup-preflight-and-actionable-errors: backlog
   3-4-add-oidc-verifier-unit-coverage: backlog
   epic-3-retrospective: optional

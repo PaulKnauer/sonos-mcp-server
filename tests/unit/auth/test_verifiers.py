@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import ast
 import asyncio
+import ssl
 from pathlib import Path
 from typing import Any
 
 import pytest
-from jwt import PyJWTError
+from jwt import PyJWKClientError, PyJWTError
 from mcp.server.auth.provider import AccessToken, TokenVerifier
 from pydantic import SecretStr
 
@@ -38,6 +39,27 @@ def config_with_oidc_missing_claim_enforcement() -> SoniqConfig:
         auth_mode=AuthMode.OIDC,
         oidc_issuer="https://issuer.example.com/",
         oidc_jwks_uri="https://issuer.example.com/jwks.json",
+    )
+
+
+def config_with_oidc_http_jwks() -> SoniqConfig:
+    return SoniqConfig(
+        transport=TransportMode.HTTP,
+        auth_mode=AuthMode.OIDC,
+        oidc_issuer="https://issuer.example.com/",
+        oidc_audience="soniq-mcp",
+        oidc_jwks_uri="http://issuer.example.com/jwks.json",
+    )
+
+
+def config_with_oidc_ca_bundle() -> SoniqConfig:
+    return SoniqConfig(
+        transport=TransportMode.HTTP,
+        auth_mode=AuthMode.OIDC,
+        oidc_issuer="https://issuer.example.com/",
+        oidc_audience="soniq-mcp",
+        oidc_jwks_uri="https://issuer.example.com/jwks.json",
+        oidc_ca_bundle="/tmp/homelab-ca.pem",
     )
 
 
@@ -142,7 +164,7 @@ def test_oidc_verifier_constructs_jwk_client_once(monkeypatch: pytest.MonkeyPatc
     init_calls: list[str] = []
 
     class FakeJWKClient:
-        def __init__(self, uri: str) -> None:
+        def __init__(self, uri: str, ssl_context: ssl.SSLContext | None = None) -> None:
             init_calls.append(uri)
 
     monkeypatch.setattr(verifier_mod, "PyJWKClient", FakeJWKClient)
@@ -151,6 +173,93 @@ def test_oidc_verifier_constructs_jwk_client_once(monkeypatch: pytest.MonkeyPatc
 
     assert init_calls == ["https://issuer.example.com/jwks.json"]
     assert isinstance(verifier, OIDCVerifier)
+
+
+def test_oidc_verifier_rejects_non_https_jwks_uri(monkeypatch: pytest.MonkeyPatch) -> None:
+    import soniq_mcp.auth.verifiers as verifier_mod
+
+    init_calls: list[str] = []
+
+    class FakeJWKClient:
+        def __init__(self, uri: str) -> None:
+            init_calls.append(uri)
+
+    monkeypatch.setattr(verifier_mod, "PyJWKClient", FakeJWKClient)
+
+    verifier = OIDCVerifier(config_with_oidc_http_jwks())
+
+    assert init_calls == []
+    assert run_verify(verifier, "good-token") is None
+
+
+def test_oidc_verifier_uses_custom_ca_bundle_ssl_context(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import soniq_mcp.auth.verifiers as verifier_mod
+
+    ssl_context = ssl.create_default_context()
+    captured_cafiles: list[str] = []
+    captured_ssl_contexts: list[ssl.SSLContext | None] = []
+
+    class FakeJWKClient:
+        def __init__(self, uri: str, ssl_context: ssl.SSLContext | None = None) -> None:
+            assert uri == "https://issuer.example.com/jwks.json"
+            captured_ssl_contexts.append(ssl_context)
+
+    def fake_create_default_context(*, cafile: str | None = None) -> ssl.SSLContext:
+        captured_cafiles.append(cafile or "")
+        return ssl_context
+
+    monkeypatch.setattr(verifier_mod, "PyJWKClient", FakeJWKClient)
+    monkeypatch.setattr(verifier_mod.ssl, "create_default_context", fake_create_default_context)
+
+    OIDCVerifier(config_with_oidc_ca_bundle())
+
+    assert captured_cafiles == ["/tmp/homelab-ca.pem"]
+    assert captured_ssl_contexts == [ssl_context]
+
+
+def test_oidc_verifier_leaves_ssl_context_none_without_ca_bundle(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import soniq_mcp.auth.verifiers as verifier_mod
+
+    init_calls: list[str] = []
+
+    class FakeJWKClient:
+        def __init__(self, uri: str) -> None:
+            assert uri == "https://issuer.example.com/jwks.json"
+            init_calls.append(uri)
+
+    monkeypatch.setattr(verifier_mod, "PyJWKClient", FakeJWKClient)
+
+    OIDCVerifier(config_with_oidc())
+
+    assert init_calls == ["https://issuer.example.com/jwks.json"]
+
+
+def test_oidc_verifier_returns_none_when_ca_bundle_context_creation_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import soniq_mcp.auth.verifiers as verifier_mod
+
+    init_calls: list[str] = []
+
+    class FakeJWKClient:
+        def __init__(self, uri: str, ssl_context: ssl.SSLContext | None = None) -> None:
+            init_calls.append(uri)
+
+    monkeypatch.setattr(verifier_mod, "PyJWKClient", FakeJWKClient)
+    monkeypatch.setattr(
+        verifier_mod.ssl,
+        "create_default_context",
+        lambda *, cafile=None: (_ for _ in ()).throw(OSError("bad ca bundle")),
+    )
+
+    verifier = OIDCVerifier(config_with_oidc_ca_bundle())
+
+    assert init_calls == []
+    assert run_verify(verifier, "good-token") is None
 
 
 def test_valid_oidc_token_maps_scope_string_sub_and_exp(
@@ -164,7 +273,7 @@ def test_valid_oidc_token_maps_scope_string_sub_and_exp(
         key = "public-key"
 
     class FakeJWKClient:
-        def __init__(self, uri: str) -> None:
+        def __init__(self, uri: str, ssl_context: ssl.SSLContext | None = None) -> None:
             self.uri = uri
 
         def get_signing_key_from_jwt(self, token: str) -> FakeSigningKey:
@@ -203,6 +312,57 @@ def test_valid_oidc_token_maps_scope_string_sub_and_exp(
     assert captured_tokens == ["good-token"]
 
 
+def test_oidc_verifier_reuses_single_jwk_client_for_multiple_verifications(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import soniq_mcp.auth.verifiers as verifier_mod
+
+    init_calls: list[str] = []
+    captured_tokens: list[str] = []
+
+    class FakeSigningKey:
+        key = "public-key"
+
+    class FakeJWKClient:
+        def __init__(self, uri: str, ssl_context: ssl.SSLContext | None = None) -> None:
+            init_calls.append(uri)
+
+        def get_signing_key_from_jwt(self, token: str) -> FakeSigningKey:
+            captured_tokens.append(token)
+            return FakeSigningKey()
+
+    monkeypatch.setattr(verifier_mod, "PyJWKClient", FakeJWKClient)
+    monkeypatch.setattr(
+        verifier_mod.jwt,
+        "decode",
+        lambda token, key, algorithms, audience, issuer: {
+            "sub": token,
+            "scope": "play",
+            "exp": 1_762_345_678,
+        },
+    )
+
+    verifier = OIDCVerifier(config_with_oidc())
+
+    first = run_verify(verifier, "token-one")
+    second = run_verify(verifier, "token-two")
+
+    assert init_calls == ["https://issuer.example.com/jwks.json"]
+    assert captured_tokens == ["token-one", "token-two"]
+    assert first == AccessToken(
+        token="token-one",
+        client_id="token-one",
+        scopes=["play"],
+        expires_at=1_762_345_678,
+    )
+    assert second == AccessToken(
+        token="token-two",
+        client_id="token-two",
+        scopes=["play"],
+        expires_at=1_762_345_678,
+    )
+
+
 def test_valid_oidc_token_prefers_client_id_and_scp(monkeypatch: pytest.MonkeyPatch) -> None:
     import soniq_mcp.auth.verifiers as verifier_mod
 
@@ -210,7 +370,7 @@ def test_valid_oidc_token_prefers_client_id_and_scp(monkeypatch: pytest.MonkeyPa
         key = "public-key"
 
     class FakeJWKClient:
-        def __init__(self, uri: str) -> None:
+        def __init__(self, uri: str, ssl_context: ssl.SSLContext | None = None) -> None:
             self.uri = uri
 
         def get_signing_key_from_jwt(self, token: str) -> FakeSigningKey:
@@ -238,11 +398,58 @@ def test_valid_oidc_token_prefers_client_id_and_scp(monkeypatch: pytest.MonkeyPa
     )
 
 
+def test_oidc_verifier_accepts_key_lookup_success_after_internal_refresh(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import soniq_mcp.auth.verifiers as verifier_mod
+
+    class FakeSigningKey:
+        key = "public-key"
+        key_id = "rotated-kid"
+
+    refresh_calls: list[bool] = []
+    monkeypatch.setattr(
+        verifier_mod.jwt,
+        "decode",
+        lambda *args, **kwargs: {
+            "client_id": "rotated-client",
+            "scp": ["playback"],
+            "exp": 1_762_345_999,
+        },
+    )
+
+    verifier = OIDCVerifier(config_with_oidc())
+    assert verifier._jwk_client is not None
+
+    def fake_get_signing_keys(refresh: bool = False) -> list[FakeSigningKey]:
+        refresh_calls.append(refresh)
+        return [FakeSigningKey()] if refresh else []
+
+    def fake_get_signing_key_from_jwt(token: str) -> FakeSigningKey:
+        assert token == "rotated-token"
+        return verifier._jwk_client.get_signing_key("rotated-kid")
+
+    monkeypatch.setattr(verifier._jwk_client, "get_signing_keys", fake_get_signing_keys)
+    monkeypatch.setattr(
+        verifier._jwk_client,
+        "get_signing_key_from_jwt",
+        fake_get_signing_key_from_jwt,
+    )
+
+    assert run_verify(verifier, "rotated-token") == AccessToken(
+        token="rotated-token",
+        client_id="rotated-client",
+        scopes=["playback"],
+        expires_at=1_762_345_999,
+    )
+    assert refresh_calls == [False, True]
+
+
 def test_invalid_oidc_tokens_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
     import soniq_mcp.auth.verifiers as verifier_mod
 
     class FakeJWKClient:
-        def __init__(self, uri: str) -> None:
+        def __init__(self, uri: str, ssl_context: ssl.SSLContext | None = None) -> None:
             self.uri = uri
 
         def get_signing_key_from_jwt(self, token: str) -> None:
@@ -256,6 +463,37 @@ def test_invalid_oidc_tokens_fail_closed(monkeypatch: pytest.MonkeyPatch) -> Non
     assert run_verify(verifier, "") is None
     assert run_verify(verifier, "   ") is None
     assert run_verify(verifier, "bad-token") is None
+
+
+def test_oidc_verifier_returns_none_when_jwks_refresh_still_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    verifier = OIDCVerifier(config_with_oidc())
+    assert verifier._jwk_client is not None
+
+    refresh_calls: list[bool] = []
+
+    def fake_get_signing_keys(refresh: bool = False) -> list[object]:
+        refresh_calls.append(refresh)
+        return []
+
+    def fake_get_signing_key_from_jwt(token: str) -> None:
+        assert token == "rotated-token"
+        return verifier._jwk_client.get_signing_key("rotated-kid")
+
+    monkeypatch.setattr(verifier._jwk_client, "get_signing_keys", fake_get_signing_keys)
+    monkeypatch.setattr(
+        verifier._jwk_client,
+        "get_signing_key_from_jwt",
+        fake_get_signing_key_from_jwt,
+    )
+
+    assert run_verify(verifier, "rotated-token") is None
+    assert refresh_calls == [False, True]
+
+
+def test_pyjwkclient_refresh_failure_is_caught_as_invalid_token() -> None:
+    assert issubclass(PyJWKClientError, PyJWTError)
 
 
 def test_oidc_verifier_fails_closed_without_audience_or_issuer() -> None:
@@ -280,7 +518,7 @@ def test_oidc_decode_exceptions_fail_closed(monkeypatch: pytest.MonkeyPatch) -> 
         key = "public-key"
 
     class FakeJWKClient:
-        def __init__(self, uri: str) -> None:
+        def __init__(self, uri: str, ssl_context: ssl.SSLContext | None = None) -> None:
             self.uri = uri
 
         def get_signing_key_from_jwt(self, token: str) -> FakeSigningKey:
@@ -312,7 +550,7 @@ def test_valid_oidc_token_accepts_string_scp(monkeypatch: pytest.MonkeyPatch) ->
         key = "public-key"
 
     class FakeJWKClient:
-        def __init__(self, uri: str) -> None:
+        def __init__(self, uri: str, ssl_context: ssl.SSLContext | None = None) -> None:
             self.uri = uri
 
         def get_signing_key_from_jwt(self, token: str) -> FakeSigningKey:
