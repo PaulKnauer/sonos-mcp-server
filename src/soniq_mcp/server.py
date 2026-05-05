@@ -12,6 +12,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
+from pydantic import AnyHttpUrl, TypeAdapter
 
 from soniq_mcp.config import SoniqConfig, run_preflight
 from soniq_mcp.config.models import AuthMode, TransportMode
@@ -20,6 +21,8 @@ from soniq_mcp.tools import register_all
 from soniq_mcp.transports.bootstrap import bootstrap_transport
 
 log = logging.getLogger(__name__)
+
+_http_url: TypeAdapter[AnyHttpUrl] = TypeAdapter(AnyHttpUrl)
 
 
 def _build_auth_kwargs(config: SoniqConfig) -> dict[str, Any]:
@@ -31,9 +34,17 @@ def _build_auth_kwargs(config: SoniqConfig) -> dict[str, Any]:
 
     from soniq_mcp.auth import build_token_verifier
 
+    issuer: AnyHttpUrl = _http_url.validate_python(
+        f"http://{_format_url_host(config.http_host)}:{config.http_port}"
+    )
+    resource: AnyHttpUrl | None = (
+        _http_url.validate_python(config.oidc_resource_url)
+        if config.oidc_resource_url is not None
+        else None
+    )
     auth_settings = AuthSettings(
-        issuer_url=f"http://{_format_url_host(config.http_host)}:{config.http_port}",
-        resource_server_url=config.oidc_resource_url,
+        issuer_url=issuer,
+        resource_server_url=resource,
         required_scopes=None,
     )
     return {"auth": auth_settings, "token_verifier": build_token_verifier(config)}
