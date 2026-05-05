@@ -1,5 +1,5 @@
 # generated: 2026-04-24
-# last_updated: 2026-05-04
+# last_updated: 2026-05-05
 # project: sonos-mcp-server
 # project_key: NOKEY
 # tracking_system: file-system
@@ -42,7 +42,7 @@
 # - Epic 4 should generally follow completion of the core capability stories.
 
 generated: 2026-04-24
-last_updated: 2026-05-04
+last_updated: 2026-05-05
 project: sonos-mcp-server
 project_key: NOKEY
 tracking_system: file-system
@@ -50,8 +50,8 @@ story_location: _bmad-output/implementation-artifacts/optional-auth
 phase_id: optional-auth-v0-6-0
 phase_label: "Optional Authentication v0.6.0"
 epics_source: "_bmad-output/planning-artifacts/epics-optional-auth.md"
-current_completed_story: "2-2-wire-static-auth-into-http-server-construction"
-next_story_hint: "2-3-add-static-auth-regression-coverage"
+current_completed_story: "2-3-add-static-auth-regression-coverage"
+next_story_hint: "3-1-implement-oidc-jwt-verifier-with-cached-jwks"
 
 development_status:
   # Epic 1: Safe Opt-In Auth Configuration
@@ -62,10 +62,10 @@ development_status:
   epic-1-retrospective: done
 
   # Epic 2: Static Bearer Token Protection for HTTP
-  epic-2: in-progress
+  epic-2: done
   2-1-implement-static-bearer-token-verifier: done
   2-2-wire-static-auth-into-http-server-construction: done
-  2-3-add-static-auth-regression-coverage: backlog
+  2-3-add-static-auth-regression-coverage: done
   epic-2-retrospective: optional
 
   # Epic 3: OIDC and JWKS Validation for Homelab Operators

@@ -78,6 +78,38 @@ def test_static_verifier_uses_compare_digest(monkeypatch: pytest.MonkeyPatch) ->
     assert calls == [(b"shared-secret", b"presented-secret")]
 
 
+def test_build_token_verifier_raises_for_none_auth_mode() -> None:
+    cfg = SoniqConfig(auth_mode=AuthMode.NONE)
+    with pytest.raises(NotImplementedError):
+        build_token_verifier(cfg)
+
+
+def test_unconfigured_auth_token_returns_none_for_any_presented_token() -> None:
+    cfg = SoniqConfig(auth_mode=AuthMode.STATIC)  # auth_token=None, bypassing preflight
+    verifier = StaticBearerVerifier(cfg)
+
+    assert run_verify(verifier, "any-token") is None
+    assert run_verify(verifier, "shared-secret") is None
+    assert run_verify(verifier, "") is None
+
+
+def test_presented_token_with_surrounding_whitespace_is_rejected() -> None:
+    # compare_digest uses raw bytes; no strip means "  shared-secret  " != "shared-secret"
+    verifier = build_token_verifier(config_with_static_token())
+
+    assert run_verify(verifier, "  shared-secret  ") is None
+    assert run_verify(verifier, " shared-secret") is None
+    assert run_verify(verifier, "shared-secret ") is None
+
+
+def test_whitespace_only_configured_token_always_returns_none() -> None:
+    cfg = SoniqConfig(auth_mode=AuthMode.STATIC, auth_token=SecretStr("   "))
+    verifier = StaticBearerVerifier(cfg)
+
+    assert run_verify(verifier, "   ") is None
+    assert run_verify(verifier, "anything") is None
+
+
 def test_secret_unwrapping_is_confined_to_static_verify_token() -> None:
     source_root = Path(__file__).parents[3] / "src" / "soniq_mcp"
     secret_attr = "get_secret_value"

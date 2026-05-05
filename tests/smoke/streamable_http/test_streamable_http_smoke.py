@@ -249,6 +249,16 @@ class TestStreamableHTTPAuthSmoke:
         )
         assert response.status_code == 401
 
+    def test_wrong_auth_scheme_returns_401(self, http_server_proc_with_auth) -> None:
+        _, test_port = http_server_proc_with_auth
+        url = f"http://{_TEST_HOST}:{test_port}{_MCP_PATH}"
+        response = httpx.post(
+            url,
+            json={"jsonrpc": "2.0", "method": "initialize", "id": 1},
+            headers={"Authorization": f"Token {_SMOKE_AUTH_TOKEN}"},
+        )
+        assert response.status_code == 401
+
     def test_correct_token_reaches_mcp_handling(self, http_server_proc_with_auth) -> None:
         _, test_port = http_server_proc_with_auth
         url = f"http://{_TEST_HOST}:{test_port}{_MCP_PATH}"

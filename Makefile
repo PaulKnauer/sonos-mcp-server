@@ -5,7 +5,7 @@ TAG ?= local
 K3S_REGISTRY ?= 192.168.2.201:32000
 K3S_IMAGE ?= $(K3S_REGISTRY)/$(IMAGE)
 
-.PHONY: ensure-uv install run run-stdio test check tree lint format type-check coverage audit build-check ci docker-build docker-run docker-compose-up docker-compose-down docker-build-k3s docker-push-k3s helm-lint helm-template helm-install release-version release-bump-major release-bump-minor release-bump-patch release-tag release-gh
+.PHONY: ensure-uv install run run-stdio test check tree lint format type-check coverage test-auth smoke-auth audit build-check ci docker-build docker-run docker-compose-up docker-compose-down docker-build-k3s docker-push-k3s helm-lint helm-template helm-install release-version release-bump-major release-bump-minor release-bump-patch release-tag release-gh
 
 ensure-uv:
 	@command -v uv >/dev/null 2>&1 || test -x "$(UV)" || { \
@@ -44,6 +44,12 @@ type-check: ensure-uv
 
 coverage: ensure-uv
 	$(UV) run pytest --cov --cov-report=term-missing
+
+test-auth: ensure-uv
+	$(UV) run pytest tests/unit/auth/ tests/unit/test_server.py::TestDisabledAuthNoOp tests/unit/test_server.py::TestStaticAuthWiring
+
+smoke-auth: ensure-uv
+	$(UV) run pytest tests/smoke/streamable_http/test_streamable_http_smoke.py::TestStreamableHTTPAuthSmoke
 
 audit: ensure-uv
 	# CVE-2026-4539 (pygments) has no fix release; ignored until upstream patch lands
