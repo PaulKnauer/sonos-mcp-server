@@ -149,12 +149,31 @@ class TestSoniqConfigAuthParsing:
         error_msg = str(exc_info.value)
         assert "oidc_issuer" in error_msg
 
+    def test_http_auth_mode_oidc_without_audience_raises(self) -> None:
+        with pytest.raises(ValidationError) as exc_info:
+            SoniqConfig(
+                auth_mode="oidc",
+                transport="http",
+                oidc_issuer="https://issuer.example.com",
+            )
+        error_msg = str(exc_info.value)
+        assert "oidc_audience" in error_msg
+
     def test_auth_mode_oidc_without_issuer_allowed_for_stdio(self) -> None:
         from soniq_mcp.config.models import AuthMode
 
         cfg = SoniqConfig(auth_mode="oidc", transport="stdio")
         assert cfg.auth_mode == AuthMode.OIDC
         assert cfg.oidc_issuer is None
+
+    def test_stdio_auth_mode_oidc_without_audience_allowed(self) -> None:
+        cfg = SoniqConfig(
+            auth_mode="oidc",
+            transport="stdio",
+            oidc_issuer="https://issuer.example.com",
+        )
+        assert cfg.auth_mode.value == "oidc"
+        assert cfg.oidc_audience is None
 
 
 class TestSoniqConfigAuthTokenMasking:

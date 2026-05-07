@@ -205,12 +205,13 @@ class SoniqConfig(BaseModel):
     @model_validator(mode="after")
     def validate_auth_config(self) -> SoniqConfig:
         """Enforce auth mode consistency."""
-        if (
-            self.auth_mode == AuthMode.OIDC
-            and self.transport != TransportMode.STDIO
-            and not self.oidc_issuer
-        ):
+        if self.auth_mode != AuthMode.OIDC or self.transport == TransportMode.STDIO:
+            return self
+
+        if not self.oidc_issuer:
             raise ValueError("auth_mode=oidc requires oidc_issuer to be set.")
+        if not self.oidc_audience:
+            raise ValueError("auth_mode=oidc requires oidc_audience to be set.")
         return self
 
     @model_validator(mode="after")

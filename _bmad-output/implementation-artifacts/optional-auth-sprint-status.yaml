@@ -1,5 +1,5 @@
 # generated: 2026-04-24
-# last_updated: 2026-05-05
+# last_updated: 2026-05-06
 # project: sonos-mcp-server
 # project_key: NOKEY
 # tracking_system: file-system
@@ -42,7 +42,7 @@
 # - Epic 4 should generally follow completion of the core capability stories.
 
 generated: 2026-04-24
-last_updated: 2026-05-05
+last_updated: 2026-05-07
 project: sonos-mcp-server
 project_key: NOKEY
 tracking_system: file-system
@@ -50,8 +50,8 @@ story_location: _bmad-output/implementation-artifacts/optional-auth
 phase_id: optional-auth-v0-6-0
 phase_label: "Optional Authentication v0.6.0"
 epics_source: "_bmad-output/planning-artifacts/epics-optional-auth.md"
-current_completed_story: "3-1-implement-oidc-jwt-verifier-with-cached-jwks"
-next_story_hint: "3-2-support-jwks-refresh-https-and-custom-ca-trust"
+current_completed_story: "3-4-add-oidc-verifier-unit-coverage"
+next_story_hint: "4-1-document-optional-auth-setup-and-constraints"
 
 development_status:
   # Epic 1: Safe Opt-In Auth Configuration
@@ -69,12 +69,12 @@ development_status:
   epic-2-retrospective: done
 
   # Epic 3: OIDC and JWKS Validation for Homelab Operators
-  epic-3: in-progress
+  epic-3: done
   3-1-implement-oidc-jwt-verifier-with-cached-jwks: done
   3-2-support-jwks-refresh-https-and-custom-ca-trust: done
-  3-3-add-oidc-startup-preflight-and-actionable-errors: backlog
-  3-4-add-oidc-verifier-unit-coverage: backlog
-  epic-3-retrospective: optional
+  3-3-add-oidc-startup-preflight-and-actionable-errors: done
+  3-4-add-oidc-verifier-unit-coverage: done
+  epic-3-retrospective: done
 
   # Epic 4: Operator Adoption, Deployment, and Release Readiness
   epic-4: backlog
