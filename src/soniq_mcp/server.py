@@ -16,6 +16,7 @@ from pydantic import AnyHttpUrl, TypeAdapter
 
 from soniq_mcp.config import SoniqConfig, run_preflight
 from soniq_mcp.config.models import AuthMode, TransportMode
+from soniq_mcp.config.validation import ensure_preflight_ready
 from soniq_mcp.domain.safety import validate_exposure_posture
 from soniq_mcp.tools import register_all
 from soniq_mcp.transports.bootstrap import bootstrap_transport
@@ -29,14 +30,19 @@ def _build_auth_kwargs(config: SoniqConfig) -> dict[str, Any]:
     """Build FastMCP auth constructor kwargs for enabled auth modes.
 
     Only called when HTTP auth is enabled — the guard in create_server() ensures that.
+    OIDC uses oidc_issuer as issuer_url; static auth derives issuer from http_host:http_port.
     """
     from mcp.server.auth.settings import AuthSettings
 
     from soniq_mcp.auth import build_token_verifier
 
-    issuer: AnyHttpUrl = _http_url.validate_python(
-        f"http://{_format_url_host(config.http_host)}:{config.http_port}"
-    )
+    if config.auth_mode == AuthMode.OIDC:
+        issuer: AnyHttpUrl = _http_url.validate_python(config.oidc_issuer)
+    else:
+        issuer = _http_url.validate_python(
+            f"http://{_format_url_host(config.http_host)}:{config.http_port}"
+        )
+
     resource: AnyHttpUrl | None = (
         _http_url.validate_python(config.oidc_resource_url)
         if config.oidc_resource_url is not None
@@ -61,13 +67,16 @@ def create_server(config: SoniqConfig | None = None) -> FastMCP:
     """Create and configure the MCP application."""
     if config is None:
         config = run_preflight()
+    else:
+        config = ensure_preflight_ready(config)
 
     warnings = validate_exposure_posture(config)
     for warning in warnings:
         log.warning("Exposure posture: %s", warning)
 
     auth_kwargs: dict[str, Any] = {}
-    if config.transport == TransportMode.HTTP and config.auth_mode == AuthMode.STATIC:
+    _http_auth_modes = (AuthMode.STATIC, AuthMode.OIDC)
+    if config.transport == TransportMode.HTTP and config.auth_mode in _http_auth_modes:
         auth_kwargs = _build_auth_kwargs(config)
 
     app = FastMCP("soniq-mcp", host=config.http_host, port=config.http_port, **auth_kwargs)

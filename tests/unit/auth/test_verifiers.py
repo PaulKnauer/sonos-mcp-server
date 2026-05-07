@@ -4,12 +4,20 @@ from __future__ import annotations
 
 import ast
 import asyncio
+import inspect
+import json
 import ssl
+import time
 from pathlib import Path
-from typing import Any
+from typing import Any, get_type_hints
 
+import jwt
 import pytest
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
 from jwt import PyJWKClientError, PyJWTError
+from jwt.algorithms import RSAAlgorithm
 from mcp.server.auth.provider import AccessToken, TokenVerifier
 from pydantic import SecretStr
 
@@ -35,7 +43,7 @@ def config_with_oidc() -> SoniqConfig:
 
 def config_with_oidc_missing_claim_enforcement() -> SoniqConfig:
     return SoniqConfig(
-        transport=TransportMode.HTTP,
+        transport=TransportMode.STDIO,
         auth_mode=AuthMode.OIDC,
         oidc_issuer="https://issuer.example.com/",
         oidc_jwks_uri="https://issuer.example.com/jwks.json",
@@ -63,9 +71,60 @@ def config_with_oidc_ca_bundle() -> SoniqConfig:
     )
 
 
+def config_with_oidc_resource() -> SoniqConfig:
+    return SoniqConfig(
+        transport=TransportMode.HTTP,
+        auth_mode=AuthMode.OIDC,
+        oidc_issuer="https://issuer.example.com/",
+        oidc_audience="soniq-mcp",
+        oidc_jwks_uri="https://issuer.example.com/jwks.json",
+        oidc_resource_url="https://resource.example.com",
+    )
+
+
 def run_verify(verifier: TokenVerifier, token: str | None) -> AccessToken | None:
     presented_token: Any = token
     return asyncio.run(verifier.verify_token(presented_token))
+
+
+# ---------------------------------------------------------------------------
+# In-process RSA/JWT helpers — provider-free OIDC verifier fixtures
+# ---------------------------------------------------------------------------
+
+
+def _make_rsa_keypair() -> tuple[RSAPrivateKey, RSAPublicKey]:
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048,
+        backend=default_backend(),
+    )
+    return private_key, private_key.public_key()
+
+
+def _make_jwks(public_key: RSAPublicKey, kid: str = "test-kid") -> dict[str, Any]:
+    """Build a JWKS dict from an in-process public key without network access."""
+    jwk_dict = json.loads(RSAAlgorithm.to_jwk(public_key))
+    jwk_dict.update({"kid": kid, "use": "sig", "alg": "RS256"})
+    return {"keys": [jwk_dict]}
+
+
+def _make_rs256_jwt(
+    private_key: RSAPrivateKey,
+    claims: dict[str, Any],
+    kid: str = "test-kid",
+) -> str:
+    return jwt.encode(claims, private_key, algorithm="RS256", headers={"kid": kid})
+
+
+def _valid_oidc_claims(**extra: Any) -> dict[str, Any]:
+    """Minimal valid JWT payload matching config_with_oidc()."""
+    return {
+        "sub": "user-123",
+        "iss": "https://issuer.example.com/",
+        "aud": "soniq-mcp",
+        "exp": int(time.time()) + 3600,
+        **extra,
+    }
 
 
 def test_build_token_verifier_returns_static_verifier_for_static_auth() -> None:
@@ -601,3 +660,208 @@ def test_secret_unwrapping_is_confined_to_static_verify_token() -> None:
                 matches.append((path.relative_to(source_root).as_posix(), function_name))
 
     assert matches == [("auth/verifiers.py", "verify_token")]
+
+
+# ---------------------------------------------------------------------------
+# Real RS256 path — in-process crypto, no jwt.decode mock, no network
+# ---------------------------------------------------------------------------
+
+
+def test_real_rs256_valid_token_returns_access_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    private_key, public_key = _make_rsa_keypair()
+    jwks = _make_jwks(public_key)
+    token = _make_rs256_jwt(private_key, _valid_oidc_claims(scope="read write"))
+
+    verifier = OIDCVerifier(config_with_oidc_resource())
+    assert verifier._jwk_client is not None
+    monkeypatch.setattr(verifier._jwk_client, "fetch_data", lambda: jwks)
+
+    result = run_verify(verifier, token)
+
+    assert result is not None
+    assert result.client_id == "user-123"
+    assert result.scopes == ["read", "write"]
+    assert isinstance(result.expires_at, int)
+    assert result.resource == "https://resource.example.com"
+
+
+def test_real_rs256_valid_token_prefers_client_id_and_scp_list(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    private_key, public_key = _make_rsa_keypair()
+    jwks = _make_jwks(public_key)
+    token = _make_rs256_jwt(
+        private_key,
+        _valid_oidc_claims(client_id="cli-abc", scp=["playback", "status"]),
+    )
+
+    verifier = OIDCVerifier(config_with_oidc())
+    assert verifier._jwk_client is not None
+    monkeypatch.setattr(verifier._jwk_client, "fetch_data", lambda: jwks)
+
+    result = run_verify(verifier, token)
+
+    assert result is not None
+    assert result.client_id == "cli-abc"
+    assert result.scopes == ["playback", "status"]
+
+
+# ---------------------------------------------------------------------------
+# Invalid-token matrix — every case must assert None explicitly
+# ---------------------------------------------------------------------------
+
+
+def test_expired_rs256_token_returns_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    private_key, public_key = _make_rsa_keypair()
+    jwks = _make_jwks(public_key)
+    expired_claims = {
+        "sub": "user-123",
+        "iss": "https://issuer.example.com/",
+        "aud": "soniq-mcp",
+        "exp": int(time.time()) - 3600,
+    }
+    token = _make_rs256_jwt(private_key, expired_claims)
+
+    verifier = OIDCVerifier(config_with_oidc())
+    assert verifier._jwk_client is not None
+    monkeypatch.setattr(verifier._jwk_client, "fetch_data", lambda: jwks)
+
+    assert run_verify(verifier, token) is None
+
+
+def test_tampered_rs256_signature_returns_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    private_key, public_key = _make_rsa_keypair()
+    jwks = _make_jwks(public_key)
+    token = _make_rs256_jwt(private_key, _valid_oidc_claims())
+
+    header, payload, sig = token.split(".")
+    corrupted_sig = sig[:-4] + ("AAAA" if not sig.endswith("AAAA") else "BBBB")
+    tampered = f"{header}.{payload}.{corrupted_sig}"
+
+    verifier = OIDCVerifier(config_with_oidc())
+    assert verifier._jwk_client is not None
+    monkeypatch.setattr(verifier._jwk_client, "fetch_data", lambda: jwks)
+
+    assert run_verify(verifier, tampered) is None
+
+
+def test_wrong_issuer_rs256_token_returns_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    private_key, public_key = _make_rsa_keypair()
+    jwks = _make_jwks(public_key)
+    token = _make_rs256_jwt(
+        private_key,
+        _valid_oidc_claims(iss="https://evil.example.com/"),
+    )
+
+    verifier = OIDCVerifier(config_with_oidc())
+    assert verifier._jwk_client is not None
+    monkeypatch.setattr(verifier._jwk_client, "fetch_data", lambda: jwks)
+
+    assert run_verify(verifier, token) is None
+
+
+def test_wrong_audience_rs256_token_returns_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    private_key, public_key = _make_rsa_keypair()
+    jwks = _make_jwks(public_key)
+    token = _make_rs256_jwt(
+        private_key,
+        _valid_oidc_claims(aud="wrong-audience"),
+    )
+
+    verifier = OIDCVerifier(config_with_oidc())
+    assert verifier._jwk_client is not None
+    monkeypatch.setattr(verifier._jwk_client, "fetch_data", lambda: jwks)
+
+    assert run_verify(verifier, token) is None
+
+
+def test_missing_identity_claim_rs256_token_returns_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    private_key, public_key = _make_rsa_keypair()
+    jwks = _make_jwks(public_key)
+    no_identity_claims: dict[str, Any] = {
+        "iss": "https://issuer.example.com/",
+        "aud": "soniq-mcp",
+        "exp": int(time.time()) + 3600,
+        "scope": "read",
+    }
+    token = _make_rs256_jwt(private_key, no_identity_claims)
+
+    verifier = OIDCVerifier(config_with_oidc())
+    assert verifier._jwk_client is not None
+    monkeypatch.setattr(verifier._jwk_client, "fetch_data", lambda: jwks)
+
+    assert run_verify(verifier, token) is None
+
+
+# ---------------------------------------------------------------------------
+# JWKS key rotation — real fetch_data boundary, built-in refresh logic
+# ---------------------------------------------------------------------------
+
+
+def test_real_rs256_token_verifies_after_jwks_key_rotation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    private_key, public_key = _make_rsa_keypair()
+    old_private, old_public = _make_rsa_keypair()
+
+    old_jwks = _make_jwks(old_public, kid="old-kid")
+    rotated_jwks = _make_jwks(public_key, kid="new-kid")
+    token = _make_rs256_jwt(private_key, _valid_oidc_claims(scope="read"), kid="new-kid")
+
+    fetch_responses = [old_jwks, rotated_jwks]
+    call_count: list[int] = [0]
+
+    def fake_fetch_data() -> dict[str, Any]:
+        idx = min(call_count[0], len(fetch_responses) - 1)
+        call_count[0] += 1
+        return fetch_responses[idx]
+
+    verifier = OIDCVerifier(config_with_oidc())
+    assert verifier._jwk_client is not None
+    monkeypatch.setattr(verifier._jwk_client, "fetch_data", fake_fetch_data)
+
+    result = run_verify(verifier, token)
+
+    assert result is not None
+    assert result.client_id == "user-123"
+    assert call_count[0] == 2
+
+
+def test_real_rs256_token_returns_none_when_rotation_key_never_appears(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    private_key, public_key = _make_rsa_keypair()
+    wrong_jwks = _make_jwks(public_key, kid="wrong-kid")
+    token = _make_rs256_jwt(private_key, _valid_oidc_claims(), kid="expected-kid")
+
+    call_count: list[int] = [0]
+
+    def fake_fetch_data() -> dict[str, Any]:
+        call_count[0] += 1
+        return wrong_jwks
+
+    verifier = OIDCVerifier(config_with_oidc())
+    assert verifier._jwk_client is not None
+    monkeypatch.setattr(verifier._jwk_client, "fetch_data", fake_fetch_data)
+
+    assert run_verify(verifier, token) is None
+    assert call_count[0] == 2
+
+
+# ---------------------------------------------------------------------------
+# FastMCP TokenVerifier contract compatibility
+# ---------------------------------------------------------------------------
+
+
+def test_oidc_verifier_satisfies_fastmcp_token_verifier_contract() -> None:
+    assert inspect.iscoroutinefunction(OIDCVerifier.verify_token)
+
+    expected_hints = get_type_hints(TokenVerifier.verify_token)
+    actual_hints = get_type_hints(OIDCVerifier.verify_token)
+
+    assert actual_hints["token"] is expected_hints["token"]
+    assert actual_hints["return"] == expected_hints["return"]
