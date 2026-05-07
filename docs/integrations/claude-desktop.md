@@ -59,6 +59,19 @@ The default port is `8000`. If you changed `SONIQ_MCP_HTTP_PORT`, use the matchi
 
 > `claude_desktop_config.json` is still used for **local stdio** servers. Claude Desktop does not use that file for remote MCP server URLs.
 
+### Private home-lab deployment constraint
+
+**Remote custom connectors originate from Anthropic's cloud infrastructure, not from your local machine or LAN.** This has a direct implication for private home-lab SoniqMCP deployments:
+
+- Your SoniqMCP server running on a home-network IP (e.g., `192.168.1.42`) is not reachable from Anthropic's cloud
+- Claude Desktop remote connectors do not provide a supported way to manually attach a static Bearer token header for SoniqMCP requests
+- Enabling `auth_mode=static` or `auth_mode=oidc` on your home-lab server does not change this reachability constraint
+- To use Claude Desktop remote connectors with SoniqMCP, the server would need to be reachable from the public internet — which requires a public hostname, firewall configuration, and reverse proxy setup that goes well beyond a typical home-lab deployment
+
+**The practical path:** Use local `stdio` for Claude Desktop. This is the recommended and fully supported path for home users. The remote connector model is better suited for internet-accessible deployments, not private home-network servers.
+
+If you need remote HTTP access for other MCP clients on your home network (Home Assistant, n8n, or similar integrations), configure auth for those clients using the [authentication guide](../setup/authentication.md). Those clients connect directly from within your home network and are not affected by the Anthropic cloud routing constraint.
+
 For Docker setup, see [docker.md](../setup/docker.md). For Helm setup, see [helm.md](../setup/helm.md).
 
 ---

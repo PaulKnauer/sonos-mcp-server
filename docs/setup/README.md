@@ -22,7 +22,7 @@ SoniqMCP supports three deployment models. Choose the one that fits your environ
 
 ## Trust model and exposure posture
 
-SoniqMCP has no built-in end-user authentication. The supported posture is local or trusted home-network use only. If you expose the HTTP endpoint beyond a trusted home network, add boundary-layer protection: reverse proxy auth, ingress authentication, network ACLs, or VPN-only access. See [operations.md](operations.md) and [SECURITY.md](../../SECURITY.md) for details.
+SoniqMCP defaults to no authentication (`auth_mode=none`). HTTP deployments can optionally enable static bearer token or OIDC authentication, but the current Helm chart does not yet surface the auth environment variables. The supported posture is local or trusted home-network use; if you expose the HTTP endpoint beyond a trusted home network, add boundary-layer protection in addition to or instead of built-in auth. See [authentication.md](authentication.md), [operations.md](operations.md), and [SECURITY.md](../../SECURITY.md) for details.
 
 ---
 
@@ -41,6 +41,7 @@ SoniqMCP has no built-in end-user authentication. The supported posture is local
 - [Local stdio setup](stdio.md) — Install, configure, and connect Claude Desktop on the same machine
 - [Docker deployment](docker.md) — Build and run SoniqMCP as a Docker container
 - [Helm deployment](helm.md) — Deploy SoniqMCP to a k3s or Kubernetes cluster
+- [Authentication](authentication.md) — Configure `none`, `static`, or OIDC auth for HTTP deployments; note that Helm chart auth values are not exposed yet
 - [Troubleshooting](troubleshooting.md) — Common problems and fixes for all deployment models
 - [Operations and release guidance](operations.md) — Trust model, exposure boundaries, release artifacts, and upgrade expectations
 

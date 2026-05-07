@@ -66,8 +66,11 @@ When both are present, environment variables win:
 | `SONIQ_MCP_DEFAULT_ROOM` | _(none)_ | Optional default Sonos room |
 | `SONIQ_MCP_MAX_VOLUME_PCT` | `80` | Volume safety cap (0–100) |
 | `SONIQ_MCP_TOOLS_DISABLED` | _(none)_ | Comma-separated tools to disable |
-| `SONIQ_MCP_HTTP_HOST` | `0.0.0.0` | Bind address (HTTP transport only) |
+| `SONIQ_MCP_HTTP_HOST` | `127.0.0.1` | Bind address (HTTP transport only; for home-network access, also set `SONIQ_MCP_EXPOSURE=home-network` and use `0.0.0.0` or a LAN address) |
 | `SONIQ_MCP_HTTP_PORT` | `8000` | Port (HTTP transport only) |
+| `SONIQ_MCP_AUTH_MODE` | `none` | HTTP auth mode: `none`, `static`, or `oidc` (HTTP transport only) |
+
+For static and OIDC auth configuration, see [docs/setup/authentication.md](docs/setup/authentication.md).
 
 ## Command surface
 
@@ -83,6 +86,7 @@ The supported command surface lives in [docs/prompts/command-reference.md](docs/
 - [Local stdio setup guide](docs/setup/stdio.md)
 - [Docker deployment guide](docs/setup/docker.md)
 - [Helm deployment guide](docs/setup/helm.md)
+- [Authentication guide](docs/setup/authentication.md)
 - [Troubleshooting](docs/setup/troubleshooting.md)
 - [Operations and release guidance](docs/setup/operations.md)
 - [Prompts and command reference index](docs/prompts/README.md)

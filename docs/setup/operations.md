@@ -8,15 +8,17 @@ For the security reporting policy and coordinated disclosure process, see [SECUR
 
 ## Trust model and exposure boundaries
 
-SoniqMCP has **no built-in end-user authentication**. The product is scoped to a single Sonos household and is designed for local or trusted home-network deployment only.
+SoniqMCP is scoped to a single Sonos household and is designed for local or trusted home-network deployment. HTTP deployments support optional authentication (`auth_mode=static` or `auth_mode=oidc`); the default is no authentication (`auth_mode=none`). The current Helm chart does not yet expose the auth environment variables, so Helm operators should treat ingress or other boundary-layer protection as the active auth path for now. See [authentication.md](authentication.md) for the full auth guide.
+
+Even with built-in HTTP auth enabled, the recommended exposure posture remains local or trusted home-network. Built-in auth protects the endpoint credential; it does not substitute for network-layer isolation against broader internet exposure.
 
 ### Supported exposure postures
 
 | Deployment | Supported posture | Notes |
 |---|---|---|
-| Local stdio | Same machine only | No port opened; AI client launches server as subprocess |
-| Docker HTTP | Trusted home network | Bind to LAN; do not expose port 8000 to untrusted networks without boundary protection |
-| Helm / k3s HTTP | Trusted home network | Same constraint; ingress requires boundary-layer auth |
+| Local stdio | Same machine only | No port opened; AI client launches server as subprocess; auth is always a no-op |
+| Docker HTTP | Trusted home network | Bind to LAN; optional `auth_mode=static` or `auth_mode=oidc` available; do not expose port 8000 to untrusted networks without boundary protection |
+| Helm / k3s HTTP | Trusted home network | Same constraint; current chart does not expose built-in auth env vars, so ingress or other boundary-layer protection remains the practical auth path |
 
 ### Adding boundary protection for remote access
 
@@ -27,7 +29,7 @@ If you need to reach SoniqMCP from outside a trusted home network, add protectio
 - **Network ACL or firewall rule** — restrict inbound access to specific source IPs
 - **VPN-only access** — place the server behind WireGuard or another VPN; only VPN peers can reach port 8000
 
-The product does not include built-in user accounts, OAuth flows, or remote authorisation features. Remote protection is the operator's responsibility.
+Built-in auth (`static` or `oidc`) is a credential layer, not a substitute for network isolation. For internet-exposed deployments, boundary-layer protection remains the operator's responsibility.
 
 ---
 

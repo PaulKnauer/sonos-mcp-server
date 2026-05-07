@@ -336,7 +336,8 @@ class TestSecurityAndOperationsDocs:
 
     def test_setup_readme_states_no_builtin_auth(self) -> None:
         readme = _read(SETUP_README)
-        assert "no built-in" in readme
+        assert "auth_mode=none" in readme
+        assert "authentication.md" in readme
 
     def test_security_policy_states_no_builtin_auth(self) -> None:
         policy = _read(SECURITY_POLICY)
@@ -388,7 +389,7 @@ class TestSecurityAndOperationsDocs:
     def test_operations_guide_states_deployment_caveats(self) -> None:
         guide = _read(OPERATIONS_GUIDE)
         assert "hostNetwork" in guide
-        assert "no built-in" in guide
+        assert "auth_mode=none" in guide
         guide_lower = guide.lower()
         assert (
             "trusted home" in guide_lower
@@ -405,11 +406,14 @@ class TestSecurityAndOperationsDocs:
 
     def test_docker_guide_has_security_note(self) -> None:
         guide = _read(DOCKER_GUIDE)
-        assert "no built-in authentication" in guide
+        assert "auth_mode=none" in guide
+        assert "authentication.md" in guide
 
     def test_helm_guide_has_security_note(self) -> None:
         guide = _read(HELM_GUIDE)
-        assert "no built-in authentication" in guide
+        assert "auth_mode=none" in guide
+        assert "current Helm chart does not expose the auth environment variables" in guide
+        assert "authentication.md" in guide
 
     def test_operations_guide_links_security_policy(self) -> None:
         guide = _read(OPERATIONS_GUIDE)

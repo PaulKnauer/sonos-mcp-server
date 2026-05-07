@@ -50,8 +50,8 @@ story_location: _bmad-output/implementation-artifacts/optional-auth
 phase_id: optional-auth-v0-6-0
 phase_label: "Optional Authentication v0.6.0"
 epics_source: "_bmad-output/planning-artifacts/epics-optional-auth.md"
-current_completed_story: "3-4-add-oidc-verifier-unit-coverage"
-next_story_hint: "4-1-document-optional-auth-setup-and-constraints"
+current_completed_story: "4-1-document-optional-auth-setup-and-constraints"
+next_story_hint: "4-2-add-deployment-examples-for-docker-and-helm"
 
 development_status:
   # Epic 1: Safe Opt-In Auth Configuration
@@ -77,8 +77,8 @@ development_status:
   epic-3-retrospective: done
 
   # Epic 4: Operator Adoption, Deployment, and Release Readiness
-  epic-4: backlog
-  4-1-document-optional-auth-setup-and-constraints: backlog
+  epic-4: in-progress
+  4-1-document-optional-auth-setup-and-constraints: done
   4-2-add-deployment-examples-for-docker-and-helm: backlog
   4-3-add-auth-smoke-coverage-and-release-validation: backlog
   epic-4-retrospective: optional

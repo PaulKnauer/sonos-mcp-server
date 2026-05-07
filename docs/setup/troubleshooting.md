@@ -43,6 +43,18 @@ Tool responses keep the same `error`, `field`, `category`, and `suggestion` keys
 
 For local `stdio`, keep `SONIQ_MCP_EXPOSURE=local`. Use `home-network` only for HTTP deployments that bind to a non-loopback host such as `0.0.0.0`.
 
+**Auth startup failures** appear in the same format with additional fields:
+
+```
+OIDC JWKS preflight failed
+URL: https://auth.example.com/.well-known/openid-configuration
+Category: tls
+Likely cause: TLS certificate verification failed; check CA trust configuration or set SONIQ_MCP_OIDC_CA_BUNDLE
+Docs: docs/setup/troubleshooting.md#configuration-errors-at-startup
+```
+
+The `Category` field identifies the class of failure: `configuration` (invalid field value or file path), `tls` (certificate verification failure), `network` (endpoint unreachable), or `discovery` (OIDC discovery document missing or invalid). For the full auth configuration reference and recovery steps by category, see [authentication.md](authentication.md#troubleshooting-auth-startup-failures).
+
 ---
 
 ## Server starts but Claude Desktop shows no tools

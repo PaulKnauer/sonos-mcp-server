@@ -153,7 +153,7 @@ helm upgrade --install soniq helm/soniq \
   --set "ingress.hosts[0].paths[0].pathType=Prefix"
 ```
 
-> **Security note:** The MCP endpoint has no built-in authentication. When ingress is enabled, the endpoint is reachable from outside the cluster without credentials. Apply authentication at the ingress layer (e.g., `nginx.ingress.kubernetes.io/auth-*` annotations, an OAuth2 proxy, or mTLS) before exposing to untrusted networks.
+> **Security note:** The MCP endpoint defaults to no authentication (`auth_mode=none`). Optional HTTP auth exists in the runtime, but the current Helm chart does not expose the auth environment variables, so ingress authentication is the practical path for Helm deployments today. When ingress is enabled, the endpoint is reachable from outside the cluster without credentials unless you add ingress-layer protection. Apply authentication at the ingress layer (e.g., `nginx.ingress.kubernetes.io/auth-*` annotations, an OAuth2 proxy, or mTLS) before exposing to untrusted networks. See [authentication.md](authentication.md) for the current runtime auth model.
 
 ---
 
