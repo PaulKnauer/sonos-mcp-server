@@ -77,8 +77,8 @@ development_status:
   epic-3-retrospective: done
 
   # Epic 4: Operator Adoption, Deployment, and Release Readiness
-  epic-4: in-progress
+  epic-4: done
   4-1-document-optional-auth-setup-and-constraints: done
   4-2-add-deployment-examples-for-docker-and-helm: done
   4-3-add-auth-smoke-coverage-and-release-validation: done
-  epic-4-retrospective: optional
+  epic-4-retrospective: done
