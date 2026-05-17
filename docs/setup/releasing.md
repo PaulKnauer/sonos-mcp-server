@@ -43,6 +43,36 @@ If the tag already exists and you need to create the GitHub Release entry manual
 make release-gh
 ```
 
+## Optional auth validation (v0.6.0+)
+
+Before cutting a release that includes optional auth changes, run these checks to confirm auth wiring, smoke behavior, and docs accuracy:
+
+```bash
+make test-auth      # auth unit tests: verifiers, server wiring, no-op/stdio guards
+make smoke-auth     # static HTTP auth smoke: missing/wrong/correct token against a live subprocess
+uv run pytest -q tests/unit/test_integration_docs.py  # docs and setup guidance drift checks
+make lint
+make type-check
+```
+
+The auth and docs validation commands require no external services, OIDC providers, or Sonos hardware. `make smoke-auth` runs against a local subprocess only.
+
+For broader coverage before a release cut:
+
+```bash
+make coverage       # full test suite including smoke tests
+make ci             # lint + type-check + coverage + audit + build-check
+```
+
+If Helm is available locally, also run:
+
+```bash
+make helm-lint
+uv run pytest -q tests/smoke/helm/test_helm_smoke.py
+```
+
+---
+
 ## Notes
 
 - `make release-tag` creates an annotated tag from the current `pyproject.toml` version.

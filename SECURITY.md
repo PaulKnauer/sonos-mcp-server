@@ -6,13 +6,15 @@ SoniqMCP is in active development. Security fixes are applied to the latest rele
 
 ## Deployment Posture
 
-SoniqMCP has **no built-in end-user authentication**. It is designed for:
+SoniqMCP defaults to no built-in authentication (`auth_mode=none`) and is designed for local or trusted home-network deployment. Optional HTTP authentication is available: `auth_mode=static` (shared bearer token) or `auth_mode=oidc` (OIDC JWT validation). Stdio deployments always ignore auth settings regardless of configuration. See [docs/setup/authentication.md](docs/setup/authentication.md) for the full auth guide.
 
-- **Local stdio** — same-machine AI client (Claude Desktop) only; no network exposure
-- **Docker HTTP** — Linux home-lab server on a trusted home network
-- **Helm / k3s HTTP** — self-hosted cluster on a trusted home network
+Supported deployment targets:
 
-**Remote or internet-facing exposure is not supported by default.** If you expose the MCP endpoint beyond a trusted home network, you must add boundary protection at the deployment edge using one or more of: reverse proxy with authentication, ingress authentication (e.g., OAuth2 proxy, `nginx.ingress.kubernetes.io/auth-*` annotations), network ACLs, or VPN-only access.
+- **Local stdio** — same-machine AI client (Claude Desktop) only; no network exposure, auth is always a no-op
+- **Docker HTTP** — Linux home-lab server on a trusted home network; optional auth available
+- **Helm / k3s HTTP** — self-hosted cluster on a trusted home network; optional auth available via chart values
+
+**Remote or internet-facing exposure is not supported by default.** If you expose the MCP endpoint beyond a trusted home network, add boundary protection at the deployment edge using one or more of: reverse proxy with authentication, ingress authentication (e.g., OAuth2 proxy, `nginx.ingress.kubernetes.io/auth-*` annotations), network ACLs, or VPN-only access. Built-in auth is a credential layer, not a substitute for network isolation.
 
 See [docs/setup/operations.md](docs/setup/operations.md) for the full operator guidance on supported exposure boundaries, release artifacts, and upgrade expectations.
 

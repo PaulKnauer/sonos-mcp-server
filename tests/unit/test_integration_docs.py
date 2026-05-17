@@ -21,6 +21,12 @@ SECURITY_POLICY = REPO_ROOT / "SECURITY.md"
 OPERATIONS_GUIDE = REPO_ROOT / "docs" / "setup" / "operations.md"
 DOCKER_GUIDE = REPO_ROOT / "docs" / "setup" / "docker.md"
 HELM_GUIDE = REPO_ROOT / "docs" / "setup" / "helm.md"
+AUTHENTICATION_GUIDE = REPO_ROOT / "docs" / "setup" / "authentication.md"
+RELEASING_GUIDE = REPO_ROOT / "docs" / "setup" / "releasing.md"
+DOCKER_COMPOSE = REPO_ROOT / "docker-compose.yml"
+HELM_VALUES = REPO_ROOT / "helm" / "soniq" / "values.yaml"
+HELM_CONFIGMAP = REPO_ROOT / "helm" / "soniq" / "templates" / "configmap.yaml"
+HELM_SECRET = REPO_ROOT / "helm" / "soniq" / "templates" / "secret.yaml"
 
 
 def _read(path: Path) -> str:
@@ -339,9 +345,11 @@ class TestSecurityAndOperationsDocs:
         assert "auth_mode=none" in readme
         assert "authentication.md" in readme
 
-    def test_security_policy_states_no_builtin_auth(self) -> None:
+    def test_security_policy_states_auth_posture(self) -> None:
         policy = _read(SECURITY_POLICY)
-        assert "no built-in end-user authentication" in policy
+        assert "auth_mode=none" in policy
+        assert "auth_mode=static" in policy
+        assert "authentication.md" in policy
 
     def test_security_policy_has_reporting_path(self) -> None:
         policy = _read(SECURITY_POLICY)
@@ -428,3 +436,101 @@ class TestSecurityAndOperationsDocs:
         guide = _read(OPERATIONS_GUIDE)
         assert "pip install soniq-mcp" in guide
         assert "uv add soniq-mcp" not in guide
+
+
+class TestAuthDocsRegression:
+    """Regression tests for optional-auth docs accuracy (Story 4.3, AC 4, 6)."""
+
+    @staticmethod
+    def _runtime_auth_env_vars() -> list[str]:
+        from soniq_mcp.config.loader import _ENV_MAP
+
+        return sorted(
+            env_name for env_name, field in _ENV_MAP.items() if "auth" in field or "oidc" in field
+        )
+
+    @staticmethod
+    def _helm_auth_values() -> list[str]:
+        values = _read(HELM_VALUES)
+        expected = [
+            "authMode",
+            "oidcIssuer",
+            "oidcAudience",
+            "oidcJwksUri",
+            "oidcResourceUrl",
+            "authToken",
+            "enabled",
+            "configMapName",
+            "mountPath",
+        ]
+        return [value for value in expected if re.search(rf"(?m)^\\s*{value}:", values)]
+
+    def test_authentication_guide_documents_all_auth_env_vars(self) -> None:
+        guide = _read(AUTHENTICATION_GUIDE)
+        for var in self._runtime_auth_env_vars():
+            assert var in guide, f"authentication.md must document {var}"
+
+    def test_docker_guidance_matches_compose_auth_env_vars(self) -> None:
+        guide = _read(DOCKER_GUIDE)
+        compose = _read(DOCKER_COMPOSE)
+        for var in self._runtime_auth_env_vars():
+            assert var in compose, f"docker-compose.yml must pass through {var}"
+            assert var in guide, f"docker.md must document {var}"
+
+    def test_helm_guide_documents_shipped_auth_chart_values(self) -> None:
+        guide = _read(HELM_GUIDE)
+        config_values = {"authMode", "oidcIssuer", "oidcAudience", "oidcJwksUri", "oidcResourceUrl"}
+        secret_values = {"authToken"}
+        ca_values = {"enabled", "configMapName", "mountPath"}
+        for value in self._helm_auth_values():
+            if value in config_values:
+                key = f"config.{value}"
+            elif value in secret_values:
+                key = f"secret.{value}"
+            elif value in ca_values:
+                key = f"caBundle.{value}"
+            else:
+                raise AssertionError(f"unexpected Helm auth value {value}")
+            assert key in guide, f"helm.md must document {key}"
+
+    def test_helm_templates_map_auth_env_vars_to_runtime_config(self) -> None:
+        templates = "\n".join([_read(HELM_CONFIGMAP), _read(HELM_SECRET)])
+        for var in self._runtime_auth_env_vars():
+            assert var in templates, f"Helm templates must surface {var}"
+            assert var in _read(HELM_GUIDE), f"helm.md must mention rendered env var {var}"
+
+    def test_docker_guide_has_compose_config_verification_step(self) -> None:
+        guide = _read(DOCKER_GUIDE)
+        assert "docker compose config" in guide
+
+    def test_helm_guide_documents_ca_bundle_mounting(self) -> None:
+        guide = _read(HELM_GUIDE)
+        assert "caBundle" in guide
+        assert "configMapName" in guide
+        assert "subPath" in guide
+
+    def test_helm_guide_states_operator_owned_authelia_boundary(self) -> None:
+        guide = _read(HELM_GUIDE)
+        assert "iot-edge-k3s" in guide or "infra repo" in guide
+
+    def test_releasing_guide_documents_auth_validation_commands(self) -> None:
+        guide = _read(RELEASING_GUIDE)
+        assert "make test-auth" in guide
+        assert "make smoke-auth" in guide
+        assert "tests/unit/test_integration_docs.py" in guide
+
+    def test_authentication_guide_documents_stdio_no_op(self) -> None:
+        guide = _read(AUTHENTICATION_GUIDE)
+        assert "stdio` transport never enforces authentication" in guide
+        assert "auth_mode=static" in guide
+        assert "auth_mode=oidc" in guide
+
+    def test_docs_do_not_contain_stale_auth_language(self) -> None:
+        for path, doc in [
+            ("helm.md", _read(HELM_GUIDE)),
+            ("docker.md", _read(DOCKER_GUIDE)),
+            ("operations.md", _read(OPERATIONS_GUIDE)),
+        ]:
+            stale_phrases = ["Helm auth not exposed", "no built-in auth"]
+            for phrase in stale_phrases:
+                assert phrase not in doc, f"{path}: contains stale phrase: {phrase!r}"
