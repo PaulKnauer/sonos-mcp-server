@@ -11,9 +11,18 @@ spec:
       {{- include "soniq.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
       labels:
         {{- include "soniq.selectorLabels" . | nindent 8 }}
     spec:
+      {{- if .Values.caBundle.enabled }}
+      volumes:
+        - name: ca-bundle
+          configMap:
+            name: {{ required "caBundle.configMapName is required when caBundle.enabled=true" .Values.caBundle.configMapName | quote }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -22,6 +31,12 @@ spec:
             - name: http
               containerPort: {{ .Values.config.httpPort | int }}
               protocol: TCP
+          {{- if .Values.caBundle.enabled }}
+          volumeMounts:
+            - name: ca-bundle
+              mountPath: {{ .Values.caBundle.mountPath }}
+              subPath: {{ .Values.caBundle.configMapKey }}
+          {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "soniq.fullname" . }}

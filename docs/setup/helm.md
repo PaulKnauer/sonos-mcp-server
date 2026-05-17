@@ -101,13 +101,23 @@ helm upgrade --install soniq helm/soniq -f my-values.yaml
 | `config.maxVolumePct` | `SONIQ_MCP_MAX_VOLUME_PCT` | `80` | Integer 0–100 |
 | `config.toolsDisabled` | `SONIQ_MCP_TOOLS_DISABLED` | `""` | Comma-separated tool names |
 | `config.configFile` | `SONIQ_MCP_CONFIG_FILE` | `""` | Reserved for future use |
+| `config.authMode` | `SONIQ_MCP_AUTH_MODE` | `""` | `"none"`, `"static"`, or `"oidc"`; empty uses runtime default (`none`) |
+| `config.oidcIssuer` | `SONIQ_MCP_OIDC_ISSUER` | `""` | OIDC issuer URL (`oidc` mode only) |
+| `config.oidcAudience` | `SONIQ_MCP_OIDC_AUDIENCE` | `""` | Expected JWT `aud` claim (`oidc` mode only) |
+| `config.oidcJwksUri` | `SONIQ_MCP_OIDC_JWKS_URI` | `""` | Explicit JWKS endpoint; auto-discovered if unset |
+| `config.oidcResourceUrl` | `SONIQ_MCP_OIDC_RESOURCE_URL` | `""` | Optional resource server URL |
 | `secret.defaultRoom` | `SONIQ_MCP_DEFAULT_ROOM` | `""` | Stored in a Kubernetes Secret |
+| `secret.authToken` | `SONIQ_MCP_AUTH_TOKEN` | `""` | Bearer token for `static` mode (stored in a Kubernetes Secret) |
+| `caBundle.enabled` | — | `false` | Mount an operator-provided CA bundle into the pod |
+| `caBundle.configMapName` | — | `""` | Name of an existing ConfigMap containing the CA bundle file |
+| `caBundle.configMapKey` | — | `ca.crt` | Key within the ConfigMap that holds the PEM data |
+| `caBundle.mountPath` | — | `/etc/soniq/ca.crt` | Container path where the CA bundle is mounted |
 | `image.repository` | — | `soniq-mcp` | Container image repository |
 | `image.tag` | — | `local` | Container image tag |
 | `service.type` | — | `ClusterIP` | `ClusterIP` or `NodePort` |
 | `ingress.enabled` | — | `false` | Enable to expose via ingress |
 
-`config.*` values are stored in a ConfigMap. `secret.defaultRoom` is stored in a Secret and mounted as an environment variable.
+`config.*` values are stored in a ConfigMap. `secret.*` values are stored in a Kubernetes Secret. Auth values are only included in rendered manifests when explicitly set; omitting them preserves the default no-auth behavior.
 
 ---
 
@@ -153,11 +163,78 @@ helm upgrade --install soniq helm/soniq \
   --set "ingress.hosts[0].paths[0].pathType=Prefix"
 ```
 
-> **Security note:** The MCP endpoint defaults to no authentication (`auth_mode=none`). Optional HTTP auth exists in the runtime, but the current Helm chart does not expose the auth environment variables, so ingress authentication is the practical path for Helm deployments today. When ingress is enabled, the endpoint is reachable from outside the cluster without credentials unless you add ingress-layer protection. Apply authentication at the ingress layer (e.g., `nginx.ingress.kubernetes.io/auth-*` annotations, an OAuth2 proxy, or mTLS) before exposing to untrusted networks. See [authentication.md](authentication.md) for the current runtime auth model.
+> **Security note:** The MCP endpoint defaults to no authentication (`auth_mode=none`). Optional static or OIDC auth is available via `config.authMode` — see [Section 6](#6-authentication-optional) below. When ingress is enabled, the endpoint is reachable from outside the cluster without credentials unless you configure runtime auth or add ingress-layer protection. Apply authentication at the ingress layer (e.g., `nginx.ingress.kubernetes.io/auth-*` annotations, an OAuth2 proxy, or mTLS) before exposing to untrusted networks. See [authentication.md](authentication.md) for the full runtime auth model.
 
 ---
 
-## 6. Connect a remote MCP client
+## 6. Authentication (optional)
+
+Authentication is disabled by default (`auth_mode=none`) and is an HTTP transport concern only.
+
+Auth values are conditional: they appear in the rendered manifests only when set. Omitting them leaves the default no-auth path unchanged.
+
+### Static bearer token
+
+```bash
+helm upgrade --install soniq helm/soniq \
+  --set config.authMode=static \
+  --set secret.authToken=change-me-to-a-strong-secret
+```
+
+Or in a values file:
+
+```yaml
+config:
+  authMode: static
+
+secret:
+  authToken: change-me-to-a-strong-secret
+```
+
+`config.authMode` is stored in the ConfigMap. `secret.authToken` is stored in the Kubernetes Secret.
+
+### OIDC JWT auth (e.g. Authelia)
+
+```yaml
+config:
+  authMode: oidc
+  oidcIssuer: https://auth.example.com
+  oidcAudience: https://soniq.example.com
+  # Optional: override JWKS endpoint if auto-discovery does not work for your IdP.
+  # oidcJwksUri: https://auth.example.com/.well-known/jwks.json
+```
+
+For Authelia on k3s, register SoniqMCP under Authelia's OIDC client configuration (`identity_providers.oidc.clients`) and use the audience issued for that client as `oidcAudience`. If your homelab manages Authelia through Terraform or GitOps, make that client registration in `iot-edge-k3s` or your infra repo; this chart only supplies the SoniqMCP-side values and template hooks.
+
+See [authentication.md](authentication.md) for startup preflight behavior and OIDC error categories.
+
+### CA bundle for OIDC with a private CA
+
+If your JWKS endpoint uses a private CA, mount the certificate into the pod using `caBundle`. The CA bundle must already exist as a ConfigMap in your cluster — this chart mounts it but does not create it.
+
+```yaml
+config:
+  authMode: oidc
+  oidcIssuer: https://auth.example.com
+  oidcAudience: https://soniq.example.com
+
+caBundle:
+  enabled: true
+  configMapName: my-private-ca    # name of an existing ConfigMap in the cluster
+  configMapKey: ca.crt
+  mountPath: /etc/soniq/ca.crt
+```
+
+The chart mounts the ConfigMap key as a single file at `mountPath` using `subPath`, and sets `SONIQ_MCP_OIDC_CA_BUNDLE` to that path automatically.
+
+> **Restart note:** Kubernetes does not propagate live updates to `subPath` volume mounts. After rotating the CA bundle in the backing ConfigMap, trigger a rollout to pick up the new certificate:
+> ```bash
+> kubectl rollout restart deployment/soniq
+> ```
+
+---
+
+## 7. Connect a remote MCP client
 
 Once the pod is running and the service is reachable, connect Claude Desktop or another MCP client.
 
@@ -177,7 +254,7 @@ Once the endpoint is reachable, use the same diagnostics-first flow as every oth
 
 ---
 
-## 7. Troubleshooting
+## 8. Troubleshooting
 
 ### Pod can't reach Sonos devices
 

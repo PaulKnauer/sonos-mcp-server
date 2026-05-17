@@ -412,7 +412,7 @@ class TestSecurityAndOperationsDocs:
     def test_helm_guide_has_security_note(self) -> None:
         guide = _read(HELM_GUIDE)
         assert "auth_mode=none" in guide
-        assert "current Helm chart does not expose the auth environment variables" in guide
+        assert "config.authMode" in guide
         assert "authentication.md" in guide
 
     def test_operations_guide_links_security_policy(self) -> None:

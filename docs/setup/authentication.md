@@ -204,6 +204,15 @@ See [claude-desktop.md](../integrations/claude-desktop.md) for the current local
 
 ---
 
+## Deployment examples
+
+For copy-pasteable deployment examples that wire up these env vars in Docker and Helm:
+
+- **Docker:** [docker.md — Authentication (optional)](docker.md#4-authentication-optional)
+- **Helm / k3s:** [helm.md — Authentication (optional)](helm.md#6-authentication-optional)
+
+---
+
 ## Troubleshooting auth startup failures
 
 Auth startup failures are reported with the same mechanism as all other configuration errors. See [troubleshooting.md#configuration-errors-at-startup](troubleshooting.md#configuration-errors-at-startup) for the recovery flow.

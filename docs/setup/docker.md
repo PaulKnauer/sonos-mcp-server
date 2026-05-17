@@ -54,6 +54,13 @@ The server listens on `http://0.0.0.0:8000/mcp` inside the container, mapped to 
 | `SONIQ_MCP_DEFAULT_ROOM` | _(empty)_ | Optional; name of your main Sonos room |
 | `SONIQ_MCP_TOOLS_DISABLED` | _(empty)_ | Comma-separated tool names to disable |
 | `SONIQ_MCP_CONFIG_FILE` | _(empty)_ | Reserved for future use; leave unset |
+| `SONIQ_MCP_AUTH_MODE` | `none` | `none`, `static`, or `oidc` — see [authentication.md](authentication.md) |
+| `SONIQ_MCP_AUTH_TOKEN` | _(empty)_ | Bearer token for `static` mode |
+| `SONIQ_MCP_OIDC_ISSUER` | _(empty)_ | OIDC issuer URL for `oidc` mode |
+| `SONIQ_MCP_OIDC_AUDIENCE` | _(empty)_ | Expected JWT `aud` claim for `oidc` mode |
+| `SONIQ_MCP_OIDC_JWKS_URI` | _(empty)_ | Explicit JWKS endpoint; auto-discovered if unset |
+| `SONIQ_MCP_OIDC_CA_BUNDLE` | _(empty)_ | Path inside the container to a private CA bundle file |
+| `SONIQ_MCP_OIDC_RESOURCE_URL` | _(empty)_ | Optional OIDC resource server URL |
 
 Pass additional variables using `-e KEY=VALUE` flags:
 
@@ -97,7 +104,77 @@ cp .env.example .env
 
 ---
 
-## 4. SSDP / Sonos network considerations
+## 4. Authentication (optional)
+
+Authentication is disabled by default (`auth_mode=none`). It is an HTTP transport concern only — `stdio` deployments ignore all auth settings.
+
+The `docker-compose.yml` already passes through the auth env vars. Set the values in your `.env` file and run `docker compose config` to verify the interpolation before restarting the stack.
+
+### Static bearer token
+
+Add the following to your `.env` file:
+
+```dotenv
+SONIQ_MCP_AUTH_MODE=static
+SONIQ_MCP_AUTH_TOKEN=change-me-to-a-strong-secret
+```
+
+Verify the resolved config before restarting:
+
+```bash
+docker compose config
+# Look for SONIQ_MCP_AUTH_MODE and SONIQ_MCP_AUTH_TOKEN in the output
+# to confirm your .env values are interpolated correctly.
+```
+
+Then restart:
+
+```bash
+docker compose up --build -d
+```
+
+Every client request must include `Authorization: Bearer <token>`. Startup blocks with an actionable error if `auth_mode=static` is set but `SONIQ_MCP_AUTH_TOKEN` is absent.
+
+### OIDC JWT auth (e.g. Authelia)
+
+Add the following to your `.env` file:
+
+```dotenv
+SONIQ_MCP_AUTH_MODE=oidc
+SONIQ_MCP_OIDC_ISSUER=https://auth.example.com
+SONIQ_MCP_OIDC_AUDIENCE=https://soniq.example.com
+# Optional: override JWKS endpoint if auto-discovery does not work for your IdP.
+# SONIQ_MCP_OIDC_JWKS_URI=https://auth.example.com/.well-known/jwks.json
+```
+
+For Authelia, register SoniqMCP as an OIDC client in your Authelia configuration and use the resulting client `audience` value for `SONIQ_MCP_OIDC_AUDIENCE`. Authelia client registration is an `iot-edge-k3s` or infra-repo concern; this repo supplies only the SoniqMCP-side env vars.
+
+See [authentication.md](authentication.md) for startup preflight behavior and error categories.
+
+### CA trust for OIDC with a private CA
+
+If your JWKS endpoint uses a private CA certificate, mount the CA bundle into the container and point `SONIQ_MCP_OIDC_CA_BUNDLE` at the mounted path.
+
+Add a volume bind-mount and the env var to your `.env`:
+
+```dotenv
+SONIQ_MCP_OIDC_CA_BUNDLE=/etc/soniq/ca.crt
+```
+
+And add the volume to your `docker-compose.yml` override or a `docker-compose.override.yml`:
+
+```yaml
+services:
+  soniq-mcp:
+    volumes:
+      - /path/on/host/private-ca.pem:/etc/soniq/ca.crt:ro
+```
+
+`SONIQ_MCP_OIDC_CA_BUNDLE` is scoped to the OIDC verifier only. To augment the default Python TLS trust store for the entire process, use `SSL_CERT_FILE` instead (pass it as an additional `-e` flag or `.env` entry).
+
+---
+
+## 5. SSDP / Sonos network considerations
 
 SoniqMCP uses SoCo, which relies on SSDP (UDP multicast on `239.255.255.250:1900`) to discover Sonos devices. Container network isolation breaks multicast routing by default.
 
@@ -136,7 +213,7 @@ Remove the `ports` mapping when using `network_mode: host` (ports are not needed
 
 ---
 
-## 5. Connect a remote MCP client
+## 6. Connect a remote MCP client
 
 Once the container is running, connect an MCP client to the HTTP endpoint.
 
@@ -152,7 +229,7 @@ Once the connector is up, start with `ping`, `server_info`, and `list_rooms` bef
 
 ---
 
-## 6. Troubleshooting
+## 7. Troubleshooting
 
 ### Container starts but cannot discover Sonos rooms
 

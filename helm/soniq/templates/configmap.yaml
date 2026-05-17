@@ -13,3 +13,21 @@ data:
   SONIQ_MCP_MAX_VOLUME_PCT: {{ .Values.config.maxVolumePct | quote }}
   SONIQ_MCP_TOOLS_DISABLED: {{ .Values.config.toolsDisabled | quote }}
   SONIQ_MCP_CONFIG_FILE: {{ .Values.config.configFile | default "" | quote }}
+  {{- if .Values.config.authMode }}
+  SONIQ_MCP_AUTH_MODE: {{ .Values.config.authMode | quote }}
+  {{- end }}
+  {{- if .Values.config.oidcIssuer }}
+  SONIQ_MCP_OIDC_ISSUER: {{ .Values.config.oidcIssuer | quote }}
+  {{- end }}
+  {{- if .Values.config.oidcAudience }}
+  SONIQ_MCP_OIDC_AUDIENCE: {{ .Values.config.oidcAudience | quote }}
+  {{- end }}
+  {{- if .Values.config.oidcJwksUri }}
+  SONIQ_MCP_OIDC_JWKS_URI: {{ .Values.config.oidcJwksUri | quote }}
+  {{- end }}
+  {{- if .Values.config.oidcResourceUrl }}
+  SONIQ_MCP_OIDC_RESOURCE_URL: {{ .Values.config.oidcResourceUrl | quote }}
+  {{- end }}
+  {{- if .Values.caBundle.enabled }}
+  SONIQ_MCP_OIDC_CA_BUNDLE: {{ .Values.caBundle.mountPath | quote }}
+  {{- end }}

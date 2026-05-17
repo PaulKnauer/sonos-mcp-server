@@ -26,6 +26,22 @@ config:
   maxVolumePct: "80"
   toolsDisabled: ""
   configFile: ""
+  # Optional HTTP authentication (auth_mode=none by default; HTTP transport only).
+  authMode: ""          # "none", "static", or "oidc"; empty uses runtime default (none)
+  oidcIssuer: ""        # OIDC issuer URL (oidc mode only)
+  oidcAudience: ""      # Expected JWT aud claim (oidc mode only)
+  oidcJwksUri: ""       # Explicit JWKS endpoint; auto-discovered from issuer if unset
+  oidcResourceUrl: ""   # Optional resource server URL
 
 secret:
   defaultRoom: ""
+  authToken: ""         # SONIQ_MCP_AUTH_TOKEN for static auth (stored in Secret)
+
+# CA bundle mount scaffolding for OIDC deployments with a private CA.
+# This mounts an operator-provided ConfigMap into the container as a single PEM file.
+# Creating the ConfigMap is an infra-repo (e.g. iot-edge-k3s) responsibility.
+caBundle:
+  enabled: false
+  configMapName: ""        # name of an existing ConfigMap containing the CA bundle
+  configMapKey: "ca.crt"   # key within the ConfigMap that holds the PEM data
+  mountPath: "/etc/soniq/ca.crt"  # container path where the CA bundle is mounted
