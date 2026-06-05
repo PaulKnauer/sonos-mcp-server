@@ -51,9 +51,10 @@ test-auth: ensure-uv
 smoke-auth: ensure-uv
 	$(UV) run pytest tests/smoke/streamable_http/test_streamable_http_smoke.py::TestStreamableHTTPAuthSmoke
 
-audit: ensure-uv
+audit:
 	# CVE-2026-4539 (pygments) has no fix release; ignored until upstream patch lands
-	$(UV) run pip-audit --ignore-vuln CVE-2026-4539
+	# PYSEC-2026-196 (pip) is a build-environment tool, not a project dependency
+	$(UV) run pip-audit --ignore-vuln CVE-2026-4539 --ignore-vuln PYSEC-2026-196
 
 build-check: ensure-uv
 	$(UV) build
