@@ -173,7 +173,11 @@ class SoCoAdapter:
             favourites = []
             for item in results:
                 meta = getattr(item, "to_didl_string", lambda: "")()
-                favourites.append(Favourite(title=item.title, uri=item.uri, meta=meta or None))
+                try:
+                    uri = item.get_uri()
+                except (IndexError, AttributeError):
+                    uri = ""
+                favourites.append(Favourite(title=item.title, uri=uri, meta=meta or None))
             return favourites
         except Exception as exc:
             raise FavouritesError(f"Failed to get favourites: {exc}") from exc
