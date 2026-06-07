@@ -166,6 +166,21 @@ class SoCoAdapter:
         except Exception as exc:
             raise VolumeError(f"Failed to set mute on {ip_address}: {exc}") from exc
 
+    @staticmethod
+    def _get_didl_uri(obj: Any) -> str:
+        """Safely extract the playable URI from a SoCo DIDL object.
+
+        SoCo's DidlObject and all subclasses (DidlItem, DidlFavorite,
+        DidlPlaylistContainer, etc.) store playable URIs in
+        ``obj.resources[0].uri`` accessed via ``obj.get_uri()`` — there
+        is no direct ``.uri`` attribute. This helper handles the
+        IndexError/AttributeError fallback gracefully.
+        """
+        try:
+            return obj.get_uri()
+        except (IndexError, AttributeError):
+            return ""
+
     def get_favourites(self, ip_address: str) -> list[Favourite]:
         try:
             zone = self._make_zone(ip_address)
@@ -173,11 +188,13 @@ class SoCoAdapter:
             favourites = []
             for item in results:
                 meta = getattr(item, "to_didl_string", lambda: "")()
-                try:
-                    uri = item.get_uri()
-                except (IndexError, AttributeError):
-                    uri = ""
-                favourites.append(Favourite(title=item.title, uri=uri, meta=meta or None))
+                favourites.append(
+                    Favourite(
+                        title=item.title,
+                        uri=self._get_didl_uri(item),
+                        meta=meta or None,
+                    )
+                )
             return favourites
         except Exception as exc:
             raise FavouritesError(f"Failed to get favourites: {exc}") from exc
@@ -196,7 +213,7 @@ class SoCoAdapter:
             return [
                 SonosPlaylist(
                     title=item.title,
-                    uri=item.uri,
+                    uri=self._get_didl_uri(item),
                     item_id=getattr(item, "item_id", None),
                 )
                 for item in results
@@ -283,7 +300,7 @@ class SoCoAdapter:
             result = zone.create_sonos_playlist(title)
             return SonosPlaylist(
                 title=result.title,
-                uri=result.uri,
+                uri=self._get_didl_uri(result),
                 item_id=getattr(result, "item_id", None),
             )
         except PlaylistError:
@@ -349,7 +366,7 @@ class SoCoAdapter:
             )
         return SonosPlaylist(
             title=updated.title,
-            uri=updated.uri,
+            uri=self._get_didl_uri(updated),
             item_id=getattr(updated, "item_id", item_id),
         )
 
