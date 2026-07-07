@@ -1,26 +1,26 @@
 installation:
-  version: 6.9.0
+  version: 6.10.0
   installDate: 2026-03-22T18:20:29.341Z
-  lastUpdated: 2026-06-22T21:24:26.101Z
+  lastUpdated: 2026-07-07T15:39:38.658Z
 modules:
   - name: core
-    version: 6.9.0
+    version: 6.10.0
     installDate: 2026-03-22T18:20:26.320Z
-    lastUpdated: 2026-06-22T21:24:26.089Z
+    lastUpdated: 2026-07-07T15:39:38.636Z
     source: built-in
     npmPackage: null
     repoUrl: null
   - name: bmm
-    version: 6.9.0
+    version: 6.10.0
     installDate: 2026-03-22T18:20:20.057Z
-    lastUpdated: 2026-06-22T21:24:26.090Z
+    lastUpdated: 2026-07-07T15:39:38.637Z
     source: built-in
     npmPackage: null
     repoUrl: null
   - name: tea
     version: v1.19.0
     installDate: 2026-03-22T18:20:24.319Z
-    lastUpdated: 2026-06-22T21:24:26.093Z
+    lastUpdated: 2026-07-07T15:39:38.641Z
     source: external
     npmPackage: bmad-method-test-architecture-enterprise
     repoUrl: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
@@ -29,7 +29,7 @@ modules:
   - name: bmb
     version: v2.1.0
     installDate: 2026-03-22T18:20:21.828Z
-    lastUpdated: 2026-06-22T21:24:26.096Z
+    lastUpdated: 2026-07-07T15:39:38.645Z
     source: external
     npmPackage: bmad-builder
     repoUrl: https://github.com/bmad-code-org/bmad-builder
@@ -38,12 +38,21 @@ modules:
   - name: cis
     version: v0.2.1
     installDate: 2026-04-02T15:48:04.142Z
-    lastUpdated: 2026-06-22T21:24:26.101Z
+    lastUpdated: 2026-07-07T15:39:38.650Z
     source: external
     npmPackage: bmad-creative-intelligence-suite
     repoUrl: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
     channel: stable
     sha: 07a8dd03d196a762f21c241d985293fe5b0f90e7
+  - name: bmad-loop
+    version: v0.8.1
+    installDate: 2026-07-07T15:39:38.514Z
+    lastUpdated: 2026-07-07T15:39:38.658Z
+    source: external
+    npmPackage: null
+    repoUrl: https://github.com/bmad-code-org/bmad-loop
+    channel: stable
+    sha: 9aefd40268e72edb492d6bc809dff8bf420953e6
 ides:
   - claude-code
   - codex
