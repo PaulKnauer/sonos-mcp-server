@@ -32,7 +32,7 @@ def make_fake_playlist(
 ) -> MagicMock:
     item = MagicMock()
     item.title = title
-    item.uri = uri
+    item.get_uri.return_value = uri
     item.item_id = item_id
     return item
 

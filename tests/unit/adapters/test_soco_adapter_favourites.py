@@ -22,7 +22,7 @@ def make_fake_favourite(
 ) -> MagicMock:
     item = MagicMock()
     item.title = title
-    item.uri = uri
+    item.get_uri.return_value = uri
     item.to_didl_string.return_value = didl
     return item
 
