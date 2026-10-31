@@ -53,17 +53,30 @@ field-by-field, and will kill this session after your final turn.
 
 - Validation rules the orchestrator enforces (a violation fails the whole
   result and burns a retry):
-  - `open_ids` must list exactly the ledger's `status: open` entries — the
-    orchestrator parses the ledger itself and compares.
-  - Every open id appears in exactly ONE of already_resolved / bundles /
-    blocked / skip / decisions. No misses, no duplicates, no invented ids.
-  - Bundle names: `^[a-z0-9][a-z0-9-]{1,39}$`, unique, non-empty `dw_ids`,
-    non-empty `intent`.
+  - `open_ids` must list exactly this session's triage universe: every
+    `status: open` entry in the ledger or, when the invocation carries
+    `--only DW-1,DW-2,...`, exactly those named ids — the orchestrator
+    parses the ledger itself, applies the same selection, and compares.
+  - Every id in the triage universe appears in exactly ONE of
+    already_resolved / bundles / blocked / skip / decisions. No misses, no
+    duplicates, no invented ids — an open entry outside the `--only`
+    selection counts as invented.
+  - Bundle names: `^[a-z0-9][a-z0-9-]{1,39}\Z`, unique, non-empty `dw_ids`,
+    non-empty `intent`. An otherwise-valid overlong bundle name or decision
+    option `bundle_name` is truncated to 40 characters and journaled before
+    validation; post-truncation name collisions still fail validation.
   - Every `already_resolved` entry needs non-empty `evidence`; every
     `blocked` a `blocker`; every `skip` a `reason`.
   - Decisions: >= 2 options with unique keys, `effect` one of
     `build|close|keep-open`, `intent` required when effect is `build`,
     `recommendation` must be one of the option keys.
+
+- Write `already_resolved[].evidence` and an option's `label` and `resolution`
+  as a **single line** — each is copied onto one line of the line-oriented
+  deferred-work ledger. This is guidance, not a validation rule: a break is
+  collapsed to a space rather than rejected, so it costs nothing but reads
+  worse. Both `intent` fields are exempt — keep them at the length the schema
+  asks above (2-6 sentences for a bundle), newlines and all.
 
 - **Migration sessions** (`--migrate`, see `./migration-mode.md`) use this
   result schema instead:
