@@ -24,6 +24,8 @@ from soniq_mcp.domain.models import (
     QueueItem,
     Room,
     SleepTimerState,
+    SnapshotRestoreResult,
+    SnapshotToken,
     SonosPlaylist,
     Speaker,
     SystemTopology,
@@ -547,3 +549,46 @@ class GroupTopologyResponse(BaseModel):
             for coord_uid, members in groups_map.items()
         ]
         return cls(groups=groups, total_groups=len(groups), total_rooms=len(rooms))
+
+
+class SnapshotResponse(BaseModel):
+    """Response for the ``snapshot`` tool."""
+
+    snapshot_id: str
+    room: str
+    include_queue: bool
+
+    @classmethod
+    def from_domain(cls, token: SnapshotToken) -> SnapshotResponse:
+        return cls(
+            snapshot_id=token.snapshot_id,
+            room=token.room_name,
+            include_queue=token.include_queue,
+        )
+
+
+class SnapshotRestoreResponse(BaseModel):
+    """Response for the ``restore_snapshot`` tool."""
+
+    status: Literal["restored"] = "restored"
+    snapshot_id: str
+    room: str
+    queue_restored: bool
+    volume_restored: bool
+    note: str | None = None
+
+    @classmethod
+    def from_domain(cls, result: SnapshotRestoreResult) -> SnapshotRestoreResponse:
+        note = None
+        if not result.volume_restored:
+            note = (
+                "The captured volume exceeds max_volume_pct, so the current volume was "
+                "left unchanged."
+            )
+        return cls(
+            snapshot_id=result.snapshot_id,
+            room=result.room_name,
+            queue_restored=result.queue_restored,
+            volume_restored=result.volume_restored,
+            note=note,
+        )

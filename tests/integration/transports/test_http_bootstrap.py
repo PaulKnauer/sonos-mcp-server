@@ -70,6 +70,8 @@ EXPECTED_TOOL_NAMES = {
     "delete_playlist",
     "browse_library",
     "play_library_item",
+    "snapshot",
+    "restore_snapshot",
 }
 
 REPRESENTATIVE_TOOL_NAMES = (

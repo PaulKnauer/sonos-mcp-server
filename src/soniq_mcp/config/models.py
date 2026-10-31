@@ -73,6 +73,8 @@ KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
         "delete_alarm",
         "browse_library",
         "play_library_item",
+        "snapshot",
+        "restore_snapshot",
     }
 )
 

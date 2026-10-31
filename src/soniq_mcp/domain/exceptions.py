@@ -288,3 +288,18 @@ class LibraryUnsupportedOperationError(LibraryError):
     """Raised when a normalized library selection cannot be played safely."""
 
     error_category = ErrorCategory.OPERATION
+
+
+class SnapshotError(SoniqDomainError):
+    """Raised when a playback snapshot capture or restore fails."""
+
+    error_category = ErrorCategory.OPERATION
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+class SnapshotNotFoundError(SnapshotError):
+    """Raised when a snapshot id is unknown or belongs to another room."""
+
+    error_category = ErrorCategory.VALIDATION

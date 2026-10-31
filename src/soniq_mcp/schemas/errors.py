@@ -209,6 +209,18 @@ class ErrorResponse(BaseModel):
         )
 
     @classmethod
+    def from_snapshot_error(cls, exc: Exception) -> ErrorResponse:
+        return cls._from_domain_error(
+            exc,
+            field="snapshot",
+            suggestion=(
+                "Check that the room is reachable. Snapshots are in-memory only: "
+                "restore with the snapshot_id returned by 'snapshot' for the same room, "
+                "before the server restarts."
+            ),
+        )
+
+    @classmethod
     def from_internal_error(
         cls,
         exc: Exception,

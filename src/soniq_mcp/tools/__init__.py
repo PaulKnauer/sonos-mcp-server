@@ -83,3 +83,10 @@ def register_all(app: FastMCP, config: SoniqConfig) -> None:
 
     library_service = LibraryService(room_service, SoCoAdapter())
     register_library(app, config, library_service)
+
+    from soniq_mcp.adapters.snapshot_adapter import SnapshotAdapter
+    from soniq_mcp.services.snapshot_service import SnapshotService
+    from soniq_mcp.tools.snapshot import register as register_snapshot
+
+    snapshot_service = SnapshotService(room_service, SnapshotAdapter(), config)
+    register_snapshot(app, config, snapshot_service)

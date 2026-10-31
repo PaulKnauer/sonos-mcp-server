@@ -303,3 +303,38 @@ class GroupAudioState:
     member_room_names: tuple[str, ...]
     volume: int
     is_muted: bool
+
+
+@dataclass(frozen=True)
+class SnapshotToken:
+    """Opaque handle for a captured playback snapshot.
+
+    Snapshots live in server memory only and do not survive a restart.
+
+    Attributes:
+        snapshot_id: Opaque identifier used to restore the snapshot.
+        room_name: Room the snapshot was captured from.
+        include_queue: True if the queue contents were captured.
+    """
+
+    snapshot_id: str
+    room_name: str
+    include_queue: bool
+
+
+@dataclass(frozen=True)
+class SnapshotRestoreResult:
+    """Outcome of restoring a playback snapshot.
+
+    Attributes:
+        snapshot_id: Identifier of the restored snapshot.
+        room_name: Room the snapshot was restored to.
+        queue_restored: True if captured queue contents were restored.
+        volume_restored: False when the captured volume exceeded the
+            configured cap and was therefore left unchanged.
+    """
+
+    snapshot_id: str
+    room_name: str
+    queue_restored: bool
+    volume_restored: bool
