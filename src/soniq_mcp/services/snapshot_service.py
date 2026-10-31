@@ -1,7 +1,8 @@
 """Snapshot service — capture and restore playback around announcements.
 
 Snapshots are held in an in-memory registry keyed by an opaque id and
-bound to the room they were captured from. They do not survive a server
+bound to the room they were captured from. Grouped rooms are captured and
+restored on their group coordinator, matching where ``play_uri`` plays. They do not survive a server
 restart (acceptable for v1): restore promptly after an announcement.
 """
 
@@ -16,7 +17,7 @@ from typing import Any
 
 from soniq_mcp.config.models import SoniqConfig
 from soniq_mcp.domain.exceptions import SnapshotNotFoundError, VolumeCapExceeded
-from soniq_mcp.domain.models import SnapshotRestoreResult, SnapshotToken
+from soniq_mcp.domain.models import Room, SnapshotRestoreResult, SnapshotToken
 from soniq_mcp.domain.safety import check_volume
 
 log = logging.getLogger(__name__)
@@ -57,7 +58,8 @@ class SnapshotService:
             SonosDiscoveryError: If network discovery fails.
         """
         room = self._room_service.get_room(room_name)
-        state = self._adapter.capture(room.ip_address, include_queue)
+        target = self._resolve_coordinator(room)
+        state = self._adapter.capture(target.ip_address, include_queue)
         snapshot_id = secrets.token_urlsafe(16)
         with self._lock:
             self._snapshots[snapshot_id] = _StoredSnapshot(
@@ -99,7 +101,8 @@ class SnapshotService:
             )
 
         restore_volume = self._volume_within_cap(stored.state.get("volume"))
-        self._adapter.restore(room.ip_address, stored.state, fade, restore_volume)
+        target = self._resolve_coordinator(room)
+        self._adapter.restore(target.ip_address, stored.state, fade, restore_volume)
         with self._lock:
             self._snapshots.pop(snapshot_id, None)
         return SnapshotRestoreResult(
@@ -108,6 +111,16 @@ class SnapshotService:
             queue_restored=stored.include_queue,
             volume_restored=restore_volume,
         )
+
+    def _resolve_coordinator(self, room: Room) -> Room:
+        """Return the group coordinator for a grouped room, else the room itself."""
+        coordinator_uid = room.group_coordinator_uid
+        if not coordinator_uid:
+            return room
+        for candidate in self._room_service.list_rooms():
+            if candidate.uid == coordinator_uid:
+                return candidate
+        return room
 
     def _volume_within_cap(self, volume: object) -> bool:
         if not isinstance(volume, int) or isinstance(volume, bool):

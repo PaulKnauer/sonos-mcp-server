@@ -14,6 +14,13 @@ from soniq_mcp.services.snapshot_service import SnapshotService
 
 KITCHEN = Room(name="Kitchen", uid="UID1", ip_address="192.168.1.10", is_coordinator=True)
 OFFICE = Room(name="Office", uid="UID2", ip_address="192.168.1.11", is_coordinator=True)
+DINING = Room(
+    name="Dining",
+    uid="UID3",
+    ip_address="192.168.1.12",
+    is_coordinator=False,
+    group_coordinator_uid="UID1",
+)
 
 
 class FakeSnapshotAdapter:
@@ -31,7 +38,7 @@ class FakeSnapshotAdapter:
 
 
 def _make_service(adapter=None, max_volume_pct=80):
-    rooms = {"Kitchen": KITCHEN, "Office": OFFICE}
+    rooms = {"Kitchen": KITCHEN, "Office": OFFICE, "Dining": DINING}
     room_service = MagicMock()
 
     def get_room(name):
@@ -40,6 +47,7 @@ def _make_service(adapter=None, max_volume_pct=80):
         return rooms[name]
 
     room_service.get_room.side_effect = get_room
+    room_service.list_rooms.return_value = list(rooms.values())
     adapter = adapter or FakeSnapshotAdapter()
     config = SoniqConfig(max_volume_pct=max_volume_pct)
     return SnapshotService(room_service, adapter, config), adapter
@@ -151,3 +159,16 @@ class TestRestoreSnapshot:
         with pytest.raises(SnapshotError):
             svc.restore_snapshot("Kitchen", token.snapshot_id)
         assert svc.restore_snapshot("Kitchen", token.snapshot_id).room_name == "Kitchen"
+
+
+class TestGroupedRooms:
+    def test_group_member_is_captured_and_restored_on_coordinator(self):
+        svc, adapter = _make_service()
+
+        token = svc.snapshot("Dining")
+        result = svc.restore_snapshot("Dining", token.snapshot_id)
+
+        assert token.room_name == "Dining"
+        assert adapter.captured == [(KITCHEN.ip_address, False)]
+        assert adapter.restored[0][0] == KITCHEN.ip_address
+        assert result.room_name == "Dining"
