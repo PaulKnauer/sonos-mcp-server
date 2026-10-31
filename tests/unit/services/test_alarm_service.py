@@ -6,11 +6,13 @@ import datetime
 
 import pytest
 
+from soniq_mcp.config import SoniqConfig
 from soniq_mcp.domain.exceptions import (
     AlarmError,
     AlarmValidationError,
     RoomNotFoundError,
     SonosDiscoveryError,
+    VolumeCapExceeded,
 )
 from soniq_mcp.domain.models import AlarmRecord, Room
 from soniq_mcp.services.alarm_service import AlarmService
@@ -455,3 +457,56 @@ class TestDeleteAlarm:
         service = AlarmService(FakeRoomService(rooms=[]), FakeAdapter())
         with pytest.raises(SonosDiscoveryError, match="No Sonos rooms found"):
             service.delete_alarm(alarm_id="101")
+
+
+class TestAlarmVolumeCap:
+    """Alarms fire unattended, so they must honour max_volume_pct."""
+
+    def _create(self, service: AlarmService, volume: int | None) -> AlarmRecord:
+        return service.create_alarm(
+            room_name="Living Room",
+            start_time="03:00:00",
+            recurrence="DAILY",
+            enabled=True,
+            volume=volume,
+            include_linked_zones=False,
+        )
+
+    def _update(self, service: AlarmService, volume: int | None) -> AlarmRecord:
+        return service.update_alarm(
+            alarm_id="101",
+            room_name="Living Room",
+            start_time="03:00:00",
+            recurrence="DAILY",
+            enabled=True,
+            volume=volume,
+            include_linked_zones=False,
+        )
+
+    def test_create_above_cap_raises_and_does_not_call_adapter(self) -> None:
+        adapter = FakeAdapter()
+        service = AlarmService(FakeRoomService(), adapter, SoniqConfig(max_volume_pct=50))
+        with pytest.raises(VolumeCapExceeded):
+            self._create(service, 100)
+        assert adapter.create_calls == []
+
+    def test_create_at_cap_is_allowed(self) -> None:
+        adapter = FakeAdapter(created_alarm=make_alarm_record(volume=50))
+        service = AlarmService(FakeRoomService(), adapter, SoniqConfig(max_volume_pct=50))
+        assert self._create(service, 50).volume == 50
+
+    def test_create_none_volume_skips_cap(self) -> None:
+        adapter = FakeAdapter(created_alarm=make_alarm_record(volume=None))
+        service = AlarmService(FakeRoomService(), adapter, SoniqConfig(max_volume_pct=0))
+        assert self._create(service, None).volume is None
+
+    def test_update_above_cap_raises(self) -> None:
+        adapter = FakeAdapter(alarms=[make_alarm_record("101")])
+        service = AlarmService(FakeRoomService(), adapter, SoniqConfig(max_volume_pct=50))
+        with pytest.raises(VolumeCapExceeded):
+            self._update(service, 51)
+
+    def test_update_within_cap_is_allowed(self) -> None:
+        adapter = FakeAdapter(alarms=[make_alarm_record("101")])
+        service = AlarmService(FakeRoomService(), adapter, SoniqConfig(max_volume_pct=50))
+        assert self._update(service, 40).alarm_id == "101"

@@ -1,15 +1,15 @@
 # SoniqMCP Threat Model
 
-**Version:** 1.0
-**Date:** 2026-03-29
+**Version:** 1.1
+**Date:** 2026-10-31
 **Status:** Living Document
-**Scope:** SoniqMCP v0.1.x — all supported deployment modes (stdio, Docker HTTP, Helm HTTP)
+**Scope:** SoniqMCP v0.6.x — all supported deployment modes (stdio, Docker HTTP, Helm HTTP)
 
 ---
 
 ## 1. Overview
 
-SoniqMCP is an MCP (Model Context Protocol) server that bridges an AI client (e.g., Claude Desktop) to a Sonos speaker system on a home network. It exposes 28 MCP tools for controlling playback, volume, queues, favourites, and room grouping.
+SoniqMCP is an MCP (Model Context Protocol) server that bridges an AI client (e.g., Claude Desktop) to a Sonos speaker system on a home network. It exposes 56 MCP tools for controlling playback, volume, queues, favourites, playlists, room grouping, alarms, EQ, inputs, and the music library.
 
 This document identifies assets, threat actors, attack surfaces, threat scenarios, and mitigations. It uses the **STRIDE** framework (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege) and follows the scope defined in [SECURITY.md](../../SECURITY.md).
 
@@ -31,7 +31,7 @@ graph TB
     end
 
     subgraph "SoniqMCP Server"
-        TOOLS["MCP Tools Layer\n(28 tools)"]
+        TOOLS["MCP Tools Layer\n(56 tools)"]
         SAFETY["Domain Safety\n(volume cap, tool permit)"]
         SERVICES["Service Layer\n(playback, volume, queue, groups)"]
         ADAPTER["SoCo Adapter Layer\n(UPnP isolation)"]
@@ -85,7 +85,7 @@ graph LR
     end
 
     A1 -->|"Trusted (same process owner)"| B1
-    A1 -->|"Unauthenticated HTTP POST"| C1
+    A1 -->|"HTTP POST (auth optional)"| C1
     C1 --> B1
     B1 -->|"Unauthenticated UPnP"| D1
 ```
@@ -95,9 +95,10 @@ graph LR
 | Boundary | Authentication | Encryption | Notes |
 |---|---|---|---|
 | stdio | OS process isolation | None (same machine) | Trusted by OS; only exploit is process injection |
-| HTTP (loopback) | None | None (HTTP) | Protected by loopback-only binding |
-| HTTP (LAN) | None | None (HTTP) | Protected only by home network trust |
-| UPnP to Sonos | None | None (HTTP/SOAP) | Standard Sonos design; no credentials |
+| HTTP (loopback) | None by default; optional static bearer or OIDC | None (HTTP) | Protected by loopback-only binding |
+| HTTP (LAN) | None by default; optional static bearer or OIDC | None (HTTP) | Protected by home network trust plus optional auth |
+| UPnP to Sonos | None | None (HTTP/SOAP) | Standard Sonos design; anyone on the LAN can call the full UPnP surface, including privileged device controls (see E5) |
+| AI client to tools | None (the model is the caller) | n/a | The AI decides which tools to call and with what arguments; treat its output as untrusted input (see §4) |
 
 ---
 
@@ -107,6 +108,9 @@ graph LR
 |---|---|---|
 | Sonos playback control | Low–Medium | Annoyance; unwanted audio |
 | Sonos volume control | Medium | Physical discomfort; hearing risk at extremes |
+| Sonos alarms | Medium | Unattended playback at a chosen time and volume (e.g. 03:00 at full volume) |
+| Sonos device configuration (buttons, LEDs, mic, music service accounts) | High | Loss of physical control of devices; privacy; account tampering. **Not exposed by SoniqMCP** (see E5) |
+| Music service account identifiers / credentials held by Sonos | High | Account takeover or misuse if leaked to the AI or its logs (see ID6) |
 | Room topology / device IPs | Low | Internal network enumeration |
 | Queue and favourites content | Low | Privacy (listening history inference) |
 | SoniqMCP config (env vars) | Medium | Reveals network topology, volume cap, disabled tools |
@@ -129,7 +133,8 @@ quadrantChart
     Curious household member: [0.2, 0.3]
     Malicious household member: [0.3, 0.7]
     LAN-adjacent attacker via guest WiFi: [0.5, 0.6]
-    Compromised AI client: [0.6, 0.5]
+    Rogue AI - injected or misdirected: [0.6, 0.5]
+    Confused AI - misreads intent: [0.4, 0.85]
     Supply chain attacker via deps: [0.8, 0.4]
     Remote internet attacker: [0.9, 0.3]
 ```
@@ -139,9 +144,18 @@ quadrantChart
 | **Curious household member** | Non-malicious user on same Wi-Fi curious about the API | LAN HTTP if exposed |
 | **Malicious household member** | Intentional misuse by someone with LAN access | LAN HTTP, direct tool calls |
 | **LAN-adjacent attacker** | Guest Wi-Fi with LAN isolation disabled, or neighbour on shared LAN | HTTP endpoint scanning |
-| **Compromised AI client** | AI model is prompt-injected to call harmful tool sequences | MCP tool invocation |
+| **Rogue AI** | AI model directed to cause harm, either by a human instructing it or by prompt injection in content it reads (track titles, playlist names, web pages) | MCP tool invocation |
+| **Confused AI** | No malice anywhere: the AI misreads intent or makes a mistake and calls a tool with harmful arguments. Example: user says *"turn my volume up to 10"* and the AI sets 100 | MCP tool invocation, every call, every session |
 | **Supply chain attacker** | Malicious code injected into `soco` or `fastmcp` dependency | Adapter/transport layer |
 | **Remote internet attacker** | Attacker who finds an internet-exposed HTTP endpoint | HTTP endpoint |
+
+### 4.1 The AI is a threat actor
+
+Version 1.0 of this model treated the AI client as trusted software, with prompt injection the only AI-layer risk. That was a blind spot. The AI sits between the user and every tool, and it can be wrong without anyone attacking it.
+
+- **Confused AI is the most likely actor.** Mistakes need no attacker and no network access. Every tool call is a chance to get an argument, room, or tool wrong.
+- **Confused AI raises risk everywhere.** Any control that assumes the caller "meant it" (relative adjustments, scheduling, destructive operations) has to hold even when the caller is mistaken.
+- **Design rule:** server-side controls (volume cap, capability allowlist, tool disabling) must hold no matter what the AI sends. Nothing safety-critical may depend on the model behaving well or on client-side confirmation prompts.
 
 ---
 
@@ -167,10 +181,11 @@ graph TD
         AS9["Queue / URI tools\n(add_uri_to_queue)"]
         AS10["Group tools\n(join_group, party_mode)"]
         AS11["System tools\n(ping, server_info)"]
+        AS12["Alarm tools\n(create_alarm, update_alarm)"]
     end
 
-    AS1 --> AS7 & AS8 & AS9 & AS10 & AS11
-    AS3 --> AS7 & AS8 & AS9 & AS10 & AS11
+    AS1 --> AS7 & AS8 & AS9 & AS10 & AS11 & AS12
+    AS3 --> AS7 & AS8 & AS9 & AS10 & AS11 & AS12
 ```
 
 ---
@@ -197,8 +212,10 @@ graph TD
 | T2 | Dependency substitution attack via compromised `soco` or `fastmcp` package | Python deps | Low | High | **Medium** |
 | T3 | MCP request body manipulation to pass URI with malicious content to queue | Queue tools | Medium | Low | **Low–Medium** |
 | T4 | Environment variable injection via parent process (if deployed without isolation) | Config loader | Low | Medium | **Low** |
+| T5 | Confused AI sends harmful arguments to a valid tool (wrong volume, wrong room, wrong alarm time) | All control tools | High | Medium | **Medium** |
 
 **T2 detail:** SoCo or FastMCP are third-party packages. A compromised version could exfiltrate network topology or issue arbitrary UPnP commands. Mitigated partially by `pip-audit` in CI.
+**T5 detail:** The request is well formed and the tool is permitted, so input validation alone cannot catch it. Server-side limits that hold no matter what the caller intended are the only reliable control: the volume cap applies to every path that sets a volume, including group volume and alarm volume. Relative adjustments are checked against the resulting level, not the delta.
 **T3 detail:** `add_uri_to_queue` accepts a URI string. Sonos devices accept `x-sonosapi-*` and `x-rincon-*` URIs. A crafted URI could potentially trigger unexpected Sonos behaviour, though impact is limited to the Sonos household.
 
 ### 6.3 Repudiation
@@ -219,8 +236,15 @@ graph TD
 | ID3 | Error messages in tool responses leak internal path or library version details | Error responses | Medium | Low | **Low** |
 | ID4 | Log output captured by AI client reveals config details | Logging | Low | Medium | **Low** |
 | ID5 | `.env` file readable by other local users if permissions are not restricted | Config file | Low | High | **Medium** |
+| ID6 | Music service account details leak to the AI via ZoneGroupTopology / UPnP event payloads | Adapter, topology tools | Low | High | **Low** (currently not exposed) |
 
 **ID2 detail:** Room IP addresses are returned in topology responses. While home LAN IPs (192.168.x.x) are low value in isolation, they contribute to network mapping.
+**ID6 detail:** SoCo can subscribe to UPnP events and read raw ZoneGroupTopology state. Those payloads can carry household and music service account details that must never reach the AI or its logs. Current status:
+- SoniqMCP makes **no event subscriptions** (`soco.events` and `.subscribe()` are not used).
+- SoCo uses ZoneGroupTopology internally during discovery, but SoniqMCP maps the result into domain models with an **explicit field allowlist** (room/speaker name, UID, IP, model, capability flags). No raw topology XML or event payload is returned by any tool.
+- Favourite, queue, and track responses include Sonos URIs. These can contain service *identifiers* (e.g. `sid=`, `sn=` account index) but not credentials. They are still listening-history data (see ID2/Assets).
+- `tests/unit/adapters/test_privileged_upnp_denylist.py` fails the build if event subscriptions or the raw `zoneGroupTopology` service are referenced in `src/`.
+
 **ID5 detail:** `.env` file may contain future sensitive config (e.g., if auth tokens are added). Current default config has no secrets, but operators should apply `chmod 600 .env`.
 
 ### 6.5 Denial of Service
@@ -242,9 +266,14 @@ graph TD
 | E2 | Volume cap bypass: providing negative or overflow integer to volume tools | Volume tools | Low | Medium | **Low** |
 | E3 | AI client with stdio access inherits full OS user privileges of SoniqMCP process | stdio transport | Medium | High | **Medium** |
 | E4 | Compromised dependency gains code execution in SoniqMCP process context | Python deps | Low | High | **Medium** |
+| E5 | Privileged Sonos UPnP APIs exposed through the tool surface (button lock, LEDs, microphone, diagnostics, music service add/remove, DoS-capable calls) | Adapter / tool design | Low | High | **Low** (not exposed; guarded) |
+| E6 | Chained misuse by a rogue or confused AI: e.g. lock hardware buttons, raise volume to max, start playback | Tool surface as a whole | Low | High | **Low** (no button tool; volume cap on every volume path) |
 
 **E1 detail:** `assert_tool_permitted` is called at tool handler entry; bypassing requires a crafted request that somehow skips this check. FastMCP routes calls through registered handlers, so this is unlikely without a FastMCP vulnerability.
 **E2 detail:** `check_volume` raises `VolumeCapExceeded` for values above the cap. Negative values are a Pydantic validation concern — should be validated as `int` with `ge=0`.
+**E5 detail:** SoCo talks to Sonos over unauthenticated UPnP/SOAP. That API can disable hardware buttons and LEDs, enable microphones, submit diagnostics, add or remove music services, and run several denial-of-service actions. SoniqMCP **exposes only an allowlisted set of capabilities** (playback, volume, queue, favourites, playlists, grouping, alarms, EQ, inputs, library) and wraps none of these privileged APIs. `tests/unit/adapters/test_privileged_upnp_denylist.py` makes the allowlist explicit by failing the build if any of them are referenced in `src/`. Adding one is a threat-model change that needs a security review.
+*Residual risk:* any device on the LAN can call these UPnP APIs directly without SoniqMCP. That is a Sonos device property and is out of scope (§11), but it is why HTTP deployments must not widen LAN reachability.
+**E6 detail:** The worst case combines a locked device with uncontrolled audio. SoniqMCP blocks the chain at two points: no tool can lock buttons, and `check_volume()` caps every absolute and relative volume change, group volume, and **alarm volume** at `max_volume_pct`. Users keep the Sonos app and physical buttons to stop playback.
 **E3 detail:** The AI client process (Claude Desktop) runs as the same OS user. If the AI is prompt-injected into running OS commands (via a future tool addition), it has full user access.
 
 ---
@@ -270,6 +299,9 @@ quadrantChart
     ID5 dotenv perms: [0.25, 0.7]
     D2 SSDP timeout: [0.5, 0.4]
     T3 URI injection: [0.5, 0.25]
+    T5 Confused AI args: [0.8, 0.5]
+    E5 Privileged UPnP: [0.15, 0.85]
+    ID6 Service creds: [0.15, 0.75]
 ```
 
 ### Priority Summary
@@ -277,8 +309,8 @@ quadrantChart
 | Priority | Threats | Action |
 |---|---|---|
 | **High** | E3, E4, T2, ID5 | Defence-in-depth; deployment guidance; dependency pinning |
-| **Medium** | S1, S2, R1, D2, E1 | Mitigations documented; consider future controls |
-| **Low / Accept** | S3, T1, T3, T4, R2, ID1–4, D1, D3, D4, E2 | Accept within stated scope; document |
+| **Medium** | S1, S2, T5, R1, D2, E1 | Mitigations documented; consider future controls |
+| **Low / Accept** | S3, T1, T3, T4, R2, ID1–4, ID6, D1, D3, D4, E2, E5, E6 | Accept within stated scope; ID6/E5 guarded by tests; document |
 
 ---
 
@@ -299,6 +331,8 @@ graph LR
         M5["Adapter isolation\n(soco confined to adapter layer)"]
         M6["Domain exception categorisation\n(no raw stack traces in responses)"]
         M7["Logging to stderr only\n(no stdout MCP stream pollution)"]
+        M11["Capability allowlist\n(privileged UPnP APIs denied by test)"]
+        M12["Topology field allowlist\n(no raw ZGT / event payloads)"]
     end
 
     subgraph "Deployment Controls"
@@ -311,7 +345,10 @@ graph LR
 | Control | Threats Addressed |
 |---|---|
 | Exposure/host validation at startup | S1, E1 (partial) |
-| Volume cap (`check_volume`) | E2, physical discomfort |
+| Volume cap (`check_volume`): room, group, relative, and alarm volume | E2, T5, E6, physical discomfort |
+| Capability allowlist + denylist test | E5, E6 |
+| Topology field allowlist (domain model mapping) | ID6, ID2 (partial) |
+| Optional HTTP auth (static bearer / OIDC) | S1 |
 | Tool disabling (`assert_tool_permitted`) | E1 |
 | Adapter isolation (SoCo confined) | T2 (blast radius reduction) |
 | No raw exceptions in responses | ID3 |
@@ -327,11 +364,14 @@ graph LR
 | REC-3 | Document `chmod 600 .env` in operations guide | ID5 | Low |
 | REC-4 | Pin dependency versions and verify hashes in `pyproject.toml` | T2, E4 | Medium |
 | REC-5 | Add prompt-injection guidance to AI client integration docs | S2 | Low |
-| REC-6 | Consider optional token-based auth for HTTP transport (bearer token via header) | S1 | Medium |
+| REC-6 | ~~Consider optional token-based auth for HTTP transport~~ **Done:** `auth_mode=static` / `auth_mode=oidc` | S1 | Medium |
 | REC-7 | Sanitise tool response fields that echo back user-supplied or Sonos-returned content | S2, ID3 | Medium |
 | REC-8 | Document recommended OS-level process isolation (dedicated user, systemd unit) | E3 | Low |
 | REC-9 | Add SSDP response validation (check returned device type matches Sonos) | S3 | Medium |
 | REC-10 | Rate-limit MCP tool calls per session in HTTP transport | D4, D1 | High |
+| REC-11 | Consider a max per-call volume step (e.g. refuse jumps larger than N points without an explicit override) to catch confused-AI unit errors below the cap | T5 | Low |
+| REC-12 | Keep raw ZoneGroupTopology and UPnP event payloads out of tool responses and logs; map to allowlisted fields only | ID6 | Low (ongoing) |
+| REC-13 | Treat any new SoCo capability as a threat-model change; extend the denylist test when new privileged APIs are identified | E5 | Low (ongoing) |
 
 ---
 
@@ -448,8 +488,8 @@ Per [SECURITY.md](../../SECURITY.md), the following are **not** modelled as acti
 |---|---|
 | Single household, single operator | No multi-user privilege model needed |
 | Home LAN is a trusted but not fully controlled boundary | LAN-adjacent threats are real but low priority |
-| AI client (Claude Desktop) is trusted software from a known vendor | Prompt injection is the main AI-layer threat, not the client software itself |
-| Sonos devices use unauthenticated UPnP (by design) | No credential theft possible; control is the asset |
+| AI client software (e.g. Claude Desktop) comes from a known vendor | The client binary is trusted, but the model's tool calls are not: they may be injected (rogue) or simply wrong (confused) |
+| Sonos devices use unauthenticated UPnP (by design) | SoniqMCP holds no credentials, but Sonos devices do hold music service account details. Tools must not relay raw UPnP state that could carry them (ID6) |
 | Python process runs as the local user | Compromise of process = compromise of user's session |
 
 ---
@@ -459,3 +499,4 @@ Per [SECURITY.md](../../SECURITY.md), the following are **not** modelled as acti
 | Version | Date | Author | Notes |
 |---|---|---|---|
 | 1.0 | 2026-03-29 | BMAD Team (party mode) | Initial threat model |
+| 1.1 | 2026-10-31 | BMAD Team (party mode) | Added rogue/confused AI as threat actors (§4.1, T5); ID6 music service credential exposure; E5/E6 privileged UPnP APIs and chained misuse; volume cap extended to alarms; optional HTTP auth reflected; REC-11–13. Prompted by community feedback (GitHub issue #5) |

@@ -12,6 +12,7 @@ from soniq_mcp.domain.exceptions import (
     AlarmError,
     RoomNotFoundError,
     SonosDiscoveryError,
+    VolumeCapExceeded,
 )
 from soniq_mcp.domain.safety import assert_tool_permitted
 from soniq_mcp.schemas.errors import ErrorResponse
@@ -81,7 +82,8 @@ def register(app: FastMCP, config: SoniqConfig, alarm_service: object) -> None:
                 recurrence: Recurrence rule — DAILY, WEEKDAYS, WEEKENDS, or ON_<day>[_<day>...]
                     where day is 0 (Sunday) through 6 (Saturday).
                 enabled: True to activate immediately (default: True).
-                volume: Alarm volume 0-100, or omit to use the zone default.
+                volume: Alarm volume 0-100 (capped by max_volume_pct), or omit to use the zone
+                    default.
                 include_linked_zones: True to play on all grouped rooms (default: False).
             """
             assert_tool_permitted("create_alarm", config)
@@ -95,6 +97,8 @@ def register(app: FastMCP, config: SoniqConfig, alarm_service: object) -> None:
                     include_linked_zones=include_linked_zones,
                 )
                 return AlarmResponse.from_domain(record).model_dump()
+            except VolumeCapExceeded as exc:
+                return ErrorResponse.from_volume_cap(exc.requested, exc.cap).model_dump()
             except RoomNotFoundError:
                 return ErrorResponse.from_room_not_found(room).model_dump()
             except AlarmError as exc:
@@ -127,7 +131,8 @@ def register(app: FastMCP, config: SoniqConfig, alarm_service: object) -> None:
                 recurrence: New recurrence rule (DAILY, WEEKDAYS, WEEKENDS, or ON_<day>[_<day>...]).
                 enabled: True to keep the alarm active, False to disable.
                 include_linked_zones: True to play on all grouped rooms (default: False).
-                volume: New alarm volume 0-100, or omit to use the zone default.
+                volume: New alarm volume 0-100 (capped by max_volume_pct), or omit to use the
+                    zone default.
             """
             assert_tool_permitted("update_alarm", config)
             try:
@@ -141,6 +146,8 @@ def register(app: FastMCP, config: SoniqConfig, alarm_service: object) -> None:
                     include_linked_zones=include_linked_zones,
                 )
                 return AlarmResponse.from_domain(record).model_dump()
+            except VolumeCapExceeded as exc:
+                return ErrorResponse.from_volume_cap(exc.requested, exc.cap).model_dump()
             except RoomNotFoundError:
                 return ErrorResponse.from_room_not_found(room).model_dump()
             except AlarmError as exc:

@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import datetime
 
+from soniq_mcp.config.models import SoniqConfig
 from soniq_mcp.domain.exceptions import AlarmValidationError, SonosDiscoveryError
 from soniq_mcp.domain.models import AlarmRecord
+from soniq_mcp.domain.safety import check_volume
 
 _TIME_FORMAT = "%H:%M:%S"
 
@@ -67,9 +69,27 @@ class AlarmService:
     and normalization. All SoCo interaction is delegated to the adapter.
     """
 
-    def __init__(self, room_service: object, adapter: object) -> None:
+    def __init__(
+        self,
+        room_service: object,
+        adapter: object,
+        config: SoniqConfig | None = None,
+    ) -> None:
         self._room_service = room_service
         self._adapter = adapter
+        self._config = config
+
+    def _check_volume_cap(self, volume: int | None) -> None:
+        """Apply the configured ``max_volume_pct`` cap to an alarm volume.
+
+        Alarms fire unattended, so they must honour the same hard cap as
+        live volume changes.
+
+        Raises:
+            VolumeCapExceeded: If ``volume`` exceeds ``config.max_volume_pct``.
+        """
+        if volume is not None and self._config is not None:
+            check_volume(volume, self._config)
 
     def list_alarms(self) -> list[AlarmRecord]:
         """Return all alarms in the household.
@@ -113,12 +133,14 @@ class AlarmService:
 
         Raises:
             AlarmValidationError: If any parameter fails validation.
+            VolumeCapExceeded: If ``volume`` exceeds ``config.max_volume_pct``.
             RoomNotFoundError: If the room cannot be resolved.
             AlarmError: If the adapter call fails.
         """
         parsed_time = _parse_start_time(start_time)
         normalized_recurrence = _validate_recurrence(recurrence, self._adapter)
         _validate_volume(volume)
+        self._check_volume_cap(volume)
         room = self._room_service.get_room(room_name)
         return self._adapter.create_alarm(
             ip_address=room.ip_address,
@@ -157,6 +179,7 @@ class AlarmService:
 
         Raises:
             AlarmValidationError: If any parameter fails validation.
+            VolumeCapExceeded: If ``volume`` exceeds ``config.max_volume_pct``.
             RoomNotFoundError: If the room cannot be resolved.
             AlarmError: If the alarm is not found or the adapter call fails.
         """
@@ -164,6 +187,7 @@ class AlarmService:
         parsed_time = _parse_start_time(start_time)
         normalized_recurrence = _validate_recurrence(recurrence, self._adapter)
         _validate_volume(volume)
+        self._check_volume_cap(volume)
         room = self._room_service.get_room(room_name)
         self._ensure_alarm_exists(normalized_alarm_id)
         return self._adapter.update_alarm(

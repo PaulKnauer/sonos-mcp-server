@@ -13,6 +13,7 @@ from soniq_mcp.domain.exceptions import (
     AlarmValidationError,
     RoomNotFoundError,
     SonosDiscoveryError,
+    VolumeCapExceeded,
 )
 from soniq_mcp.domain.models import AlarmRecord
 from soniq_mcp.tools.alarms import register
@@ -47,6 +48,7 @@ class FakeAlarmService:
         raise_validation_error: bool = False,
         raise_room_not_found: bool = False,
         raise_discovery_error: bool = False,
+        raise_volume_cap: bool = False,
         created_alarm: AlarmRecord | None = None,
         updated_alarm: AlarmRecord | None = None,
     ) -> None:
@@ -55,6 +57,7 @@ class FakeAlarmService:
         self._raise_validation_error = raise_validation_error
         self._raise_room_not_found = raise_room_not_found
         self._raise_discovery_error = raise_discovery_error
+        self._raise_volume_cap = raise_volume_cap
         self._created_alarm = created_alarm or make_alarm_record(alarm_id="new-1")
         self._updated_alarm = updated_alarm or make_alarm_record(alarm_id="101")
 
@@ -66,6 +69,8 @@ class FakeAlarmService:
         return list(self._alarms)
 
     def create_alarm(self, **kwargs) -> AlarmRecord:
+        if self._raise_volume_cap:
+            raise VolumeCapExceeded(kwargs["volume"], 80)
         if self._raise_discovery_error:
             raise SonosDiscoveryError("network unreachable")
         if self._raise_room_not_found:
@@ -77,6 +82,8 @@ class FakeAlarmService:
         return self._created_alarm
 
     def update_alarm(self, **kwargs) -> AlarmRecord:
+        if self._raise_volume_cap:
+            raise VolumeCapExceeded(kwargs["volume"], 80)
         if self._raise_discovery_error:
             raise SonosDiscoveryError("network unreachable")
         if self._raise_room_not_found:
@@ -410,3 +417,23 @@ class TestDeleteAlarmTool:
         data = parse(result)
         assert "error" in data
         assert data["field"] == "sonos_network"
+
+
+class TestAlarmVolumeCapTools:
+    @pytest.mark.anyio
+    @pytest.mark.parametrize("tool_name", ["create_alarm", "update_alarm"])
+    async def test_returns_volume_cap_error(self, tool_name: str) -> None:
+        app = make_app(FakeAlarmService(raise_volume_cap=True))
+        args = {
+            "room": "Living Room",
+            "start_time": "03:00:00",
+            "recurrence": "DAILY",
+            "enabled": True,
+            "volume": 100,
+        }
+        if tool_name == "update_alarm":
+            args["alarm_id"] = "101"
+        data = parse(await app.call_tool(tool_name, args))
+        assert data["field"] == "volume"
+        assert data["category"] == "validation"
+        assert "80" in data["error"]

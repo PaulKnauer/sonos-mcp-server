@@ -78,7 +78,7 @@ def register_all(app: FastMCP, config: SoniqConfig) -> None:
 
     from soniq_mcp.services.alarm_service import AlarmService
 
-    alarm_service = AlarmService(room_service, SoCoAdapter())
+    alarm_service = AlarmService(room_service, SoCoAdapter(), config)
     register_alarms(app, config, alarm_service)
 
     library_service = LibraryService(room_service, SoCoAdapter())

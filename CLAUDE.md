@@ -31,6 +31,7 @@ make ci             # full quality gate
 3. New code MUST be fully typed (`disallow_untyped_defs = true`)
 4. Never commit `.env` — it's gitignored
 5. Never bypass Pydantic model validators in `config/models.py`
+6. Trunk-based development: commit directly to `main`. Do not create feature branches or pull requests unless explicitly asked
 
 ## BMAD Context
 
