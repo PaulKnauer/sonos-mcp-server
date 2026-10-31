@@ -155,13 +155,37 @@ Alarm lifecycle operations target alarms by `alarm_id`. Use `list_alarms` first 
 | `update_playlist` | `playlist_id`, `room` | Replaces the saved playlist contents with the current queue from the named room. |
 | `delete_playlist` | `playlist_id` | Destructive operation; returns delete confirmation. |
 
+| `save_queue_as_playlist` | `room`, `title` | Saves the room's current queue (the group queue for grouped rooms) as a new playlist. |
+| `remove_from_playlist` | `playlist_id`, `position` | Destructive operation; removes the track at a 1-based position. |
+| `reorder_playlist` | `playlist_id`, `from_position`, `to_position` | Moves a track using 1-based positions. |
+
 Playlist playback and playlist management intentionally use different identifiers:
 
 - `play_playlist` uses the playlist `uri`
-- `create_playlist`, `update_playlist`, and `delete_playlist` use the playlist `item_id` returned by `list_playlists`
+- `create_playlist`, `update_playlist`, `delete_playlist`, `remove_from_playlist`, and `reorder_playlist` use the playlist `item_id` returned by `list_playlists`
 - `rename_playlist` is not part of the supported MCP surface
 
 For natural-language examples of these flows, use [example-uses.md](example-uses.md).
+
+## Announcement, queue, and device surface
+
+These tools are transport-neutral across local `stdio` and remote `Streamable HTTP`.
+
+| Tool | Required parameters | Notes |
+|---|---|---|
+| `snapshot` | `room` | Captures playback state and returns a `snapshot_id`. Optional: `include_queue` (default `false`). Snapshots are in memory only and are lost on server restart. |
+| `restore_snapshot` | `room`, `snapshot_id` | Restores and consumes a snapshot from the same room. Stopped or paused rooms stay stopped or paused. Optional: `fade`. A captured volume above `max_volume_pct` is left unchanged. |
+| `play_uri` | `room`, `uri` | Plays an arbitrary URI, replacing the current source. Optional: `meta`, `title`, `force_radio`. HTTP audio plays as a radio stream, so wrap one-shot announcements in `snapshot` / `restore_snapshot`. |
+| `ramp_volume` | `room`, `volume` | Smooth, non-blocking volume change; the safety cap still applies. Optional: `ramp_type`. |
+| `add_to_queue` | `room`, `uri` | Optional: `as_next` (honoured by Sonos only in shuffle mode). |
+| `add_multiple_to_queue` | `room`, `uris` | Appends up to 100 URIs in one call. |
+| `list_radio_favourites` | `room` | Sonos Radio / TuneIn favourite stations and shows. |
+| `play_radio_favourite` | `room`, `uri` | Plays a `uri` from `list_radio_favourites`. |
+| `get_battery_info` | `room` | Portable speakers only; other rooms return `supported: false`. |
+| `create_stereo_pair` | `room`, `right_room` | `room` becomes the left channel. |
+| `separate_stereo_pair` | `room` | Splits the pair back into two rooms. |
+
+For the announcement recipe, see [../integrations/hermes.md](../integrations/hermes.md).
 
 ## Local music library surface
 

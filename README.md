@@ -11,18 +11,20 @@ SoniqMCP is an [MCP](https://modelcontextprotocol.io/) server that exposes your 
 | Category | Tools |
 |---|---|
 | System | `list_rooms`, `get_system_topology` |
-| Playback | `play`, `pause`, `stop`, `next_track`, `previous_track`, `get_playback_state`, `get_track_info` |
+| Playback | `play`, `pause`, `stop`, `next_track`, `previous_track`, `get_playback_state`, `get_track_info`, `play_uri` |
+| Announcements | `snapshot`, `restore_snapshot` (see [Hermes integration](docs/integrations/hermes.md)) |
 | Playback Modes | `get_play_mode`, `set_play_mode`, `seek`, `get_sleep_timer`, `set_sleep_timer` |
-| Volume | `get_volume`, `set_volume`, `adjust_volume`, `mute`, `unmute`, `get_mute` |
+| Volume | `get_volume`, `set_volume`, `adjust_volume`, `ramp_volume`, `mute`, `unmute`, `get_mute` |
 | Room Audio | `get_eq_settings`, `set_bass`, `set_treble`, `set_loudness` |
-| Queue | `get_queue`, `add_to_queue`, `remove_from_queue`, `clear_queue`, `play_from_queue` |
-| Favourites | `list_favourites`, `play_favourite` |
+| Queue | `get_queue`, `add_to_queue`, `add_multiple_to_queue`, `remove_from_queue`, `clear_queue`, `play_from_queue` |
+| Favourites | `list_favourites`, `play_favourite`, `list_radio_favourites`, `play_radio_favourite` |
 | Alarm Lifecycle | `list_alarms`, `create_alarm`, `update_alarm`, `delete_alarm` |
-| Playlist Playback and Lifecycle | `list_playlists`, `play_playlist`, `create_playlist`, `update_playlist`, `delete_playlist` |
+| Playlist Playback and Lifecycle | `list_playlists`, `play_playlist`, `create_playlist`, `update_playlist`, `delete_playlist`, `save_queue_as_playlist`, `remove_from_playlist`, `reorder_playlist` |
 | Local Music Library | `browse_library`, `play_library_item` |
-| Groups | `get_group_topology`, `join_group`, `unjoin_room`, `party_mode`, `group_rooms` |
+| Groups | `get_group_topology`, `join_group`, `unjoin_room`, `party_mode`, `group_rooms`, `create_stereo_pair`, `separate_stereo_pair` |
 | Group Audio | `get_group_volume`, `set_group_volume`, `adjust_group_volume`, `group_mute`, `group_unmute` |
 | Inputs | `switch_to_line_in`, `switch_to_tv` |
+| Device | `get_battery_info` |
 | Setup | `ping`, `server_info` |
 
 ## Quick start

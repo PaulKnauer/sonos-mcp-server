@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-SoniqMCP is an MCP (Model Context Protocol) server that bridges an AI client (e.g., Claude Desktop) to a Sonos speaker system on a home network. It exposes 56 MCP tools for controlling playback, volume, queues, favourites, playlists, room grouping, alarms, EQ, inputs, and the music library.
+SoniqMCP is an MCP (Model Context Protocol) server that bridges an AI client (e.g., Claude Desktop) to a Sonos speaker system on a home network. It exposes 69 MCP tools for controlling playback, volume, queues, favourites, playlists, room grouping, alarms, EQ, inputs, the music library, announcements (snapshot, restore, and arbitrary URI playback), and battery status.
 
 This document identifies assets, threat actors, attack surfaces, threat scenarios, and mitigations. It uses the **STRIDE** framework (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege) and follows the scope defined in [SECURITY.md](../../SECURITY.md).
 
@@ -215,8 +215,8 @@ graph TD
 | T5 | Confused AI sends harmful arguments to a valid tool (wrong volume, wrong room, wrong alarm time) | All control tools | High | Medium | **Medium** |
 
 **T2 detail:** SoCo or FastMCP are third-party packages. A compromised version could exfiltrate network topology or issue arbitrary UPnP commands. Mitigated partially by `pip-audit` in CI.
-**T5 detail:** The request is well formed and the tool is permitted, so input validation alone cannot catch it. Server-side limits that hold no matter what the caller intended are the only reliable control: the volume cap applies to every path that sets a volume, including group volume and alarm volume. Relative adjustments are checked against the resulting level, not the delta.
-**T3 detail:** `add_uri_to_queue` accepts a URI string. Sonos devices accept `x-sonosapi-*` and `x-rincon-*` URIs. A crafted URI could potentially trigger unexpected Sonos behaviour, though impact is limited to the Sonos household.
+**T5 detail:** The request is well formed and the tool is permitted, so input validation alone cannot catch it. Server-side limits that hold no matter what the caller intended are the only reliable control: the volume cap applies to every path that sets a volume, including group volume, alarm volume, and `ramp_volume`. `restore_snapshot` leaves the volume unchanged rather than restoring a captured level above the cap. Relative adjustments are checked against the resulting level, not the delta.
+**T3 detail:** `add_to_queue`, `add_multiple_to_queue`, and `play_uri` accept URI strings. Sonos devices accept `x-sonosapi-*` and `x-rincon-*` URIs, and `play_uri` makes the speaker fetch any HTTP URL it is given, including hosts on the LAN. A crafted URI could potentially trigger unexpected Sonos behaviour or make a speaker request an internal URL, though the speaker does not return the response body to the caller. Operators who do not need announcements can disable `play_uri` with `SONIQ_MCP_TOOLS_DISABLED`.
 
 ### 6.3 Repudiation
 

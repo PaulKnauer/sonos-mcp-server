@@ -9,6 +9,7 @@ SoniqMCP implements the [Model Context Protocol (MCP)](https://modelcontextproto
 - [Claude Desktop](claude-desktop.md) — Connect Claude Desktop using local stdio or remote HTTP transport
 - [Home Assistant](home-assistant.md) — Use SoniqMCP as a remote MCP action layer for home automations and assistants
 - [n8n](n8n.md) — Use SoniqMCP from automation workflows that need stable Sonos control tools
+- [Hermes](hermes.md) — Play voice-assistant TTS announcements and put the music back afterwards
 
 ---
 
