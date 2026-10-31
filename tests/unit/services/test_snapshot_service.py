@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+import threading
 from unittest.mock import MagicMock
 
 import pytest
 
 from soniq_mcp.config.models import SoniqConfig
-from soniq_mcp.domain.exceptions import RoomNotFoundError, SnapshotError, SnapshotNotFoundError
+from soniq_mcp.domain.exceptions import (
+    RoomNotFoundError,
+    SnapshotError,
+    SnapshotInProgressError,
+    SnapshotNotFoundError,
+)
 from soniq_mcp.domain.models import Room
 from soniq_mcp.services import snapshot_service as snapshot_module
 from soniq_mcp.services.snapshot_service import SnapshotService
@@ -37,7 +43,15 @@ class FakeSnapshotAdapter:
         self.restored.append((ip_address, state, fade, restore_volume))
 
 
-def _make_service(adapter=None, max_volume_pct=80):
+class FakeClock:
+    def __init__(self, now: float = 1000.0) -> None:
+        self.now = now
+
+    def __call__(self) -> float:
+        return self.now
+
+
+def _make_service(adapter=None, max_volume_pct=80, clock=None):
     rooms = {"Kitchen": KITCHEN, "Office": OFFICE, "Dining": DINING}
     room_service = MagicMock()
 
@@ -50,7 +64,7 @@ def _make_service(adapter=None, max_volume_pct=80):
     room_service.list_rooms.return_value = list(rooms.values())
     adapter = adapter or FakeSnapshotAdapter()
     config = SoniqConfig(max_volume_pct=max_volume_pct)
-    return SnapshotService(room_service, adapter, config), adapter
+    return SnapshotService(room_service, adapter, config, clock=clock or FakeClock()), adapter
 
 
 class TestSnapshot:
@@ -67,7 +81,7 @@ class TestSnapshot:
     def test_tokens_are_unique(self):
         svc, _ = _make_service()
 
-        assert svc.snapshot("Kitchen").snapshot_id != svc.snapshot("Kitchen").snapshot_id
+        assert svc.snapshot("Kitchen").snapshot_id != svc.snapshot("Office").snapshot_id
 
     def test_passes_include_queue(self):
         svc, adapter = _make_service()
@@ -93,10 +107,13 @@ class TestSnapshot:
 
     def test_registry_is_bounded(self, monkeypatch):
         monkeypatch.setattr(snapshot_module, "MAX_SNAPSHOTS", 2)
-        svc, _ = _make_service()
+        clock = FakeClock()
+        svc, _ = _make_service(clock=clock)
 
         first = svc.snapshot("Kitchen")
+        clock.now += snapshot_module.PENDING_LOCK_SECONDS + 1
         svc.snapshot("Kitchen")
+        clock.now += snapshot_module.PENDING_LOCK_SECONDS + 1
         svc.snapshot("Kitchen")
 
         with pytest.raises(SnapshotNotFoundError):
@@ -172,3 +189,94 @@ class TestGroupedRooms:
         assert adapter.captured == [(KITCHEN.ip_address, False)]
         assert adapter.restored[0][0] == KITCHEN.ip_address
         assert result.room_name == "Dining"
+
+
+class TestOverlappingSnapshots:
+    def test_second_snapshot_of_same_room_is_rejected(self):
+        svc, adapter = _make_service()
+        svc.snapshot("Kitchen")
+
+        with pytest.raises(SnapshotInProgressError, match="restore_snapshot"):
+            svc.snapshot("Kitchen")
+        assert len(adapter.captured) == 1
+
+    def test_group_member_blocked_by_pending_coordinator_snapshot(self):
+        svc, adapter = _make_service()
+        svc.snapshot("Kitchen")
+
+        with pytest.raises(SnapshotInProgressError):
+            svc.snapshot("Dining")
+        assert len(adapter.captured) == 1
+
+    def test_other_rooms_are_not_blocked(self):
+        svc, _ = _make_service()
+        svc.snapshot("Kitchen")
+
+        assert svc.snapshot("Office").room_name == "Office"
+
+    def test_restore_releases_the_room(self):
+        svc, _ = _make_service()
+        first = svc.snapshot("Kitchen")
+        svc.restore_snapshot("Kitchen", first.snapshot_id)
+
+        assert svc.snapshot("Kitchen").snapshot_id != first.snapshot_id
+
+    def test_failed_restore_keeps_room_blocked(self):
+        adapter = FakeSnapshotAdapter()
+        svc, _ = _make_service(adapter=adapter)
+        token = svc.snapshot("Kitchen")
+        adapter.restore = MagicMock(side_effect=SnapshotError("boom"))
+
+        with pytest.raises(SnapshotError):
+            svc.restore_snapshot("Kitchen", token.snapshot_id)
+        with pytest.raises(SnapshotInProgressError):
+            svc.snapshot("Kitchen")
+
+    def test_abandoned_snapshot_stops_blocking_after_timeout(self):
+        clock = FakeClock()
+        svc, _ = _make_service(clock=clock)
+        first = svc.snapshot("Kitchen")
+
+        clock.now += snapshot_module.PENDING_LOCK_SECONDS + 1
+        second = svc.snapshot("Kitchen")
+
+        assert second.snapshot_id != first.snapshot_id
+        # The abandoned snapshot can still be restored explicitly.
+        assert svc.restore_snapshot("Kitchen", first.snapshot_id).room_name == "Kitchen"
+
+    def test_failed_capture_does_not_block(self):
+        adapter = FakeSnapshotAdapter()
+        svc, _ = _make_service(adapter=adapter)
+        original_capture = adapter.capture
+        adapter.capture = MagicMock(side_effect=SnapshotError("timeout"))
+
+        with pytest.raises(SnapshotError):
+            svc.snapshot("Kitchen")
+        adapter.capture = original_capture
+        assert svc.snapshot("Kitchen").room_name == "Kitchen"
+
+    def test_concurrent_capture_is_rejected(self):
+        started = threading.Event()
+        release = threading.Event()
+        adapter = FakeSnapshotAdapter()
+        original_capture = adapter.capture
+
+        def slow_capture(ip_address, include_queue):
+            started.set()
+            release.wait(timeout=5)
+            return original_capture(ip_address, include_queue)
+
+        adapter.capture = slow_capture
+        svc, _ = _make_service(adapter=adapter)
+        results: list[object] = []
+        worker = threading.Thread(target=lambda: results.append(svc.snapshot("Kitchen")))
+        worker.start()
+        assert started.wait(timeout=5)
+
+        try:
+            with pytest.raises(SnapshotInProgressError, match="already being captured"):
+                svc.snapshot("Dining")
+        finally:
+            release.set()
+            worker.join(timeout=5)
+        assert len(results) == 1

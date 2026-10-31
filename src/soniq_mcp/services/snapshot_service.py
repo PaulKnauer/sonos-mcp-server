@@ -2,8 +2,13 @@
 
 Snapshots are held in an in-memory registry keyed by an opaque id and
 bound to the room they were captured from. Grouped rooms are captured and
-restored on their group coordinator, matching where ``play_uri`` plays. They do not survive a server
-restart (acceptable for v1): restore promptly after an announcement.
+restored on their group coordinator, matching where ``play_uri`` plays.
+They do not survive a server restart (acceptable for v1): restore
+promptly after an announcement.
+
+Only one snapshot may be pending per coordinator. A second snapshot taken
+mid-announcement would capture the announcement stream as the "previous"
+state, and restoring it would replay the announcement indefinitely.
 """
 
 from __future__ import annotations
@@ -11,12 +16,18 @@ from __future__ import annotations
 import logging
 import secrets
 import threading
+import time
 from collections import OrderedDict
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
 from soniq_mcp.config.models import SoniqConfig
-from soniq_mcp.domain.exceptions import SnapshotNotFoundError, VolumeCapExceeded
+from soniq_mcp.domain.exceptions import (
+    SnapshotInProgressError,
+    SnapshotNotFoundError,
+    VolumeCapExceeded,
+)
 from soniq_mcp.domain.models import Room, SnapshotRestoreResult, SnapshotToken
 from soniq_mcp.domain.safety import check_volume
 
@@ -25,12 +36,18 @@ log = logging.getLogger(__name__)
 # Bound the registry so abandoned snapshots cannot grow memory without limit.
 MAX_SNAPSHOTS = 64
 
+# A pending snapshot stops blocking new snapshots for its coordinator after
+# this long, so a client that never restores cannot lock a room until restart.
+PENDING_LOCK_SECONDS = 600.0
+
 
 @dataclass(frozen=True)
 class _StoredSnapshot:
     room_name: str
+    coordinator_uid: str
     include_queue: bool
     state: dict[str, Any]
+    created_at: float
 
 
 class SnapshotService:
@@ -40,13 +57,22 @@ class SnapshotService:
         room_service: A ``RoomService`` instance for room/IP resolution.
         adapter: A ``SnapshotAdapter`` instance (or compatible fake).
         config: Active server configuration (volume cap).
+        clock: Monotonic time source; injectable for tests.
     """
 
-    def __init__(self, room_service: object, adapter: object, config: SoniqConfig) -> None:
+    def __init__(
+        self,
+        room_service: object,
+        adapter: object,
+        config: SoniqConfig,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
         self._room_service = room_service
         self._adapter = adapter
         self._config = config
+        self._clock = clock
         self._snapshots: OrderedDict[str, _StoredSnapshot] = OrderedDict()
+        self._capturing: set[str] = set()
         self._lock = threading.Lock()
 
     def snapshot(self, room_name: str, include_queue: bool = False) -> SnapshotToken:
@@ -54,18 +80,32 @@ class SnapshotService:
 
         Raises:
             RoomNotFoundError: If the room is not found.
+            SnapshotInProgressError: If the room (or its group) already has a
+                pending snapshot that has not been restored.
             SnapshotError: If the capture fails.
             SonosDiscoveryError: If network discovery fails.
         """
         room = self._room_service.get_room(room_name)
         target = self._resolve_coordinator(room)
-        state = self._adapter.capture(target.ip_address, include_queue)
+        with self._lock:
+            self._ensure_no_pending(target.uid, room.name)
+            self._capturing.add(target.uid)
+        try:
+            state = self._adapter.capture(target.ip_address, include_queue)
+        except BaseException:
+            with self._lock:
+                self._capturing.discard(target.uid)
+            raise
+
         snapshot_id = secrets.token_urlsafe(16)
         with self._lock:
+            self._capturing.discard(target.uid)
             self._snapshots[snapshot_id] = _StoredSnapshot(
                 room_name=room.name,
+                coordinator_uid=target.uid,
                 include_queue=include_queue,
                 state=state,
+                created_at=self._clock(),
             )
             while len(self._snapshots) > MAX_SNAPSHOTS:
                 self._snapshots.popitem(last=False)
@@ -111,6 +151,25 @@ class SnapshotService:
             queue_restored=stored.include_queue,
             volume_restored=restore_volume,
         )
+
+    def _ensure_no_pending(self, coordinator_uid: str, room_name: str) -> None:
+        """Reject a snapshot while another for the same coordinator is pending.
+
+        Caller must hold ``self._lock``.
+        """
+        if coordinator_uid in self._capturing:
+            raise SnapshotInProgressError(
+                f"A snapshot of {room_name!r} (or its group) is already being captured. "
+                "Retry after it completes."
+            )
+        cutoff = self._clock() - PENDING_LOCK_SECONDS
+        for pending in self._snapshots.values():
+            if pending.coordinator_uid == coordinator_uid and pending.created_at > cutoff:
+                raise SnapshotInProgressError(
+                    f"Room {pending.room_name!r} (or its group) has a snapshot that has not "
+                    "been restored. Call 'restore_snapshot' before taking a new snapshot, "
+                    "or play the next announcement before restoring."
+                )
 
     def _resolve_coordinator(self, room: Room) -> Room:
         """Return the group coordinator for a grouped room, else the room itself."""

@@ -173,7 +173,7 @@ These tools are transport-neutral across local `stdio` and remote `Streamable HT
 
 | Tool | Required parameters | Notes |
 |---|---|---|
-| `snapshot` | `room` | Captures playback state and returns a `snapshot_id`. Optional: `include_queue` (default `false`). Snapshots are in memory only and are lost on server restart. |
+| `snapshot` | `room` | Captures playback state and returns a `snapshot_id`. Optional: `include_queue` (default `false`). Snapshots are in memory only and are lost on server restart. Only one snapshot per room or group may be pending; a second is rejected until `restore_snapshot` (or 10 minutes pass). |
 | `restore_snapshot` | `room`, `snapshot_id` | Restores and consumes a snapshot from the same room. Stopped or paused rooms stay stopped or paused. Optional: `fade`. A captured volume above `max_volume_pct` is left unchanged. |
 | `play_uri` | `room`, `uri` | Plays an arbitrary URI, replacing the current source. Optional: `meta`, `title`, `force_radio`. HTTP audio plays as a radio stream, so wrap one-shot announcements in `snapshot` / `restore_snapshot`. |
 | `ramp_volume` | `room`, `volume` | Smooth, non-blocking volume change; the safety cap still applies. Optional: `ramp_type`. |

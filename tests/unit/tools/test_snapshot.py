@@ -86,6 +86,18 @@ class TestSnapshotTool:
         assert result["category"] == "internal"
         assert "secret" not in result["error"]
 
+    def test_snapshot_in_progress_is_validation_error(self):
+        from soniq_mcp.domain.exceptions import SnapshotInProgressError
+
+        svc = MagicMock()
+        svc.snapshot.side_effect = SnapshotInProgressError("pending")
+        fn, _ = _register_and_get("snapshot", svc)
+
+        result = fn(room="Kitchen")
+
+        assert result["category"] == "validation"
+        assert result["field"] == "snapshot"
+
     def test_disabled_tool_not_registered(self):
         fn, _ = _register_and_get("snapshot", disabled=["snapshot"])
 

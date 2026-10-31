@@ -45,6 +45,16 @@ Do not skip the snapshot. Sonos treats a single HTTP audio URL as a **radio stre
 
 When the room is part of a group, `play_uri` plays on the group coordinator, so the whole group hears the announcement. `snapshot` and `restore_snapshot` also act on the coordinator, so the group goes back to what it was playing. Address the room by any member's name; use the same name for all three calls.
 
+### Back-to-back announcements
+
+Only one snapshot can be pending per room, or per group for grouped rooms. A second `snapshot` before `restore_snapshot` is rejected with a `validation` error on the `snapshot` field.
+
+This is deliberate. A snapshot taken while an announcement is playing would save the announcement stream as the "previous" state, and restoring it would replay the announcement indefinitely.
+
+To play several announcements in a row, snapshot once, call `play_uri` for each clip in turn (waiting for each to finish), then call `restore_snapshot` once at the end. If Hermes can produce announcements faster than it plays them, queue them on the Hermes side.
+
+A pending snapshot stops blocking new snapshots after 10 minutes, so a client that crashes before restoring cannot lock a room until the server restarts. The old snapshot can still be restored after that.
+
 ### Snapshot lifetime
 
 Snapshots are held in server memory. They are lost if SoniqMCP restarts, and the server keeps only the 64 most recent. Restore as soon as the announcement finishes. A missing snapshot returns a `validation` error on the `snapshot` field.

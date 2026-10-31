@@ -324,3 +324,9 @@ class VolumeValidationError(VolumeError):
     """Raised when a volume request fails local validation."""
 
     error_category = ErrorCategory.VALIDATION
+
+
+class SnapshotInProgressError(SnapshotError):
+    """Raised when a room already has a pending, unrestored snapshot."""
+
+    error_category = ErrorCategory.VALIDATION

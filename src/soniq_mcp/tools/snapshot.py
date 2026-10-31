@@ -56,6 +56,8 @@ def register(app: FastMCP, config: SoniqConfig, snapshot_service: object) -> Non
             Returns a snapshot_id for restore_snapshot. Snapshots are held in server
             memory only and are lost if the server restarts. Set include_queue=true
             only when the queue itself will be replaced; restoring a large queue is slow.
+            Only one snapshot per room (or group) may be pending: for back-to-back
+            announcements, play them all, then restore once.
             """
             assert_tool_permitted("snapshot", config)
             try:
