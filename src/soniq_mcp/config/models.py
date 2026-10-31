@@ -80,6 +80,12 @@ KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
         "list_radio_favourites",
         "play_radio_favourite",
         "add_multiple_to_queue",
+        "save_queue_as_playlist",
+        "remove_from_playlist",
+        "reorder_playlist",
+        "ramp_volume",
+        "create_stereo_pair",
+        "separate_stereo_pair",
     }
 )
 

@@ -1,7 +1,7 @@
 """Volume and mute MCP tools for SoniqMCP.
 
-Exposes ``get_volume``, ``set_volume``, ``adjust_volume``, ``mute``,
-``unmute``, and ``get_mute`` as thin handlers that delegate all logic
+Exposes ``get_volume``, ``set_volume``, ``adjust_volume``, ``ramp_volume``,
+``mute``, ``unmute``, and ``get_mute`` as thin handlers that delegate all logic
 to ``VolumeService``. No SoCo calls here.
 """
 
@@ -21,7 +21,7 @@ from soniq_mcp.domain.exceptions import (
 )
 from soniq_mcp.domain.safety import assert_tool_permitted
 from soniq_mcp.schemas.errors import ErrorResponse
-from soniq_mcp.schemas.responses import VolumeStateResponse
+from soniq_mcp.schemas.responses import VolumeRampResponse, VolumeStateResponse
 
 log = logging.getLogger(__name__)
 
@@ -102,6 +102,30 @@ def register(app: FastMCP, config: SoniqConfig, volume_service: object) -> None:
                 return ErrorResponse.from_room_not_found(room).model_dump()
             except SonosDiscoveryError as exc:
                 log.warning("Discovery failed in adjust_volume: %s", exc)
+                return ErrorResponse.from_discovery_error(exc).model_dump()
+
+    if "ramp_volume" not in config.tools_disabled:
+
+        @app.tool(title="Ramp Volume", annotations=_CONTROL_TOOL_HINTS)
+        def ramp_volume(room: str, volume: int, ramp_type: str = "SLEEP_TIMER_RAMP_TYPE") -> dict:
+            """Smoothly ramp a Sonos room to a target volume (capped by max_volume_pct).
+
+            ramp_type: SLEEP_TIMER_RAMP_TYPE (linear from current, ~1.25 steps/s),
+            ALARM_RAMP_TYPE (from 0 after ~30s pause), or AUTOPLAY_RAMP_TYPE (fast from 0).
+            Returns immediately; the ramp continues on the speaker.
+            """
+            assert_tool_permitted("ramp_volume", config)
+            try:
+                result = volume_service.ramp_volume(room, volume, ramp_type)
+                return VolumeRampResponse.from_domain(result).model_dump()
+            except VolumeCapExceeded as exc:
+                return ErrorResponse.from_volume_cap(exc.requested, exc.cap).model_dump()
+            except (ValueError, VolumeError) as exc:
+                return ErrorResponse.from_volume_error(exc).model_dump()
+            except RoomNotFoundError:
+                return ErrorResponse.from_room_not_found(room).model_dump()
+            except SonosDiscoveryError as exc:
+                log.warning("Discovery failed in ramp_volume: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
 
     if "mute" not in config.tools_disabled:

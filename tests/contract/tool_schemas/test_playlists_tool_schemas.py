@@ -54,6 +54,9 @@ class TestPlaylistToolSurfaceContract:
             "create_playlist",
             "update_playlist",
             "delete_playlist",
+            "save_queue_as_playlist",
+            "remove_from_playlist",
+            "reorder_playlist",
         }
 
     def test_rename_playlist_is_not_exposed(self, registered_app: FastMCP) -> None:

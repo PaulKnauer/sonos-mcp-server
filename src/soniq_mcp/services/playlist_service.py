@@ -6,7 +6,7 @@ from soniq_mcp.domain.exceptions import (
     PlaylistValidationError,
     SonosDiscoveryError,
 )
-from soniq_mcp.domain.models import SonosPlaylist
+from soniq_mcp.domain.models import Room, SonosPlaylist
 
 
 def _validate_playlist_id(value: str) -> str:
@@ -37,6 +37,19 @@ def _validate_title(value: str) -> str:
             "Invalid title. Playlist title must not be empty or whitespace-only."
         )
     return normalized
+
+
+def _validate_position(value: object, field_name: str) -> int:
+    """Return a validated 1-based playlist position.
+
+    Raises:
+        PlaylistValidationError: If the value is not a positive integer.
+    """
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise PlaylistValidationError(
+            f"Invalid {field_name} {value!r}. Expected a 1-based positive integer."
+        )
+    return value
 
 
 class PlaylistService:
@@ -165,6 +178,67 @@ class PlaylistService:
         self._ensure_playlist_exists(normalized_id, ip)
         self._adapter.delete_playlist(ip, normalized_id)
         return {"playlist_id": normalized_id, "status": "deleted"}
+
+    def save_queue_as_playlist(self, room: str, title: str) -> SonosPlaylist:
+        """Save the room's current queue as a new Sonos playlist.
+
+        Grouped rooms save the group coordinator's queue.
+
+        Raises:
+            PlaylistValidationError: If the title is blank.
+            RoomNotFoundError: If the room is not found.
+            PlaylistError: If the adapter call fails.
+        """
+        normalized_title = _validate_title(title)
+        room_obj = self._resolve_coordinator(room)
+        return self._adapter.save_queue_as_playlist(room_obj.ip_address, normalized_title)
+
+    def remove_from_playlist(self, playlist_id: str, position: int) -> dict:
+        """Remove the track at a 1-based position from a Sonos playlist.
+
+        Raises:
+            PlaylistValidationError: If the id, position, or playlist is invalid.
+            PlaylistError: If the adapter call fails.
+            SonosDiscoveryError: If no rooms are reachable.
+        """
+        normalized_id = _validate_playlist_id(playlist_id)
+        validated_position = _validate_position(position, "position")
+        ip = self._get_any_ip()
+        self._ensure_playlist_exists(normalized_id, ip)
+        self._adapter.remove_from_playlist(ip, normalized_id, validated_position)
+        return {"playlist_id": normalized_id, "status": "removed", "position": validated_position}
+
+    def reorder_playlist(self, playlist_id: str, from_position: int, to_position: int) -> dict:
+        """Move a track within a Sonos playlist using 1-based positions.
+
+        Raises:
+            PlaylistValidationError: If the id, a position, or the playlist is invalid.
+            PlaylistError: If the adapter call fails.
+            SonosDiscoveryError: If no rooms are reachable.
+        """
+        normalized_id = _validate_playlist_id(playlist_id)
+        validated_from = _validate_position(from_position, "from_position")
+        validated_to = _validate_position(to_position, "to_position")
+        ip = self._get_any_ip()
+        self._ensure_playlist_exists(normalized_id, ip)
+        self._adapter.reorder_playlist(ip, normalized_id, validated_from, validated_to)
+        return {
+            "playlist_id": normalized_id,
+            "status": "reordered",
+            "from_position": validated_from,
+            "to_position": validated_to,
+        }
+
+    def _resolve_coordinator(self, room_name: str) -> Room:
+        """Return the group coordinator for a grouped room, else the room itself."""
+        room = self._room_service.get_room(room_name)
+        coordinator_uid = room.group_coordinator_uid
+        if not coordinator_uid:
+            return room
+        for candidate in self._room_service.list_rooms():
+            if candidate.uid == coordinator_uid:
+                return candidate
+        return room
 
     def _get_any_ip(self) -> str:
         """Return a reachable room IP for household-wide playlist operations."""

@@ -27,6 +27,7 @@ from soniq_mcp.schemas.responses import (
     GroupTopologyResponse,
     RoomStatusResponse,
     StatusResponse,
+    StereoPairResponse,
 )
 
 log = logging.getLogger(__name__)
@@ -304,4 +305,56 @@ def register(app: FastMCP, config: SoniqConfig, group_service: object) -> None:
                 return ErrorResponse.from_discovery_error(exc).model_dump()
             except Exception as exc:
                 log.exception("Internal error in group_rooms")
+                return ErrorResponse.from_internal_error(exc, field="group").model_dump()
+
+    if "create_stereo_pair" not in config.tools_disabled:
+
+        @app.tool(
+            title="Create Stereo Pair",
+            annotations=_CONTROL_TOOL_HINTS,
+        )
+        def create_stereo_pair(room: str, right_room: str) -> dict:
+            """Bond two speakers into a stereo pair; room becomes left, right_room becomes right.
+
+            Both rooms must contain a single, unpaired speaker. The pair then appears as
+            one room named after the left speaker.
+            """
+            assert_tool_permitted("create_stereo_pair", config)
+            try:
+                group_service.create_stereo_pair(room, right_room)
+                return StereoPairResponse(room=room, right_room=right_room).model_dump()
+            except RoomNotFoundError as exc:
+                return ErrorResponse.from_room_not_found(exc.room_name).model_dump()
+            except GroupError as exc:
+                log.warning("Group error in create_stereo_pair: %s", exc)
+                return ErrorResponse.from_group_error(exc).model_dump()
+            except SonosDiscoveryError as exc:
+                log.warning("Discovery error in create_stereo_pair: %s", exc)
+                return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in create_stereo_pair")
+                return ErrorResponse.from_internal_error(exc, field="group").model_dump()
+
+    if "separate_stereo_pair" not in config.tools_disabled:
+
+        @app.tool(
+            title="Separate Stereo Pair",
+            annotations=_CONTROL_TOOL_HINTS,
+        )
+        def separate_stereo_pair(room: str) -> dict:
+            """Split the stereo pair a room belongs to back into two independent rooms."""
+            assert_tool_permitted("separate_stereo_pair", config)
+            try:
+                group_service.separate_stereo_pair(room)
+                return RoomStatusResponse(room=room).model_dump()
+            except RoomNotFoundError:
+                return ErrorResponse.from_room_not_found(room).model_dump()
+            except GroupError as exc:
+                log.warning("Group error in separate_stereo_pair: %s", exc)
+                return ErrorResponse.from_group_error(exc).model_dump()
+            except SonosDiscoveryError as exc:
+                log.warning("Discovery error in separate_stereo_pair: %s", exc)
+                return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in separate_stereo_pair")
                 return ErrorResponse.from_internal_error(exc, field="group").model_dump()

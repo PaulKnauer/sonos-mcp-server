@@ -379,3 +379,20 @@ class RadioFavourite:
     uri: str
     kind: Literal["station", "show"]
     meta: str | None = field(default=None)
+
+
+@dataclass(frozen=True)
+class VolumeRampResult:
+    """Outcome of starting a Sonos volume ramp.
+
+    Attributes:
+        room_name: Human-readable room name.
+        target_volume: Volume the ramp ends at (0-100, within the cap).
+        ramp_type: Sonos ramp type used.
+        ramp_seconds: Estimated ramp duration reported by Sonos.
+    """
+
+    room_name: str
+    target_volume: int
+    ramp_type: str
+    ramp_seconds: int

@@ -32,6 +32,7 @@ from soniq_mcp.domain.models import (
     Speaker,
     SystemTopology,
     TrackInfo,
+    VolumeRampResult,
     VolumeState,
 )
 
@@ -243,6 +244,29 @@ class PlaylistPlaybackResponse(RoomStatusResponse):
     """Success response for the ``play_playlist`` tool."""
 
     uri: str
+
+
+class StereoPairResponse(RoomStatusResponse):
+    """Success response for the ``create_stereo_pair`` tool."""
+
+    right_room: str
+
+
+class PlaylistTrackRemoveResponse(BaseModel):
+    """Response for the ``remove_from_playlist`` tool."""
+
+    playlist_id: str
+    status: str
+    position: int
+
+
+class PlaylistReorderResponse(BaseModel):
+    """Response for the ``reorder_playlist`` tool."""
+
+    playlist_id: str
+    status: str
+    from_position: int
+    to_position: int
 
 
 class PlaylistDeleteResponse(BaseModel):
@@ -645,4 +669,23 @@ class RadioFavouritesListResponse(BaseModel):
             room=room_name,
             items=[RadioFavouriteResponse.from_domain(f) for f in items],
             count=len(items),
+        )
+
+
+class VolumeRampResponse(BaseModel):
+    """Response for the ``ramp_volume`` tool."""
+
+    status: str = "ok"
+    room: str
+    target_volume: int
+    ramp_type: str
+    ramp_seconds: int
+
+    @classmethod
+    def from_domain(cls, result: VolumeRampResult) -> VolumeRampResponse:
+        return cls(
+            room=result.room_name,
+            target_volume=result.target_volume,
+            ramp_type=result.ramp_type,
+            ramp_seconds=result.ramp_seconds,
         )

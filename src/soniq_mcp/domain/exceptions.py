@@ -318,3 +318,9 @@ class QueueValidationError(QueueError):
     """Raised when a queue request fails local validation."""
 
     error_category = ErrorCategory.VALIDATION
+
+
+class VolumeValidationError(VolumeError):
+    """Raised when a volume request fails local validation."""
+
+    error_category = ErrorCategory.VALIDATION

@@ -5,11 +5,22 @@ from __future__ import annotations
 import logging
 
 from soniq_mcp.config.models import SoniqConfig
-from soniq_mcp.domain.exceptions import PlaybackValidationError
-from soniq_mcp.domain.models import PlaybackState, Room, SleepTimerState, TrackInfo, VolumeState
+from soniq_mcp.domain.exceptions import PlaybackValidationError, VolumeValidationError
+from soniq_mcp.domain.models import (
+    PlaybackState,
+    Room,
+    SleepTimerState,
+    TrackInfo,
+    VolumeRampResult,
+    VolumeState,
+)
 from soniq_mcp.domain.safety import check_volume
 
 log = logging.getLogger(__name__)
+
+RAMP_TYPES: frozenset[str] = frozenset(
+    {"SLEEP_TIMER_RAMP_TYPE", "ALARM_RAMP_TYPE", "AUTOPLAY_RAMP_TYPE"}
+)
 
 
 class SonosService:
@@ -134,6 +145,33 @@ class SonosService:
         self._adapter.set_volume(room.ip_address, target)
         is_muted = self._adapter.get_mute(room.ip_address)
         return VolumeState(room_name=room.name, volume=target, is_muted=is_muted)
+
+    def ramp_volume(
+        self, room_name: str, volume: int, ramp_type: str = "SLEEP_TIMER_RAMP_TYPE"
+    ) -> VolumeRampResult:
+        """Smoothly ramp the room volume to a capped target.
+
+        Raises:
+            VolumeCapExceeded: If ``volume`` exceeds ``config.max_volume_pct``.
+            ValueError: If ``volume`` is outside 0-100.
+            VolumeValidationError: If ``ramp_type`` is not a Sonos ramp type.
+            RoomNotFoundError: If room is not in the household.
+            VolumeError: If the SoCo operation fails.
+        """
+        if ramp_type not in RAMP_TYPES:
+            allowed = ", ".join(sorted(RAMP_TYPES))
+            raise VolumeValidationError(
+                f"Invalid ramp_type {ramp_type!r}. Expected one of: {allowed}."
+            )
+        check_volume(volume, self._config)
+        room = self._room_service.get_room(room_name)
+        seconds = self._adapter.ramp_to_volume(room.ip_address, volume, ramp_type)
+        return VolumeRampResult(
+            room_name=room.name,
+            target_volume=volume,
+            ramp_type=ramp_type,
+            ramp_seconds=seconds,
+        )
 
     def mute(self, room_name: str) -> None:
         room = self._room_service.get_room(room_name)

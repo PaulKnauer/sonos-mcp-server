@@ -23,8 +23,10 @@ from soniq_mcp.schemas.errors import ErrorResponse
 from soniq_mcp.schemas.responses import (
     PlaylistDeleteResponse,
     PlaylistPlaybackResponse,
+    PlaylistReorderResponse,
     PlaylistResponse,
     PlaylistsListResponse,
+    PlaylistTrackRemoveResponse,
 )
 
 log = logging.getLogger(__name__)
@@ -205,4 +207,79 @@ def register(app: FastMCP, config: SoniqConfig, playlist_service: object) -> Non
                 return ErrorResponse.from_discovery_error(exc).model_dump()
             except Exception as exc:
                 log.exception("Internal error in delete_playlist")
+                return ErrorResponse.from_internal_error(exc, field="playlist").model_dump()
+
+    if "save_queue_as_playlist" not in config.tools_disabled:
+
+        @app.tool(title="Save Queue as Playlist", annotations=_CONTROL_TOOL_HINTS)
+        def save_queue_as_playlist(room: str, title: str) -> dict:
+            """Save a room's current queue as a new Sonos playlist.
+
+            Args:
+                room: Room whose queue to save (grouped rooms save the group queue).
+                title: Title for the new playlist. Must not be blank.
+            """
+            assert_tool_permitted("save_queue_as_playlist", config)
+            try:
+                playlist = playlist_service.save_queue_as_playlist(room, title)
+                return PlaylistResponse.from_domain(playlist).model_dump()
+            except RoomNotFoundError:
+                return ErrorResponse.from_room_not_found(room).model_dump()
+            except PlaylistError as exc:
+                log.warning("Playlist error in save_queue_as_playlist: %s", exc)
+                return ErrorResponse.from_playlist_error(exc).model_dump()
+            except SonosDiscoveryError as exc:
+                log.warning("Discovery error in save_queue_as_playlist: %s", exc)
+                return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in save_queue_as_playlist")
+                return ErrorResponse.from_internal_error(exc, field="playlist").model_dump()
+
+    if "remove_from_playlist" not in config.tools_disabled:
+
+        @app.tool(title="Remove from Playlist", annotations=_DESTRUCTIVE_TOOL_HINTS)
+        def remove_from_playlist(playlist_id: str, position: int) -> dict:
+            """Remove the track at a 1-based position from a Sonos playlist.
+
+            Args:
+                playlist_id: The ``item_id`` of the playlist (from ``list_playlists``).
+                position: 1-based position of the track to remove.
+            """
+            assert_tool_permitted("remove_from_playlist", config)
+            try:
+                result = playlist_service.remove_from_playlist(playlist_id, position)
+                return PlaylistTrackRemoveResponse(**result).model_dump()
+            except PlaylistError as exc:
+                log.warning("Playlist error in remove_from_playlist: %s", exc)
+                return ErrorResponse.from_playlist_error(exc).model_dump()
+            except SonosDiscoveryError as exc:
+                log.warning("Discovery error in remove_from_playlist: %s", exc)
+                return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in remove_from_playlist")
+                return ErrorResponse.from_internal_error(exc, field="playlist").model_dump()
+
+    if "reorder_playlist" not in config.tools_disabled:
+
+        @app.tool(title="Reorder Playlist", annotations=_CONTROL_TOOL_HINTS)
+        def reorder_playlist(playlist_id: str, from_position: int, to_position: int) -> dict:
+            """Move a track within a Sonos playlist.
+
+            Args:
+                playlist_id: The ``item_id`` of the playlist (from ``list_playlists``).
+                from_position: 1-based current position of the track.
+                to_position: 1-based position to move the track to.
+            """
+            assert_tool_permitted("reorder_playlist", config)
+            try:
+                result = playlist_service.reorder_playlist(playlist_id, from_position, to_position)
+                return PlaylistReorderResponse(**result).model_dump()
+            except PlaylistError as exc:
+                log.warning("Playlist error in reorder_playlist: %s", exc)
+                return ErrorResponse.from_playlist_error(exc).model_dump()
+            except SonosDiscoveryError as exc:
+                log.warning("Discovery error in reorder_playlist: %s", exc)
+                return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in reorder_playlist")
                 return ErrorResponse.from_internal_error(exc, field="playlist").model_dump()

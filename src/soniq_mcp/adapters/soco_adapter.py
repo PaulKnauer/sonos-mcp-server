@@ -175,6 +175,18 @@ class SoCoAdapter:
         except Exception as exc:
             raise VolumeError(f"Failed to set volume on {ip_address}: {exc}") from exc
 
+    def ramp_to_volume(self, ip_address: str, volume: int, ramp_type: str) -> int:
+        """Start a non-blocking volume ramp and return its estimated duration in seconds.
+
+        Raises:
+            VolumeError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            return int(zone.ramp_to_volume(volume, ramp_type=ramp_type))
+        except Exception as exc:
+            raise VolumeError(f"Failed to ramp volume on {ip_address}: {exc}") from exc
+
     def get_mute(self, ip_address: str) -> bool:
         try:
             zone = self._make_zone(ip_address)
@@ -359,6 +371,66 @@ class SoCoAdapter:
             raise
         except Exception as exc:
             raise PlaylistError(f"Failed to create playlist: {exc}") from exc
+
+    def save_queue_as_playlist(self, ip_address: str, title: str) -> SonosPlaylist:
+        """Save the zone's current queue as a new Sonos playlist.
+
+        Raises:
+            PlaylistError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            result = zone.create_sonos_playlist_from_queue(title)
+            return SonosPlaylist(
+                title=result.title,
+                uri=self._get_didl_uri(result),
+                item_id=getattr(result, "item_id", None),
+            )
+        except Exception as exc:
+            raise PlaylistError(f"Failed to save queue as playlist: {exc}") from exc
+
+    def remove_from_playlist(self, ip_address: str, item_id: str, position: int) -> None:
+        """Remove the track at a 1-based position from a Sonos playlist.
+
+        Raises:
+            PlaylistValidationError: If the playlist or position is not found.
+            PlaylistError: If SoCo raises any exception.
+        """
+        zone = self._make_zone(ip_address)
+        playlist_obj = self._require_playlist(zone, item_id)
+        self._require_playlist_position(zone, playlist_obj, position)
+        try:
+            zone.remove_from_sonos_playlist(playlist_obj, position - 1, update_id=0)
+        except Exception as exc:
+            raise PlaylistError(f"Failed to remove track from playlist: {exc}") from exc
+
+    def reorder_playlist(
+        self, ip_address: str, item_id: str, from_position: int, to_position: int
+    ) -> None:
+        """Move a track within a Sonos playlist using 1-based positions.
+
+        Raises:
+            PlaylistValidationError: If the playlist or a position is not found.
+            PlaylistError: If SoCo raises any exception.
+        """
+        zone = self._make_zone(ip_address)
+        playlist_obj = self._require_playlist(zone, item_id)
+        self._require_playlist_position(zone, playlist_obj, from_position, to_position)
+        try:
+            zone.move_in_sonos_playlist(
+                playlist_obj, from_position - 1, to_position - 1, update_id=0
+            )
+        except Exception as exc:
+            raise PlaylistError(f"Failed to reorder playlist: {exc}") from exc
+
+    def _require_playlist_position(self, zone: Any, playlist_obj: Any, *positions: int) -> None:
+        track_count = len(self._browse_playlist_items(zone, playlist_obj))
+        for position in positions:
+            if not 1 <= position <= track_count:
+                raise PlaylistValidationError(
+                    f"Playlist position {position} is out of range "
+                    f"(playlist has {track_count} tracks)."
+                )
 
     def rename_playlist(self, ip_address: str, item_id: str, title: str) -> SonosPlaylist:
         """Rename a Sonos playlist.
@@ -760,6 +832,30 @@ class SoCoAdapter:
             zone.unjoin()
         except Exception as exc:
             raise GroupError(f"Failed to unjoin room: {exc}") from exc
+
+    def create_stereo_pair(self, ip_address: str, right_ip: str) -> None:
+        """Bond two speakers as a stereo pair (this zone becomes the left channel).
+
+        Raises:
+            GroupError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            zone.create_stereo_pair(self._make_zone(right_ip))
+        except Exception as exc:
+            raise GroupError(f"Failed to create stereo pair: {exc}") from exc
+
+    def separate_stereo_pair(self, ip_address: str) -> None:
+        """Split a stereo pair back into two independent zones.
+
+        Raises:
+            GroupError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            zone.separate_stereo_pair()
+        except Exception as exc:
+            raise GroupError(f"Failed to separate stereo pair: {exc}") from exc
 
     def party_mode(self, ip_address: str) -> None:
         try:
