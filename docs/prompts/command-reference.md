@@ -176,13 +176,13 @@ These tools are transport-neutral across local `stdio` and remote `Streamable HT
 | `snapshot` | `room` | Captures playback state and returns a `snapshot_id`. Optional: `include_queue` (default `false`). Snapshots are in memory only and are lost on server restart. Only one snapshot per room or group may be pending; a second is rejected until `restore_snapshot` (or 10 minutes pass). |
 | `restore_snapshot` | `room`, `snapshot_id` | Restores and consumes a snapshot from the same room. Stopped or paused rooms stay stopped or paused. Optional: `fade`. A captured volume above `max_volume_pct` is left unchanged. |
 | `play_uri` | `room`, `uri` | Plays an arbitrary URI, replacing the current source. Optional: `meta`, `title`, `force_radio`. HTTP audio plays as a radio stream, so wrap one-shot announcements in `snapshot` / `restore_snapshot`. |
-| `ramp_volume` | `room`, `volume` | Smooth, non-blocking volume change; the safety cap still applies. Optional: `ramp_type`. |
+| `ramp_volume` | `room`, `target` | Smooth, non-blocking volume change; the safety cap still applies. Optional: `ramp_type`. |
 | `add_to_queue` | `room`, `uri` | Optional: `as_next` (honoured by Sonos only in shuffle mode). |
 | `add_multiple_to_queue` | `room`, `uris` | Appends up to 100 URIs in one call. |
 | `list_radio_favourites` | `room` | Sonos Radio / TuneIn favourite stations and shows. |
 | `play_radio_favourite` | `room`, `uri` | Plays a `uri` from `list_radio_favourites`. |
 | `get_battery_info` | `room` | Portable speakers only; other rooms return `supported: false`. |
-| `create_stereo_pair` | `room`, `right_room` | `room` becomes the left channel. |
+| `create_stereo_pair` | `room`, `slave_room` | `room` becomes the left channel and `slave_room` the right. |
 | `separate_stereo_pair` | `room` | Splits the pair back into two rooms. |
 
 For the announcement recipe, see [../integrations/hermes.md](../integrations/hermes.md).

@@ -313,16 +313,16 @@ def register(app: FastMCP, config: SoniqConfig, group_service: object) -> None:
             title="Create Stereo Pair",
             annotations=_CONTROL_TOOL_HINTS,
         )
-        def create_stereo_pair(room: str, right_room: str) -> dict:
-            """Bond two speakers into a stereo pair; room becomes left, right_room becomes right.
+        def create_stereo_pair(room: str, slave_room: str) -> dict:
+            """Bond two speakers into a stereo pair; room becomes left, slave_room becomes right.
 
             Both rooms must contain a single, unpaired speaker. The pair then appears as
             one room named after the left speaker.
             """
             assert_tool_permitted("create_stereo_pair", config)
             try:
-                group_service.create_stereo_pair(room, right_room)
-                return StereoPairResponse(room=room, right_room=right_room).model_dump()
+                group_service.create_stereo_pair(room, slave_room)
+                return StereoPairResponse(room=room, slave_room=slave_room).model_dump()
             except RoomNotFoundError as exc:
                 return ErrorResponse.from_room_not_found(exc.room_name).model_dump()
             except GroupError as exc:

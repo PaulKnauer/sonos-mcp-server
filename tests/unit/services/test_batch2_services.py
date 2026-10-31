@@ -191,7 +191,7 @@ class TestStereoPair:
             svc.create_stereo_pair("Kitchen", "Kitchen")
         adapter.create_stereo_pair.assert_not_called()
 
-    def test_unknown_right_room(self):
+    def test_unknown_slave_room(self):
         svc = GroupService(_room_service(), MagicMock())
 
         with pytest.raises(RoomNotFoundError):

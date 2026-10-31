@@ -249,7 +249,7 @@ class PlaylistPlaybackResponse(RoomStatusResponse):
 class StereoPairResponse(RoomStatusResponse):
     """Success response for the ``create_stereo_pair`` tool."""
 
-    right_room: str
+    slave_room: str
 
 
 class PlaylistTrackRemoveResponse(BaseModel):

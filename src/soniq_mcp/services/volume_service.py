@@ -79,19 +79,19 @@ class VolumeService:
         return self._sonos_service.adjust_volume(room_name, delta)
 
     def ramp_volume(
-        self, room_name: str, volume: int, ramp_type: str = "SLEEP_TIMER_RAMP_TYPE"
+        self, room_name: str, target: int, ramp_type: str = "SLEEP_TIMER_RAMP_TYPE"
     ) -> VolumeRampResult:
         """Smoothly ramp the named room to a target volume (capped by max_volume_pct).
 
         Raises:
-            VolumeCapExceeded: If ``volume`` exceeds ``config.max_volume_pct``.
-            ValueError: If ``volume`` is outside 0-100.
+            VolumeCapExceeded: If ``target`` exceeds ``config.max_volume_pct``.
+            ValueError: If ``target`` is outside 0-100.
             VolumeValidationError: If ``ramp_type`` is not a Sonos ramp type.
             RoomNotFoundError: If room is not in the household.
             SonosDiscoveryError: If network discovery fails.
             VolumeError: If the SoCo operation fails.
         """
-        return self._sonos_service.ramp_volume(room_name, volume, ramp_type)
+        return self._sonos_service.ramp_volume(room_name, target, ramp_type)
 
     def mute(self, room_name: str) -> None:
         """Mute the named room.

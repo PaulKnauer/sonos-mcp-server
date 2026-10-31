@@ -40,8 +40,10 @@ class GroupService:
         room = self._room_service.get_room(room_name)
         self._adapter.unjoin_room(room.ip_address)
 
-    def create_stereo_pair(self, room_name: str, right_room_name: str) -> None:
+    def create_stereo_pair(self, room_name: str, slave_room_name: str) -> None:
         """Bond two rooms into a stereo pair; room_name becomes the left channel.
+
+        slave_room_name becomes the right channel.
 
         Raises:
             GroupValidationError: If both names resolve to the same room.
@@ -49,10 +51,10 @@ class GroupService:
             GroupError: If the adapter call fails (e.g. a speaker is already paired).
         """
         left = self._room_service.get_room(room_name)
-        right = self._room_service.get_room(right_room_name)
-        if left.uid == right.uid:
+        slave = self._room_service.get_room(slave_room_name)
+        if left.uid == slave.uid:
             raise GroupValidationError("A stereo pair needs two different rooms.")
-        self._adapter.create_stereo_pair(left.ip_address, right.ip_address)
+        self._adapter.create_stereo_pair(left.ip_address, slave.ip_address)
 
     def separate_stereo_pair(self, room_name: str) -> None:
         """Split the stereo pair that room_name belongs to.

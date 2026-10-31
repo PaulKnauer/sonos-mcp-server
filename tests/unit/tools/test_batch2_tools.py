@@ -163,7 +163,7 @@ class TestRampVolumeTool:
         svc.ramp_volume.return_value = VolumeRampResult("Kitchen", 30, "SLEEP_TIMER_RAMP_TYPE", 8)
         tools, _ = _volume_tools(svc)
 
-        result = tools["ramp_volume"](room="Kitchen", volume=30)
+        result = tools["ramp_volume"](room="Kitchen", target=30)
 
         svc.ramp_volume.assert_called_once_with("Kitchen", 30, "SLEEP_TIMER_RAMP_TYPE")
         assert result == {
@@ -179,7 +179,7 @@ class TestRampVolumeTool:
         svc.ramp_volume.side_effect = VolumeCapExceeded(95, 80)
         tools, _ = _volume_tools(svc)
 
-        result = tools["ramp_volume"](room="Kitchen", volume=95)
+        result = tools["ramp_volume"](room="Kitchen", target=95)
 
         assert result["field"] == "volume"
         assert result["category"] == "validation"
@@ -192,31 +192,31 @@ class TestRampVolumeTool:
         svc.ramp_volume.side_effect = exc
         tools, _ = _volume_tools(svc)
 
-        assert tools["ramp_volume"](room="Kitchen", volume=30)["field"] == "sonos_volume"
+        assert tools["ramp_volume"](room="Kitchen", target=30)["field"] == "sonos_volume"
 
     def test_room_not_found(self):
         svc = MagicMock()
         svc.ramp_volume.side_effect = RoomNotFoundError("Garage")
         tools, _ = _volume_tools(svc)
 
-        assert tools["ramp_volume"](room="Garage", volume=30)["field"] == "room"
+        assert tools["ramp_volume"](room="Garage", target=30)["field"] == "room"
 
     def test_discovery_error(self):
         svc = MagicMock()
         svc.ramp_volume.side_effect = SonosDiscoveryError("down")
         tools, _ = _volume_tools(svc)
 
-        assert tools["ramp_volume"](room="Kitchen", volume=30)["category"] == "connectivity"
+        assert tools["ramp_volume"](room="Kitchen", target=30)["category"] == "connectivity"
 
 
 class TestStereoPairTools:
     def test_create_returns_ok(self):
         tools, svc = _group_tools()
 
-        result = tools["create_stereo_pair"](room="Left", right_room="Right")
+        result = tools["create_stereo_pair"](room="Left", slave_room="Right")
 
         svc.create_stereo_pair.assert_called_once_with("Left", "Right")
-        assert result == {"status": "ok", "room": "Left", "right_room": "Right"}
+        assert result == {"status": "ok", "room": "Left", "slave_room": "Right"}
 
     @pytest.mark.parametrize(
         ("exc", "field"),
@@ -233,7 +233,7 @@ class TestStereoPairTools:
         svc.create_stereo_pair.side_effect = exc
         tools, _ = _group_tools(svc)
 
-        assert tools["create_stereo_pair"](room="Left", right_room="Right")["field"] == field
+        assert tools["create_stereo_pair"](room="Left", slave_room="Right")["field"] == field
 
     def test_separate_returns_ok(self):
         tools, svc = _group_tools()
@@ -265,3 +265,19 @@ def test_disabled_tools_not_registered(factory, names):
 
     for name in names:
         assert name not in tools
+
+
+@pytest.mark.parametrize(
+    ("factory", "tool_name", "expected"),
+    [
+        (_volume_tools, "ramp_volume", ["room", "target", "ramp_type"]),
+        (_group_tools, "create_stereo_pair", ["room", "slave_room"]),
+        (_group_tools, "separate_stereo_pair", ["room"]),
+    ],
+)
+def test_parameter_names_match_brief(factory, tool_name, expected):
+    import inspect
+
+    tools, _ = factory()
+
+    assert list(inspect.signature(tools[tool_name]).parameters) == expected

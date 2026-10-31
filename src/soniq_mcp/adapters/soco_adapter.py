@@ -833,7 +833,7 @@ class SoCoAdapter:
         except Exception as exc:
             raise GroupError(f"Failed to unjoin room: {exc}") from exc
 
-    def create_stereo_pair(self, ip_address: str, right_ip: str) -> None:
+    def create_stereo_pair(self, ip_address: str, slave_ip: str) -> None:
         """Bond two speakers as a stereo pair (this zone becomes the left channel).
 
         Raises:
@@ -841,7 +841,7 @@ class SoCoAdapter:
         """
         try:
             zone = self._make_zone(ip_address)
-            zone.create_stereo_pair(self._make_zone(right_ip))
+            zone.create_stereo_pair(self._make_zone(slave_ip))
         except Exception as exc:
             raise GroupError(f"Failed to create stereo pair: {exc}") from exc
 

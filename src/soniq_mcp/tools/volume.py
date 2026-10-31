@@ -107,7 +107,7 @@ def register(app: FastMCP, config: SoniqConfig, volume_service: object) -> None:
     if "ramp_volume" not in config.tools_disabled:
 
         @app.tool(title="Ramp Volume", annotations=_CONTROL_TOOL_HINTS)
-        def ramp_volume(room: str, volume: int, ramp_type: str = "SLEEP_TIMER_RAMP_TYPE") -> dict:
+        def ramp_volume(room: str, target: int, ramp_type: str = "SLEEP_TIMER_RAMP_TYPE") -> dict:
             """Smoothly ramp a Sonos room to a target volume (capped by max_volume_pct).
 
             ramp_type: SLEEP_TIMER_RAMP_TYPE (linear from current, ~1.25 steps/s),
@@ -116,7 +116,7 @@ def register(app: FastMCP, config: SoniqConfig, volume_service: object) -> None:
             """
             assert_tool_permitted("ramp_volume", config)
             try:
-                result = volume_service.ramp_volume(room, volume, ramp_type)
+                result = volume_service.ramp_volume(room, target, ramp_type)
                 return VolumeRampResponse.from_domain(result).model_dump()
             except VolumeCapExceeded as exc:
                 return ErrorResponse.from_volume_cap(exc.requested, exc.cap).model_dump()

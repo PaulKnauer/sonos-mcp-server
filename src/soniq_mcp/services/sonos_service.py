@@ -147,13 +147,13 @@ class SonosService:
         return VolumeState(room_name=room.name, volume=target, is_muted=is_muted)
 
     def ramp_volume(
-        self, room_name: str, volume: int, ramp_type: str = "SLEEP_TIMER_RAMP_TYPE"
+        self, room_name: str, target: int, ramp_type: str = "SLEEP_TIMER_RAMP_TYPE"
     ) -> VolumeRampResult:
         """Smoothly ramp the room volume to a capped target.
 
         Raises:
-            VolumeCapExceeded: If ``volume`` exceeds ``config.max_volume_pct``.
-            ValueError: If ``volume`` is outside 0-100.
+            VolumeCapExceeded: If ``target`` exceeds ``config.max_volume_pct``.
+            ValueError: If ``target`` is outside 0-100.
             VolumeValidationError: If ``ramp_type`` is not a Sonos ramp type.
             RoomNotFoundError: If room is not in the household.
             VolumeError: If the SoCo operation fails.
@@ -163,12 +163,12 @@ class SonosService:
             raise VolumeValidationError(
                 f"Invalid ramp_type {ramp_type!r}. Expected one of: {allowed}."
             )
-        check_volume(volume, self._config)
+        check_volume(target, self._config)
         room = self._room_service.get_room(room_name)
-        seconds = self._adapter.ramp_to_volume(room.ip_address, volume, ramp_type)
+        seconds = self._adapter.ramp_to_volume(room.ip_address, target, ramp_type)
         return VolumeRampResult(
             room_name=room.name,
-            target_volume=volume,
+            target_volume=target,
             ramp_type=ramp_type,
             ramp_seconds=seconds,
         )
