@@ -72,6 +72,7 @@ EXPECTED_TOOL_NAMES = {
     "play_library_item",
     "snapshot",
     "restore_snapshot",
+    "play_uri",
 }
 
 REPRESENTATIVE_TOOL_NAMES = (

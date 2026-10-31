@@ -65,6 +65,25 @@ class SonosService:
         self._adapter.seek(room.ip_address, validated_position)
         return self._adapter.get_playback_state(room.ip_address, room_name)
 
+    def play_uri(
+        self,
+        room_name: str,
+        uri: object,
+        meta: str = "",
+        title: str = "",
+        force_radio: bool = False,
+    ) -> None:
+        """Play an arbitrary URI in the named room, routed to the group coordinator.
+
+        Raises:
+            RoomNotFoundError: If room_name does not match any discovered zone.
+            PlaybackError: If the URI is blank or the SoCo operation fails.
+            SonosDiscoveryError: If network discovery fails.
+        """
+        validated_uri = self._validate_uri(uri)
+        room = self._resolve_coordinator(room_name)
+        self._adapter.play_uri(room.ip_address, validated_uri, meta, title, force_radio)
+
     def get_sleep_timer(self, room_name: str) -> SleepTimerState:
         """Return the current sleep timer state for the named room.
 
@@ -175,6 +194,18 @@ class SonosService:
                 f"Invalid seek position {position!r}. Minutes and seconds must be < 60."
             )
         return position
+
+    def _validate_uri(self, uri: object) -> str:
+        """Require a non-blank URI with a scheme (e.g. ``http:`` or ``x-rincon-mp3radio:``)."""
+        if not isinstance(uri, str) or not uri.strip():
+            raise PlaybackValidationError("Invalid uri. Expected a non-empty URI string.")
+        normalized = uri.strip()
+        scheme, sep, rest = normalized.partition(":")
+        if not sep or not scheme or not rest:
+            raise PlaybackValidationError(
+                "Invalid uri. Expected a URI with a scheme, e.g. 'http://host/file.mp3'."
+            )
+        return normalized
 
     def _validate_sleep_timer_minutes(self, minutes: object) -> int:
         """Validate sleep timer minutes without accepting bool or string coercions."""

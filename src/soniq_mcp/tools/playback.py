@@ -1,7 +1,8 @@
 """Playback MCP tools for SoniqMCP.
 
 Exposes play, pause, stop, next_track, previous_track, get_playback_state,
-and get_track_info as thin handlers that delegate to ``PlaybackService``.
+get_track_info, seek, play_uri, and sleep-timer tools as thin handlers that
+delegate to ``PlaybackService``.
 """
 
 from __future__ import annotations
@@ -219,6 +220,41 @@ def register(app: FastMCP, config: SoniqConfig, playback_service: object) -> Non
                 return ErrorResponse.from_discovery_error(exc).model_dump()
             except Exception as exc:
                 log.exception("Internal error in seek")
+                return ErrorResponse.from_internal_error(exc, field="playback").model_dump()
+
+    if "play_uri" not in config.tools_disabled:
+
+        @app.tool(
+            title="Play URI",
+            annotations=_CONTROL_TOOL_HINTS,
+        )
+        def play_uri(
+            room: str,
+            uri: str,
+            meta: str = "",
+            title: str = "",
+            force_radio: bool = False,
+        ) -> dict:
+            """Play an arbitrary audio URI (e.g. a TTS file served over LAN HTTP) in a room.
+
+            This replaces what the room is playing. Sonos treats a single HTTP audio URL
+            as a radio stream, so do not assume it stops on its own: for one-shot
+            announcements call snapshot first, then play_uri, then restore_snapshot.
+            """
+            assert_tool_permitted("play_uri", config)
+            try:
+                playback_service.play_uri(room, uri, meta, title, force_radio)
+                return {"status": "ok", "room": room}
+            except RoomNotFoundError:
+                return ErrorResponse.from_room_not_found(room).model_dump()
+            except PlaybackError as exc:
+                log.warning("Playback error in play_uri: %s", exc)
+                return ErrorResponse.from_playback_error(exc).model_dump()
+            except SonosDiscoveryError as exc:
+                log.warning("Discovery error in play_uri: %s", exc)
+                return ErrorResponse.from_discovery_error(exc).model_dump()
+            except Exception as exc:
+                log.exception("Internal error in play_uri")
                 return ErrorResponse.from_internal_error(exc, field="playback").model_dump()
 
     if "get_sleep_timer" not in config.tools_disabled:

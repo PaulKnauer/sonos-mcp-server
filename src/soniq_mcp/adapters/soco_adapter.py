@@ -138,6 +138,26 @@ class SoCoAdapter:
         except Exception as exc:
             raise PlaybackError(f"Failed to get track info: {exc}") from exc
 
+    def play_uri(
+        self,
+        ip_address: str,
+        uri: str,
+        meta: str = "",
+        title: str = "",
+        force_radio: bool = False,
+    ) -> None:
+        """Play an arbitrary URI on the zone, replacing the current source.
+
+        Raises:
+            PlaybackError: If SoCo raises any exception.
+        """
+        self._call_playback(
+            ip_address,
+            lambda zone: zone.play_uri(
+                uri=uri, meta=meta, title=title, start=True, force_radio=force_radio
+            ),
+        )
+
     def get_volume(self, ip_address: str) -> int:
         try:
             zone = self._make_zone(ip_address)

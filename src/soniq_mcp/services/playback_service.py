@@ -109,6 +109,27 @@ class PlaybackService:
         """
         return self._sonos_service.seek(room_name, position)
 
+    def play_uri(
+        self,
+        room_name: str,
+        uri: str,
+        meta: str = "",
+        title: str = "",
+        force_radio: bool = False,
+    ) -> None:
+        """Play an arbitrary URI (for example a served TTS audio file) in the named room.
+
+        Sonos treats a single HTTP audio URL as a radio stream, so playback does
+        not reliably end on its own. For one-shot announcements, call
+        ``SnapshotService.snapshot`` first and ``restore_snapshot`` afterwards.
+
+        Raises:
+            RoomNotFoundError: If room_name does not match any discovered zone.
+            SonosDiscoveryError: If network discovery fails.
+            PlaybackError: If the URI is invalid or the SoCo operation fails.
+        """
+        self._sonos_service.play_uri(room_name, uri, meta, title, force_radio)
+
     def get_sleep_timer(self, room_name: str) -> SleepTimerState:
         """Return the current sleep timer state for the named room.
 

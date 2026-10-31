@@ -75,6 +75,7 @@ KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
         "play_library_item",
         "snapshot",
         "restore_snapshot",
+        "play_uri",
     }
 )
 
