@@ -4,16 +4,19 @@ version = "0.6.1"
 description = "Sonos MCP server"
 requires-python = ">=3.12"
 dependencies = [
-    "cryptography>=48.0.1",
+    "anyio>=4.14.2",
+    "certifi>=2026.10.18",
+    "cryptography>=50.0.0",
     "idna>=3.15",
     "lxml>=6.1.0",
-    "mcp[cli]>=1.26.0",
-    "pyjwt[crypto]>=2.13.0",
+    "mcp[cli]>=1.30.0,<2",
+    "pyjwt[crypto]>=2.15.0",
     "pydantic-settings>=2.14.2",
     "python-dotenv>=1.2.2",
     "python-multipart>=0.0.31",
     "soco>=0.30.14",
     "starlette>=1.0.1",
+    "urllib3>=2.8.0",
 ]
 
 [project.scripts]
@@ -25,8 +28,10 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "msgpack>=1.2.1",
+    "filelock>=4.2.1",
+    "msgpack>=1.2.3",
     "mypy>=1.15.0",
+    "pip>=26.2",
     "pip-audit>=2.8.0",
     "pygments>=2.20.0",
     "pytest>=9.0.3",
