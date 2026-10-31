@@ -76,9 +76,10 @@ class TestAddToQueueParameters:
         assert "room" in params
         assert "uri" in params
 
-    def test_has_exactly_two_parameters(self, queue_tools):
+    def test_has_room_uri_and_optional_as_next(self, queue_tools):
         params = inspect.signature(queue_tools["add_to_queue"]).parameters
-        assert set(params.keys()) == {"room", "uri"}
+        assert set(params.keys()) == {"room", "uri", "as_next"}
+        assert params["as_next"].default is False
 
 
 class TestRemoveFromQueueParameters:

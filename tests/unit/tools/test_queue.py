@@ -130,8 +130,61 @@ class TestAddToQueue:
 
         assert result["field"] == "queue"
 
+    def test_passes_as_next(self):
+        qs = MagicMock()
+        qs.add_to_queue.return_value = 2
+
+        fn, _, _ = _register_and_get("add_to_queue", qs)
+        fn(room="Kitchen", uri="x-sonos:track", as_next=True)
+
+        qs.add_to_queue.assert_called_once_with("Kitchen", "x-sonos:track", True)
+
     def test_tool_disabled_not_registered(self):
         fn, _, _ = _register_and_get("add_to_queue", disabled=["add_to_queue"])
+        assert fn is None
+
+
+class TestAddMultipleToQueue:
+    def test_returns_added_count(self):
+        qs = MagicMock()
+        qs.add_multiple_to_queue.return_value = 2
+
+        fn, _, _ = _register_and_get("add_multiple_to_queue", qs)
+        result = fn(room="Kitchen", uris=["uri:1", "uri:2"])
+
+        qs.add_multiple_to_queue.assert_called_once_with("Kitchen", ["uri:1", "uri:2"])
+        assert result == {"status": "ok", "room": "Kitchen", "added": 2}
+
+    def test_validation_error_returns_error(self):
+        from soniq_mcp.domain.exceptions import QueueValidationError
+
+        qs = MagicMock()
+        qs.add_multiple_to_queue.side_effect = QueueValidationError("empty")
+
+        fn, _, _ = _register_and_get("add_multiple_to_queue", qs)
+        result = fn(room="Kitchen", uris=[])
+
+        assert result["category"] == "validation"
+        assert result["field"] == "queue"
+
+    def test_room_not_found_returns_error(self):
+        qs = MagicMock()
+        qs.add_multiple_to_queue.side_effect = RoomNotFoundError("Kitchen")
+
+        fn, _, _ = _register_and_get("add_multiple_to_queue", qs)
+
+        assert fn(room="Kitchen", uris=["uri:1"])["field"] == "room"
+
+    def test_discovery_error_returns_error(self):
+        qs = MagicMock()
+        qs.add_multiple_to_queue.side_effect = SonosDiscoveryError("down")
+
+        fn, _, _ = _register_and_get("add_multiple_to_queue", qs)
+
+        assert fn(room="Kitchen", uris=["uri:1"])["category"] == "connectivity"
+
+    def test_tool_disabled_not_registered(self):
+        fn, _, _ = _register_and_get("add_multiple_to_queue", disabled=["add_multiple_to_queue"])
         assert fn is None
 
 

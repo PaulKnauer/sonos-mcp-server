@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from soniq_mcp.domain.models import (
     AlarmRecord,
     AudioSettingsState,
+    BatteryInfo,
     Favourite,
     GroupAudioState,
     InputState,
@@ -22,6 +23,7 @@ from soniq_mcp.domain.models import (
     PlaybackState,
     PlayModeState,
     QueueItem,
+    RadioFavourite,
     Room,
     SleepTimerState,
     SnapshotRestoreResult,
@@ -591,4 +593,56 @@ class SnapshotRestoreResponse(BaseModel):
             queue_restored=result.queue_restored,
             volume_restored=result.volume_restored,
             note=note,
+        )
+
+
+class BatteryInfoResponse(BaseModel):
+    """Response for the ``get_battery_info`` tool."""
+
+    room: str
+    supported: bool
+    level: int | None = None
+    health: str | None = None
+    temperature: str | None = None
+    power_source: str | None = None
+
+    @classmethod
+    def from_domain(cls, info: BatteryInfo) -> BatteryInfoResponse:
+        return cls(
+            room=info.room_name,
+            supported=info.supported,
+            level=info.level,
+            health=info.health,
+            temperature=info.temperature,
+            power_source=info.power_source,
+        )
+
+
+class RadioFavouriteResponse(BaseModel):
+    """Serialisable representation of a single radio favourite."""
+
+    title: str
+    uri: str
+    kind: Literal["station", "show"]
+
+    @classmethod
+    def from_domain(cls, fav: RadioFavourite) -> RadioFavouriteResponse:
+        return cls(title=fav.title, uri=fav.uri, kind=fav.kind)
+
+
+class RadioFavouritesListResponse(BaseModel):
+    """Response for the ``list_radio_favourites`` tool."""
+
+    room: str
+    items: list[RadioFavouriteResponse]
+    count: int
+
+    @classmethod
+    def from_domain(
+        cls, room_name: str, items: list[RadioFavourite]
+    ) -> RadioFavouritesListResponse:
+        return cls(
+            room=room_name,
+            items=[RadioFavouriteResponse.from_domain(f) for f in items],
+            count=len(items),
         )

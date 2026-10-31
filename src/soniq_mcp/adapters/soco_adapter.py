@@ -14,6 +14,7 @@ from typing import Any, Literal
 from soniq_mcp.domain.exceptions import (
     AlarmError,
     AudioSettingsError,
+    DeviceError,
     FavouritesError,
     GroupError,
     InputError,
@@ -29,11 +30,13 @@ from soniq_mcp.domain.exceptions import (
 from soniq_mcp.domain.models import (
     AlarmRecord,
     AudioSettingsState,
+    BatteryInfo,
     Favourite,
     LibraryItem,
     PlaybackState,
     PlayModeState,
     QueueItem,
+    RadioFavourite,
     SleepTimerState,
     SonosPlaylist,
     TrackInfo,
@@ -225,6 +228,35 @@ class SoCoAdapter:
             zone.play_uri(uri=uri, meta=meta or "")
         except Exception as exc:
             raise FavouritesError(f"Failed to play favourite: {exc}") from exc
+
+    def get_radio_favourites(self, ip_address: str) -> list[RadioFavourite]:
+        """Return saved Sonos Radio / TuneIn favourite stations and shows.
+
+        Raises:
+            FavouritesError: If SoCo raises any exception.
+        """
+        try:
+            zone = self._make_zone(ip_address)
+            library = zone.music_library
+            sources: list[tuple[Literal["station", "show"], Any]] = [
+                ("station", library.get_favorite_radio_stations()),
+                ("show", library.get_favorite_radio_shows()),
+            ]
+            favourites = []
+            for kind, results in sources:
+                for item in results:
+                    meta = getattr(item, "to_didl_string", lambda: "")()
+                    favourites.append(
+                        RadioFavourite(
+                            title=item.title,
+                            uri=self._get_didl_uri(item),
+                            kind=kind,
+                            meta=meta or None,
+                        )
+                    )
+            return favourites
+        except Exception as exc:
+            raise FavouritesError(f"Failed to get radio favourites: {exc}") from exc
 
     def get_playlists(self, ip_address: str) -> list[SonosPlaylist]:
         try:
@@ -559,13 +591,37 @@ class SoCoAdapter:
         except Exception as exc:
             raise QueueError(f"Failed to get queue for {ip_address}: {exc}") from exc
 
-    def add_to_queue(self, ip_address: str, uri: str) -> int:
+    def add_to_queue(self, ip_address: str, uri: str, as_next: bool = False) -> int:
         try:
             zone = self._make_zone(ip_address)
-            position = zone.add_uri_to_queue(uri)
+            position = zone.add_uri_to_queue(uri, as_next=as_next)
             return int(position)
         except Exception as exc:
             raise QueueError(f"Failed to add to queue on {ip_address}: {exc}") from exc
+
+    def add_multiple_to_queue(self, ip_address: str, uris: list[str]) -> int:
+        """Append several URIs to the end of the queue and return the count added.
+
+        Raises:
+            QueueError: If SoCo raises any exception.
+        """
+        try:
+            from soco.data_structures import DidlObject, DidlResource  # noqa: PLC0415
+
+            zone = self._make_zone(ip_address)
+            items = [
+                DidlObject(
+                    resources=[DidlResource(uri=uri, protocol_info="x-rincon-playlist:*:*:*")],
+                    title="",
+                    parent_id="",
+                    item_id="",
+                )
+                for uri in uris
+            ]
+            zone.add_multiple_to_queue(items)
+            return len(items)
+        except Exception as exc:
+            raise QueueError(f"Failed to add items to queue on {ip_address}: {exc}") from exc
 
     def remove_from_queue(self, ip_address: str, position: int) -> None:
         try:
@@ -732,6 +788,33 @@ class SoCoAdapter:
             return str(zone.music_source)
         except Exception as exc:
             raise InputError(f"Failed to inspect music source on {ip_address}: {exc}") from exc
+
+    def get_battery_info(self, ip_address: str, room_name: str) -> BatteryInfo:
+        """Return battery state, or ``supported=False`` for non-portable speakers.
+
+        Raises:
+            DeviceError: If the battery query fails for a reason other than
+                the speaker not supporting it.
+        """
+        try:
+            from soco.exceptions import NotSupportedException  # noqa: PLC0415
+
+            zone = self._make_zone(ip_address)
+            try:
+                raw = zone.get_battery_info()
+            except NotSupportedException:
+                return BatteryInfo(room_name=room_name, supported=False)
+            level = raw.get("Level")
+            return BatteryInfo(
+                room_name=room_name,
+                supported=True,
+                level=int(level) if level is not None else None,
+                health=_coerce_str(raw.get("Health")),
+                temperature=_coerce_str(raw.get("Temperature")),
+                power_source=_coerce_str(raw.get("PowerSource")),
+            )
+        except Exception as exc:
+            raise DeviceError(f"Failed to get battery info for {room_name!r}: {exc}") from exc
 
     def seek(self, ip_address: str, position: str) -> None:
         """Seek to a position in the current track.

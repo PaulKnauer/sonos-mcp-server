@@ -56,7 +56,7 @@ class TestAddToQueue:
 
         result = svc.add_to_queue("Kitchen", "x-sonos:track")
 
-        adapter.add_to_queue.assert_called_once_with(IP, "x-sonos:track")
+        adapter.add_to_queue.assert_called_once_with(IP, "x-sonos:track", as_next=False)
         assert result == 5
 
     def test_propagates_room_not_found(self):
@@ -142,3 +142,49 @@ class TestPlayFromQueue:
 
         with pytest.raises(QueueError):
             svc.play_from_queue("Kitchen", 0)
+
+
+class TestAddToQueueAsNext:
+    def test_passes_as_next(self):
+        svc, _, adapter = _make_service()
+
+        svc.add_to_queue("Kitchen", "uri", as_next=True)
+
+        adapter.add_to_queue.assert_called_once_with(IP, "uri", as_next=True)
+
+
+class TestAddMultipleToQueue:
+    def test_validates_and_delegates(self):
+        svc, rs, adapter = _make_service()
+        adapter.add_multiple_to_queue.return_value = 2
+
+        result = svc.add_multiple_to_queue("Kitchen", [" uri:1 ", "uri:2"])
+
+        adapter.add_multiple_to_queue.assert_called_once_with(IP, ["uri:1", "uri:2"])
+        assert result == 2
+
+    @pytest.mark.parametrize("uris", [[], None, "uri:1", ["uri:1", ""], ["uri:1", 3]])
+    def test_invalid_uris_raise_validation_error(self, uris):
+        from soniq_mcp.domain.exceptions import QueueValidationError
+
+        svc, _, adapter = _make_service()
+
+        with pytest.raises(QueueValidationError):
+            svc.add_multiple_to_queue("Kitchen", uris)
+        adapter.add_multiple_to_queue.assert_not_called()
+
+    def test_rejects_oversized_batch(self):
+        from soniq_mcp.domain.exceptions import QueueValidationError
+        from soniq_mcp.services.queue_service import MAX_BATCH_URIS
+
+        svc, _, _ = _make_service()
+
+        with pytest.raises(QueueValidationError, match="at most"):
+            svc.add_multiple_to_queue("Kitchen", ["uri"] * (MAX_BATCH_URIS + 1))
+
+    def test_propagates_room_not_found(self):
+        svc, rs, _ = _make_service()
+        rs.get_room.side_effect = RoomNotFoundError("Kitchen")
+
+        with pytest.raises(RoomNotFoundError):
+            svc.add_multiple_to_queue("Kitchen", ["uri"])

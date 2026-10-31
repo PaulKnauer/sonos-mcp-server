@@ -86,7 +86,7 @@ class TestAddToQueue:
             position = SoCoAdapter().add_to_queue(IP, "x-sonos:track")
 
         assert position == 3
-        zone.add_uri_to_queue.assert_called_once_with("x-sonos:track")
+        zone.add_uri_to_queue.assert_called_once_with("x-sonos:track", as_next=False)
 
     def test_soco_error_raises_queue_error(self):
         zone = MagicMock()
@@ -95,6 +95,37 @@ class TestAddToQueue:
         with patch("soco.SoCo", return_value=zone):
             with pytest.raises(QueueError, match="Failed to add to queue"):
                 SoCoAdapter().add_to_queue(IP, "x-sonos:track")
+
+
+class TestAddToQueueAsNext:
+    def test_passes_as_next_through(self):
+        zone = MagicMock()
+        zone.add_uri_to_queue.return_value = 2
+
+        with patch("soco.SoCo", return_value=zone):
+            SoCoAdapter().add_to_queue(IP, "x-sonos:track", as_next=True)
+
+        zone.add_uri_to_queue.assert_called_once_with("x-sonos:track", as_next=True)
+
+
+class TestAddMultipleToQueue:
+    def test_builds_didl_items_with_resource_uris(self):
+        zone = MagicMock()
+
+        with patch("soco.SoCo", return_value=zone):
+            added = SoCoAdapter().add_multiple_to_queue(IP, ["uri:1", "uri:2"])
+
+        assert added == 2
+        items = zone.add_multiple_to_queue.call_args.args[0]
+        assert [item.get_uri() for item in items] == ["uri:1", "uri:2"]
+
+    def test_soco_error_raises_queue_error(self):
+        zone = MagicMock()
+        zone.add_multiple_to_queue.side_effect = RuntimeError("upnp error")
+
+        with patch("soco.SoCo", return_value=zone):
+            with pytest.raises(QueueError, match="Failed to add items to queue"):
+                SoCoAdapter().add_multiple_to_queue(IP, ["uri:1"])
 
 
 class TestRemoveFromQueue:

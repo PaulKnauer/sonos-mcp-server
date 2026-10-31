@@ -221,6 +221,14 @@ class ErrorResponse(BaseModel):
         )
 
     @classmethod
+    def from_device_error(cls, exc: Exception) -> ErrorResponse:
+        return cls._from_domain_error(
+            exc,
+            field="device",
+            suggestion="Check that the speaker is reachable and try again.",
+        )
+
+    @classmethod
     def from_internal_error(
         cls,
         exc: Exception,

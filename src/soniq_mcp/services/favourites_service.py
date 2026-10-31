@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from soniq_mcp.domain.exceptions import FavouritesError
-from soniq_mcp.domain.models import Favourite
+from soniq_mcp.domain.models import Favourite, RadioFavourite
 
 
 class FavouritesService:
@@ -60,3 +60,36 @@ class FavouritesService:
         if resolved_meta is None:
             resolved_meta = self._lookup_favourite_meta(room.ip_address, uri)
         self._adapter.play_favourite(room.ip_address, uri, resolved_meta)
+
+    def list_radio_favourites(self, room_name: str) -> list[RadioFavourite]:
+        """Return saved Sonos Radio / TuneIn favourite stations and shows.
+
+        Raises:
+            RoomNotFoundError: If the room is not found.
+            FavouritesError: If the operation fails.
+            SonosDiscoveryError: If network discovery fails.
+        """
+        room = self._room_service.get_room(room_name)
+        return self._adapter.get_radio_favourites(room.ip_address)
+
+    def play_radio_favourite(self, room_name: str, uri: str) -> None:
+        """Play a saved radio favourite by URI in the specified room.
+
+        The favourite's DIDL metadata is looked up so Sonos shows the station
+        name; an unknown URI is still played without metadata.
+
+        Raises:
+            RoomNotFoundError: If the room is not found.
+            FavouritesError: If the URI is blank or the play operation fails.
+            SonosDiscoveryError: If network discovery fails.
+        """
+        if not isinstance(uri, str) or not uri.strip():
+            raise FavouritesError("Invalid uri. Use 'list_radio_favourites' to find a radio URI.")
+        room = self._room_service.get_room(room_name)
+        normalized = uri.strip()
+        meta = None
+        for favourite in self._adapter.get_radio_favourites(room.ip_address):
+            if favourite.uri == normalized:
+                meta = favourite.meta
+                break
+        self._adapter.play_favourite(room.ip_address, normalized, meta)

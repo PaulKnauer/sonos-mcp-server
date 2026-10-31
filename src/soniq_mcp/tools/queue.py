@@ -1,7 +1,7 @@
 """Queue MCP tools for SoniqMCP.
 
-Exposes get_queue, add_to_queue, remove_from_queue, clear_queue, and
-play_from_queue as thin handlers that delegate to ``QueueService``.
+Exposes get_queue, add_to_queue, add_multiple_to_queue, remove_from_queue,
+clear_queue, and play_from_queue as thin handlers that delegate to ``QueueService``.
 """
 
 from __future__ import annotations
@@ -70,11 +70,14 @@ def register(app: FastMCP, config: SoniqConfig, queue_service: object) -> None:
             title="Add to Queue",
             annotations=_CONTROL_TOOL_HINTS,
         )
-        def add_to_queue(room: str, uri: str) -> dict:
-            """Add a URI to the playback queue in the specified Sonos room."""
+        def add_to_queue(room: str, uri: str, as_next: bool = False) -> dict:
+            """Add a URI to the playback queue in the specified Sonos room.
+
+            Set as_next=true to play it next; Sonos honours this only in shuffle mode.
+            """
             assert_tool_permitted("add_to_queue", config)
             try:
-                position = queue_service.add_to_queue(room, uri)
+                position = queue_service.add_to_queue(room, uri, as_next)
                 return {"status": "ok", "room": room, "queue_position": position}
             except RoomNotFoundError:
                 return ErrorResponse.from_room_not_found(room).model_dump()
@@ -83,6 +86,27 @@ def register(app: FastMCP, config: SoniqConfig, queue_service: object) -> None:
                 return ErrorResponse.from_queue_error(exc).model_dump()
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in add_to_queue: %s", exc)
+                return ErrorResponse.from_discovery_error(exc).model_dump()
+
+    if "add_multiple_to_queue" not in config.tools_disabled:
+
+        @app.tool(
+            title="Add Multiple to Queue",
+            annotations=_CONTROL_TOOL_HINTS,
+        )
+        def add_multiple_to_queue(room: str, uris: list[str]) -> dict:
+            """Append several URIs (at most 100) to the end of the queue in one call."""
+            assert_tool_permitted("add_multiple_to_queue", config)
+            try:
+                added = queue_service.add_multiple_to_queue(room, uris)
+                return {"status": "ok", "room": room, "added": added}
+            except RoomNotFoundError:
+                return ErrorResponse.from_room_not_found(room).model_dump()
+            except QueueError as exc:
+                log.warning("Queue error in add_multiple_to_queue: %s", exc)
+                return ErrorResponse.from_queue_error(exc).model_dump()
+            except SonosDiscoveryError as exc:
+                log.warning("Discovery error in add_multiple_to_queue: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()
 
     if "remove_from_queue" not in config.tools_disabled:

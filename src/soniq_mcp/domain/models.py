@@ -338,3 +338,44 @@ class SnapshotRestoreResult:
     room_name: str
     queue_restored: bool
     volume_restored: bool
+
+
+@dataclass(frozen=True)
+class BatteryInfo:
+    """Battery state for a portable Sonos speaker.
+
+    Non-portable speakers report ``supported=False`` with all other fields
+    left as None.
+
+    Attributes:
+        room_name: Human-readable room name.
+        supported: True if the speaker reports battery information.
+        level: Charge level percentage (0-100), or None.
+        health: Battery health indicator (e.g. "GREEN"), or None.
+        temperature: Battery temperature indicator (e.g. "NORMAL"), or None.
+        power_source: Current power source (e.g. "BATTERY"), or None.
+    """
+
+    room_name: str
+    supported: bool
+    level: int | None = field(default=None)
+    health: str | None = field(default=None)
+    temperature: str | None = field(default=None)
+    power_source: str | None = field(default=None)
+
+
+@dataclass(frozen=True)
+class RadioFavourite:
+    """A saved Sonos Radio / TuneIn favourite station or show.
+
+    Attributes:
+        title: Human-readable title.
+        uri: Stream URI used to play the favourite.
+        kind: "station" or "show".
+        meta: DIDL-Lite XML string used when calling play_uri. Optional.
+    """
+
+    title: str
+    uri: str
+    kind: Literal["station", "show"]
+    meta: str | None = field(default=None)

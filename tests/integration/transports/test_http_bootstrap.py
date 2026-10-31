@@ -73,6 +73,10 @@ EXPECTED_TOOL_NAMES = {
     "snapshot",
     "restore_snapshot",
     "play_uri",
+    "get_battery_info",
+    "list_radio_favourites",
+    "play_radio_favourite",
+    "add_multiple_to_queue",
 }
 
 REPRESENTATIVE_TOOL_NAMES = (

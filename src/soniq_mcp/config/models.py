@@ -76,6 +76,10 @@ KNOWN_TOOL_NAMES: frozenset[str] = frozenset(
         "snapshot",
         "restore_snapshot",
         "play_uri",
+        "get_battery_info",
+        "list_radio_favourites",
+        "play_radio_favourite",
+        "add_multiple_to_queue",
     }
 )
 

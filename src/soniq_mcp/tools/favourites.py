@@ -1,6 +1,7 @@
 """Favourites MCP tools for SoniqMCP.
 
-Exposes list_favourites and play_favourite as tool handlers that delegate
+Exposes list_favourites, play_favourite, list_radio_favourites, and
+play_radio_favourite as tool handlers that delegate
 to ``FavouritesService``.
 """
 
@@ -15,7 +16,7 @@ from soniq_mcp.config import SoniqConfig
 from soniq_mcp.domain.exceptions import FavouritesError, RoomNotFoundError, SonosDiscoveryError
 from soniq_mcp.domain.safety import assert_tool_permitted
 from soniq_mcp.schemas.errors import ErrorResponse
-from soniq_mcp.schemas.responses import FavouritesListResponse
+from soniq_mcp.schemas.responses import FavouritesListResponse, RadioFavouritesListResponse
 
 log = logging.getLogger(__name__)
 
@@ -75,4 +76,40 @@ def register(app: FastMCP, config: SoniqConfig, favourites_service: object) -> N
                 return ErrorResponse.from_favourites_error(exc).model_dump()
             except SonosDiscoveryError as exc:
                 log.warning("Discovery error in play_favourite: %s", exc)
+                return ErrorResponse.from_discovery_error(exc).model_dump()
+
+    if "list_radio_favourites" not in config.tools_disabled:
+
+        @app.tool(title="List Radio Favourites", annotations=_READ_ONLY_TOOL_HINTS)
+        def list_radio_favourites(room: str) -> dict:
+            """Return saved Sonos Radio / TuneIn favourite stations and shows."""
+            assert_tool_permitted("list_radio_favourites", config)
+            try:
+                items = favourites_service.list_radio_favourites(room)
+                return RadioFavouritesListResponse.from_domain(room, items).model_dump()
+            except RoomNotFoundError:
+                return ErrorResponse.from_room_not_found(room).model_dump()
+            except FavouritesError as exc:
+                log.warning("Favourites error in list_radio_favourites: %s", exc)
+                return ErrorResponse.from_favourites_error(exc).model_dump()
+            except SonosDiscoveryError as exc:
+                log.warning("Discovery error in list_radio_favourites: %s", exc)
+                return ErrorResponse.from_discovery_error(exc).model_dump()
+
+    if "play_radio_favourite" not in config.tools_disabled:
+
+        @app.tool(title="Play Radio Favourite", annotations=_CONTROL_TOOL_HINTS)
+        def play_radio_favourite(room: str, uri: str) -> dict:
+            """Play a radio favourite by URI (from list_radio_favourites) in the specified room."""
+            assert_tool_permitted("play_radio_favourite", config)
+            try:
+                favourites_service.play_radio_favourite(room, uri)
+                return {"status": "ok", "room": room, "uri": uri}
+            except RoomNotFoundError:
+                return ErrorResponse.from_room_not_found(room).model_dump()
+            except FavouritesError as exc:
+                log.warning("Favourites error in play_radio_favourite: %s", exc)
+                return ErrorResponse.from_favourites_error(exc).model_dump()
+            except SonosDiscoveryError as exc:
+                log.warning("Discovery error in play_radio_favourite: %s", exc)
                 return ErrorResponse.from_discovery_error(exc).model_dump()

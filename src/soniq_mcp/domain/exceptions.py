@@ -303,3 +303,18 @@ class SnapshotNotFoundError(SnapshotError):
     """Raised when a snapshot id is unknown or belongs to another room."""
 
     error_category = ErrorCategory.VALIDATION
+
+
+class DeviceError(SoniqDomainError):
+    """Raised when a speaker-level device query fails."""
+
+    error_category = ErrorCategory.OPERATION
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+class QueueValidationError(QueueError):
+    """Raised when a queue request fails local validation."""
+
+    error_category = ErrorCategory.VALIDATION

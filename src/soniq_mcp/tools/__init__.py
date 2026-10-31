@@ -90,3 +90,9 @@ def register_all(app: FastMCP, config: SoniqConfig) -> None:
 
     snapshot_service = SnapshotService(room_service, SnapshotAdapter(), config)
     register_snapshot(app, config, snapshot_service)
+
+    from soniq_mcp.services.device_service import DeviceService
+    from soniq_mcp.tools.device import register as register_device
+
+    device_service = DeviceService(room_service, SoCoAdapter())
+    register_device(app, config, device_service)
